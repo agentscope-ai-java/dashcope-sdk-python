@@ -1,0 +1,151 @@
+{
+    "create_response": {
+        "status_code": 200,
+        "request_id": "0f69ff22-c966-4804-8600-2eb260b6da8d",
+        "code": null,
+        "message": "",
+        "output": {
+            "job_id": "ft-202403261451-d26b",
+            "job_name": "ft-202403261451-d26b",
+            "status": "PENDING",
+            "model": "qwen-turbo",
+            "base_model": "qwen-turbo",
+            "training_file_ids": [
+                "52a70708-c20c-484a-a442-304cf3e9caa4"
+            ],
+            "validation_file_ids": [],
+            "hyper_parameters": {
+                "learning_rate": "2e-5",
+                "n_epochs": 10,
+                "batch_size": 32
+            },
+            "training_type": "sft",
+            "create_time": "2024-03-26 14:51:10",
+            "user_identity": "1809711008757874",
+            "modifier": "1809711008757874",
+            "creator": "1809711008757874",
+            "group": "llm"
+        },
+        "usage": null
+    },
+    "create_multi_files_response": {
+        "status_code": 200,
+        "request_id": "0f69ff22-c966-4804-8600-2eb260b6da8d",
+        "code": null,
+        "message": "",
+        "output": {
+            "job_id": "ft-202403261451-d26b",
+            "job_name": "ft-202403261451-d26b",
+            "status": "PENDING",
+            "model": "qwen-turbo",
+            "base_model": "qwen-turbo",
+            "training_file_ids": [
+                "training_001",
+                "training_002"
+            ],
+            "validation_file_ids": [
+                "validation_001",
+                "validation_002"
+            ],
+            "hyper_parameters": {
+                "learning_rate": "2e-5",
+                "n_epochs": 10,
+                "batch_size": 32
+            },
+            "training_type": "sft",
+            "create_time": "2024-03-26 14:51:10",
+            "user_identity": "1809711008757874",
+            "modifier": "1809711008757874",
+            "creator": "1809711008757874",
+            "group": "llm"
+        },
+        "usage": null
+    },
+    "query_response": {
+        "status_code": 200,
+        "request_id": "58512bca-8ef6-4edc-8e93-937efe57076d",
+        "code": null,
+        "message": "",
+        "output": {
+            "job_id": "ft-202403261451-d26b",
+            "job_name": "ft-202403261451-d26b",
+            "status": "RUNNING",
+            "model": "qwen-turbo",
+            "base_model": "qwen-turbo",
+            "training_file_ids": [
+                "52a70708-c20c-484a-a442-304cf3e9caa4"
+            ],
+            "validation_file_ids": [],
+            "hyper_parameters": {
+                "learning_rate": "2e-5",
+                "n_epochs": 10,
+                "batch_size": 32
+            },
+            "training_type": "sft",
+            "create_time": "2024-03-26 14:51:10",
+            "user_identity": "1809711008757874",
+            "modifier": "1809711008757874",
+            "creator": "1809711008757874",
+            "group": "llm"
+        },
+        "usage": null
+    },
+    "list_response": {
+        "status_code": 200,
+        "request_id": "16ccaf2b-7f96-417b-b3c1-dcfdc72cf6d2",
+        "code": null,
+        "message": "",
+        "output": {
+            "page_no": 1,
+            "page_size": 10,
+            "total": 2,
+            "jobs": [
+                {
+                    "job_id": "ft-202403261454-d8b4",
+                    "job_name": "ft-202403261454-d8b4",
+                    "status": "QUEUING",
+                    "model": "qwen-turbo",
+                    "base_model": "qwen-turbo",
+                    "training_file_ids": [
+                        "52a70708-c20c-484a-a442-304cf3e9caa4"
+                    ],
+                    "validation_file_ids": [],
+                    "hyper_parameters": {
+                        "learning_rate": "2e-5",
+                        "n_epochs": 10,
+                        "batch_size": 32
+                    },
+                    "training_type": "sft",
+                    "create_time": "2024-03-26 14:54:57",
+                    "user_identity": "1809711008757874",
+                    "modifier": "1809711008757874",
+                    "creator": "1809711008757874",
+                    "group": "llm"
+                },
+                {
+                    "job_id": "ft-202403261451-d26b",
+                    "job_name": "ft-202403261451-d26b",
+                    "status": "RUNNING",
+                    "model": "qwen-turbo",
+                    "base_model": "qwen-turbo",
+                    "training_file_ids": [
+                        "52a70708-c20c-484a-a442-304cf3e9caa4"
+                    ],
+                    "validation_file_ids": [],
+                    "hyper_parameters": {
+                        "learning_rate": "2e-5",
+                        "n_epochs": 10,
+                        "batch_size": 32
+                    },
+                    "training_type": "sft",
+                    "create_time": "2024-03-26 14:51:10",
+                    "user_identity": "1809711008757874",
+                    "modifier": "1809711008757874",
+                    "creator": "1809711008757874",
+                    "group": "llm"
+                }
+            ]
+        },
+        "usage": null
+    }
+}
