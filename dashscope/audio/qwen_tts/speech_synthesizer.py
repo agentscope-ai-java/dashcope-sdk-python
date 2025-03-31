@@ -51,7 +51,7 @@ class SpeechSynthesizer(BaseApi):
 
         Returns:
             Union[TextToSpeechResponse,
-                  Generator[MultiModalConversationResponse, None, None]]: If
+                  Generator[TextToSpeechResponse, None, None]]: If
             stream is True, return Generator, otherwise TextToSpeechResponse.
         """
         if not text:
