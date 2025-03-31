@@ -622,3 +622,64 @@ class ReRankResponse(DashScopeAPIResponse):
                                   request_id=api_response.request_id,
                                   code=api_response.code,
                                   message=api_response.message)
+
+
+@dataclass(init=False)
+class TextToSpeechAudio(DictMixin):
+    expires_at: int
+    id: str
+    data: str
+    url: str
+
+    def __init__(self,
+                 expires_at: int,
+                 id: str,
+                 data: str = None,
+                 url: str = None,
+                 **kwargs):
+        super().__init__(expires_at=expires_at,
+                         id=id,
+                         data=data,
+                         url=url,
+                         **kwargs)
+
+
+@dataclass(init=False)
+class TextToSpeechOutput(DictMixin):
+    finish_reason: str
+    audio: TextToSpeechAudio
+
+    def __init__(self,
+                 finish_reason: str = None,
+                 audio: TextToSpeechAudio = None,
+                 **kwargs):
+        super().__init__(finish_reason=finish_reason,
+                         audio=audio,
+                         **kwargs)
+
+
+@dataclass(init=False)
+class TextToSpeechResponse(DashScopeAPIResponse):
+    output: TextToSpeechOutput
+    usage: MultiModalConversationUsage
+
+    @staticmethod
+    def from_api_response(api_response: DashScopeAPIResponse):
+        if api_response.status_code == HTTPStatus.OK:
+            usage = {}
+            if api_response.usage:
+                usage = api_response.usage
+
+            return MultiModalConversationResponse(
+                status_code=api_response.status_code,
+                request_id=api_response.request_id,
+                code=api_response.code,
+                message=api_response.message,
+                output=TextToSpeechOutput(**api_response.output),
+                usage=MultiModalConversationUsage(**usage))
+        else:
+            return TextToSpeechResponse(
+                status_code=api_response.status_code,
+                request_id=api_response.request_id,
+                code=api_response.code,
+                message=api_response.message)
