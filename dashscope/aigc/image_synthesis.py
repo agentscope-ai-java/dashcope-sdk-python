@@ -190,7 +190,7 @@ class ImageSynthesis(BaseAsyncApi):
 
         if task is None:
             task = ImageSynthesis.task
-        if 'imageedit' in model:
+        if model is not None and model and 'imageedit' in model:
             task = 'image2image'
 
         response = super().async_call(

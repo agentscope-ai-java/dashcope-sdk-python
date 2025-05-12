@@ -190,7 +190,7 @@ class VideoSynthesis(BaseAsyncApi):
 
         if task is None:
             task = VideoSynthesis.task
-        if 'kf2v' in model:
+        if model is not None and model and 'kf2v' in model:
             task = 'image2video'
         response = super().async_call(
             model=model,
