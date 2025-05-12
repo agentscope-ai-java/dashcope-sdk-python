@@ -27,6 +27,9 @@ class VideoSynthesis(BaseAsyncApi):
         wanx_2_1_i2v_plus = 'wanx2.1-i2v-plus'
         wanx_2_1_i2v_turbo = 'wanx2.1-i2v-turbo'
 
+        wanx_2_1_kf2v_plus = 'wanx2.1-kf2v-plus'
+        wanx_kf2v = 'wanx-kf2v'
+
     @classmethod
     def call(cls,
              model: str,
@@ -40,9 +43,6 @@ class VideoSynthesis(BaseAsyncApi):
              extra_input: Dict = None,
              workspace: str = None,
              task: str = None,
-             function: str = None,
-             mask_image_url: str = None,
-             base_image_url: str = None,
              head_frame: str = None,
              tail_frame: str = None,
              first_frame_url: str = None,
@@ -61,11 +61,6 @@ class VideoSynthesis(BaseAsyncApi):
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            function (str): The specific functions to be achieved. like:
-                colorization,super_resolution,expand,remove_watermaker,doodle,
-                description_edit_with_mask,description_edit,stylization_local,stylization_all
-            base_image_url (str): Enter the URL address of the target edited image.
-            mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.
             first_frame_url (str): The URL of the first frame image for generating the video.
             last_frame_url (str): The URL of the last frame image for generating the video.
             **kwargs:
@@ -89,9 +84,6 @@ class VideoSynthesis(BaseAsyncApi):
                             workspace=workspace,
                             extra_input=extra_input,
                             task=task,
-                            function=function,
-                            mask_image_url=mask_image_url,
-                            base_image_url=base_image_url,
                             head_frame=head_frame,
                             tail_frame=tail_frame,
                             first_frame_url=first_frame_url,
@@ -111,9 +103,6 @@ class VideoSynthesis(BaseAsyncApi):
                    extra_input: Dict = None,
                    workspace: str = None,
                    task: str = None,
-                   function: str = None,
-                   mask_image_url: str = None,
-                   base_image_url: str = None,
                    head_frame: str = None,
                    tail_frame: str = None,
                    first_frame_url: str = None,
@@ -132,11 +121,6 @@ class VideoSynthesis(BaseAsyncApi):
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            function (str): The specific functions to be achieved. like:
-                colorization,super_resolution,expand,remove_watermaker,doodle,
-                description_edit_with_mask,description_edit,stylization_local,stylization_all
-            base_image_url (str): Enter the URL address of the target edited image.
-            mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.
             first_frame_url (str): The URL of the first frame image for generating the video.
             last_frame_url (str): The URL of the last frame image for generating the video.
             **kwargs:
@@ -168,20 +152,6 @@ class VideoSynthesis(BaseAsyncApi):
             if is_upload:
                 has_upload = True
             inputs['img_url'] = res_img_url
-
-        if mask_image_url is not None and mask_image_url:
-            is_upload, res_mask_image_url = check_and_upload_local(
-                model, mask_image_url, api_key)
-            if is_upload:
-                has_upload = True
-            inputs['mask_image_url'] = mask_image_url
-
-        if base_image_url is not None and base_image_url:
-            is_upload, res_base_image_url = check_and_upload_local(
-                model, base_image_url, api_key)
-            if is_upload:
-                has_upload = True
-            inputs['base_image_url'] = res_base_image_url
 
         if head_frame is not None and head_frame:
             is_upload, res_head_frame = check_and_upload_local(
@@ -217,6 +187,11 @@ class VideoSynthesis(BaseAsyncApi):
             headers = kwargs.pop('headers', {})
             headers['X-DashScope-OssResourceResolve'] = 'enable'
             kwargs['headers'] = headers
+
+        if task is None:
+            task = VideoSynthesis.task
+        if 'kf2v' in model:
+            task = 'image2video'
         response = super().async_call(
             model=model,
             task_group=task_group,

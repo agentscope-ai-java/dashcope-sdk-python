@@ -19,6 +19,8 @@ class ImageSynthesis(BaseAsyncApi):
         wanx_v1 = 'wanx-v1'
         wanx_sketch_to_image_v1 = 'wanx-sketch-to-image-v1'
 
+        wanx_2_1_imageedit = 'wanx2.1-imageedit'
+
     @classmethod
     def call(cls,
              model: str,
@@ -31,6 +33,9 @@ class ImageSynthesis(BaseAsyncApi):
              workspace: str = None,
              extra_input: Dict = None,
              task: str = None,
+             function: str = None,
+             mask_image_url: str = None,
+             base_image_url: str = None,
              **kwargs) -> ImageSynthesisResponse:
         """Call image(s) synthesis service and get result.
 
@@ -47,6 +52,11 @@ class ImageSynthesis(BaseAsyncApi):
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
+            function (str): The specific functions to be achieved. like:
+                colorization,super_resolution,expand,remove_watermaker,doodle,
+                description_edit_with_mask,description_edit,stylization_local,stylization_all
+            base_image_url (str): Enter the URL address of the target edited image.
+            mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.
             **kwargs:
                 n(int, `optional`): Number of images to synthesis.
                 size(str, `optional`): The output image(s) size(width*height).
@@ -74,6 +84,9 @@ class ImageSynthesis(BaseAsyncApi):
                             workspace=workspace,
                             extra_input=extra_input,
                             task=task,
+                            function=function,
+                            mask_image_url=mask_image_url,
+                            base_image_url=base_image_url,
                             **kwargs)
 
     @classmethod
@@ -88,6 +101,9 @@ class ImageSynthesis(BaseAsyncApi):
                    workspace: str = None,
                    extra_input: Dict = None,
                    task: str = None,
+                   function: str = None,
+                   mask_image_url: str = None,
+                   base_image_url: str = None,
                    **kwargs) -> ImageSynthesisResponse:
         """Create a image(s) synthesis task, and return task information.
 
@@ -102,6 +118,11 @@ class ImageSynthesis(BaseAsyncApi):
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
+            function (str): The specific functions to be achieved. like:
+                colorization,super_resolution,expand,remove_watermaker,doodle,
+                description_edit_with_mask,description_edit,stylization_local,stylization_all
+            base_image_url (str): Enter the URL address of the target edited image.
+            mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.
             **kwargs(wanx-v1):
                 n(int, `optional`): Number of images to synthesis.
                 size: The output image(s) size, Default 1024*1024
@@ -122,7 +143,7 @@ class ImageSynthesis(BaseAsyncApi):
         """
         if prompt is None or not prompt:
             raise InputRequired('prompt is required!')
-        task_group, function = _get_task_group_and_task(__name__)
+        task_group, f = _get_task_group_and_task(__name__)
         input = {PROMPT: prompt}
         has_upload = False
         if negative_prompt is not None:
@@ -141,6 +162,24 @@ class ImageSynthesis(BaseAsyncApi):
             if is_upload:
                 has_upload = True
             input['ref_img'] = ref_img
+
+        if function is not None and function:
+            input['function'] = function
+
+        if mask_image_url is not None and mask_image_url:
+            is_upload, res_mask_image_url = check_and_upload_local(
+                model, mask_image_url, api_key)
+            if is_upload:
+                has_upload = True
+            input['mask_image_url'] = mask_image_url
+
+        if base_image_url is not None and base_image_url:
+            is_upload, res_base_image_url = check_and_upload_local(
+                model, base_image_url, api_key)
+            if is_upload:
+                has_upload = True
+            input['base_image_url'] = res_base_image_url
+
         if extra_input is not None and extra_input:
             input = {**input, **extra_input}
 
@@ -149,11 +188,16 @@ class ImageSynthesis(BaseAsyncApi):
             headers['X-DashScope-OssResourceResolve'] = 'enable'
             kwargs['headers'] = headers
 
+        if task is None:
+            task = ImageSynthesis.task
+        if 'imageedit' in model:
+            task = 'image2image'
+
         response = super().async_call(
             model=model,
             task_group=task_group,
-            task=ImageSynthesis.task if task is None else task,
-            function=function,
+            task=task,
+            function=f,
             api_key=api_key,
             input=input,
             workspace=workspace,

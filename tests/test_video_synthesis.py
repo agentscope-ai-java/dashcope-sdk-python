@@ -14,16 +14,20 @@ class TestAsyncVideoSynthesisRequest(BaseTestEnvironment):
 
     def test_create_task(self):
         rsp = VideoSynthesis.call(
-            model=VideoSynthesis.Models.wanx_txt2video_pro,
-            prompt='cute kitten puppy')
+            model=VideoSynthesis.Models.wanx_kf2v,
+            first_frame_url='https://static.dingtalk.com/media/lQLPD2ob9dfKPBvNBADNAkCwOcPjjaFVcEcHqrO8n1BLAA_576_1024.png_620x10000q90.png',
+            last_frame_url='https://static.dingtalk.com/media/lQLPD2jl0mg85BvNBADNAkCwNJvjWJXBVMwHqrO0OvZlAA_576_1024.png_620x10000q90.png'
+        )
         assert rsp.status_code == HTTPStatus.OK
 
         assert rsp.output['task_status'] == 'SUCCEEDED'
 
     def test_fetch_status(self):
         rsp = VideoSynthesis.call(
-            model=VideoSynthesis.Models.wanx_txt2video_pro,
-            prompt='cute kitten puppy')
+            model=VideoSynthesis.Models.wanx_kf2v,
+            first_frame_url='https://static.dingtalk.com/media/lQLPD2ob9dfKPBvNBADNAkCwOcPjjaFVcEcHqrO8n1BLAA_576_1024.png_620x10000q90.png',
+            last_frame_url='https://static.dingtalk.com/media/lQLPD2jl0mg85BvNBADNAkCwNJvjWJXBVMwHqrO0OvZlAA_576_1024.png_620x10000q90.png'
+        )
         assert rsp.status_code == HTTPStatus.OK
 
         rsp = VideoSynthesis.fetch(rsp)
@@ -31,8 +35,10 @@ class TestAsyncVideoSynthesisRequest(BaseTestEnvironment):
 
     def test_wait(self):
         rsp = VideoSynthesis.async_call(
-            model=VideoSynthesis.Models.wanx_txt2video_pro,
-            prompt='cute kitten puppy')
+            model=VideoSynthesis.Models.wanx_kf2v,
+            first_frame_url='https://static.dingtalk.com/media/lQLPD2ob9dfKPBvNBADNAkCwOcPjjaFVcEcHqrO8n1BLAA_576_1024.png_620x10000q90.png',
+            last_frame_url='https://static.dingtalk.com/media/lQLPD2jl0mg85BvNBADNAkCwNJvjWJXBVMwHqrO0OvZlAA_576_1024.png_620x10000q90.png'
+        )
         assert rsp.status_code == HTTPStatus.OK
 
         rsp = VideoSynthesis.wait(rsp)
