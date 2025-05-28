@@ -171,7 +171,7 @@ class ImageSynthesis(BaseAsyncApi):
                 model, mask_image_url, api_key)
             if is_upload:
                 has_upload = True
-            input['mask_image_url'] = mask_image_url
+            input['mask_image_url'] = res_mask_image_url
 
         if base_image_url is not None and base_image_url:
             is_upload, res_base_image_url = check_and_upload_local(
