@@ -134,9 +134,7 @@ class Request:
                 'task_group': 'audio',
                 'task': 'tts',
                 'function': 'SpeechSynthesizer',
-                'input': {
-                    'text': ''
-                },
+                'input': {},
                 'parameters': {
                     'voice': self.voice,
                     'volume': self.volume,
@@ -179,9 +177,7 @@ class Request:
                 'streaming': WebsocketStreamingMode.DUPLEX,
             },
             'payload': {
-                'input': {
-                    'text': ''
-                },
+                'input': {},
             },
         }
         return json.dumps(cmd)
@@ -514,6 +510,10 @@ class SpeechSynthesizer:
             otherwise, it will wait indefinitely.
         """
         # print('还不支持非流式语音合成sdk调用大模型，使用流式模拟')
+        if self.additional_params is None:
+            self.additional_params = {"enable_ssml":True}
+        else:
+            self.additional_params["enable_ssml"] = True
         if not self.callback:
             self.callback = ResultCallback()
         self.__start_stream()
