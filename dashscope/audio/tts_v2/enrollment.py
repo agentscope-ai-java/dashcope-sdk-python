@@ -12,14 +12,15 @@ from dashscope.common.logging import logger
 
 
 class VoiceEnrollmentException(Exception):
-    def __init__(self, status_code: int, code: str,
+    def __init__(self, request_id: str, status_code: int, code: str,
                  error_message: str) -> None:
+        self._request_id = request_id
         self._status_code = status_code
         self._code = code
         self._error_message = error_message
 
     def __str__(self):
-        return f'Status Code: {self._status_code}, Code: {self._code}, Error Message: {self._error_message}'
+        return f'Request: {self._request_id}, Status Code: {self._status_code}, Code: {self._code}, Error Message: {self._error_message}'
 
 
 class VoiceEnrollmentService(BaseApi):
@@ -81,11 +82,11 @@ class VoiceEnrollmentService(BaseApi):
             'prefix': prefix,
             'url': url,
         }, )
+        self._last_request_id = response.request_id
         if response.status_code == 200:
-            self._last_request_id = response.request_id
             return response.output['voice_id']
         else:
-            raise VoiceEnrollmentException(response.status_code, response.code,
+            raise VoiceEnrollmentException(response.request_id, response.status_code, response.code,
                                            response.message)
 
     def list_voices(self,
@@ -111,11 +112,11 @@ class VoiceEnrollmentService(BaseApi):
                 'page_index': page_index,
                 'page_size': page_size,
             }, )
+        self._last_request_id = response.request_id
         if response.status_code == 200:
-            self._last_request_id = response.request_id
             return response.output['voice_list']
         else:
-            raise VoiceEnrollmentException(response.status_code, response.code,
+            raise VoiceEnrollmentException(response.request_id, response.status_code, response.code,
                                            response.message)
 
     def query_voice(self, voice_id: str) -> List[str]:
@@ -128,11 +129,11 @@ class VoiceEnrollmentService(BaseApi):
             'action': 'query_voice',
             'voice_id': voice_id,
         }, )
+        self._last_request_id = response.request_id
         if response.status_code == 200:
-            self._last_request_id = response.request_id
             return response.output
         else:
-            raise VoiceEnrollmentException(response.status_code, response.code,
+            raise VoiceEnrollmentException(response.request_id, response.status_code, response.code,
                                            response.message)
 
     def update_voice(self, voice_id: str, url: str) -> None:
@@ -146,11 +147,11 @@ class VoiceEnrollmentService(BaseApi):
             'voice_id': voice_id,
             'url': url,
         }, )
+        self._last_request_id = response.request_id
         if response.status_code == 200:
-            self._last_request_id = response.request_id
             return
         else:
-            raise VoiceEnrollmentException(response.status_code, response.code,
+            raise VoiceEnrollmentException(response.request_id, response.status_code, response.code,
                                            response.message)
 
     def delete_voice(self, voice_id: str) -> None:
@@ -162,11 +163,11 @@ class VoiceEnrollmentService(BaseApi):
             'action': 'delete_voice',
             'voice_id': voice_id,
         }, )
+        self._last_request_id = response.request_id
         if response.status_code == 200:
-            self._last_request_id = response.request_id
             return
         else:
-            raise VoiceEnrollmentException(response.status_code, response.code,
+            raise VoiceEnrollmentException(response.request_id, response.status_code, response.code,
                                            response.message)
 
     def get_last_request_id(self):

@@ -12,14 +12,15 @@ from dashscope.common.logging import logger
 
 
 class VocabularyServiceException(Exception):
-    def __init__(self, status_code: int, code: str,
+    def __init__(self, request_id: str, status_code: int, code: str,
                  error_message: str) -> None:
+        self._request_id = request_id
         self._status_code = status_code
         self._code = code
         self._error_message = error_message
 
     def __str__(self):
-        return f'Status Code: {self._status_code}, Code: {self._code}, Error Message: {self._error_message}'
+        return f'Request: {self._request_id}, Status Code: {self._status_code}, Code: {self._code}, Error Message: {self._error_message}'
 
 
 class VocabularyService(BaseApi):
@@ -86,7 +87,7 @@ class VocabularyService(BaseApi):
             self._last_request_id = response.request_id
             return response.output['vocabulary_id']
         else:
-            raise VocabularyServiceException(response.status_code,
+            raise VocabularyServiceException(response.request_id, response.status_code,
                                              response.code, response.message)
 
     def list_vocabularies(self,
@@ -117,7 +118,7 @@ class VocabularyService(BaseApi):
             self._last_request_id = response.request_id
             return response.output['vocabulary_list']
         else:
-            raise VocabularyServiceException(response.status_code,
+            raise VocabularyServiceException(response.request_id, response.status_code,
                                              response.code, response.message)
 
     def query_vocabulary(self, vocabulary_id: str) -> List[dict]:
@@ -134,7 +135,7 @@ class VocabularyService(BaseApi):
             self._last_request_id = response.request_id
             return response.output
         else:
-            raise VocabularyServiceException(response.status_code,
+            raise VocabularyServiceException(response.request_id, response.status_code,
                                              response.code, response.message)
 
     def update_vocabulary(self, vocabulary_id: str,
@@ -153,7 +154,7 @@ class VocabularyService(BaseApi):
             self._last_request_id = response.request_id
             return
         else:
-            raise VocabularyServiceException(response.status_code,
+            raise VocabularyServiceException(response.request_id, response.status_code,
                                              response.code, response.message)
 
     def delete_vocabulary(self, vocabulary_id: str) -> None:
@@ -169,7 +170,7 @@ class VocabularyService(BaseApi):
             self._last_request_id = response.request_id
             return
         else:
-            raise VocabularyServiceException(response.status_code,
+            raise VocabularyServiceException(response.request_id, response.status_code,
                                              response.code, response.message)
 
     def get_last_request_id(self):
