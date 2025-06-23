@@ -127,10 +127,10 @@ class MultiModalDialog:
     """
 
     def __init__(self,
-                 workspace_id: str,
                  app_id: str,
                  request_params: RequestParameters,
                  multimodal_callback: MultiModalCallback,
+                 workspace_id: str = None,
                  url: str = None,
                  api_key: str = None,
                  dialog_id: str = None,
@@ -140,7 +140,7 @@ class MultiModalDialog:
                 创建一个语音对话会话。
 
                 此方法用于初始化一个新的voice_chat会话，设置必要的参数以准备开始与模型的交互。
-                ：param workspace_id: 客户的workspace_id
+                ：param workspace_id: 客户的workspace_id 主工作空间id,非必填字段
                 :param app_id: 客户在管控台创建的应用id，可以根据值规律确定使用哪个对话系统
                 :param request_params: 请求参数集合
                 :param url: (str) API的URL地址。
@@ -383,10 +383,10 @@ class _Request:
 
     def generate_start_request(self, direction_name: str,
                                dialog_id: str,
-                               workspace_id: str,
                                app_id: str,
                                request_params: RequestParameters,
-                               model: str = None
+                               model: str = None,
+                               workspace_id: str = None
                                ) -> str:
         """
         构建语音聊天服务的启动请求数据.
@@ -394,7 +394,7 @@ class _Request:
         :param request_params: start请求body中的parameters
         :param direction_name:
         :param dialog_id: 对话ID.
-        :param workspace_id: 管控台工作区id
+        :param workspace_id: 管控台工作空间id, 非必填字段。
         :param model: 模型
         :return: 启动请求字典.
         """
@@ -593,6 +593,8 @@ class _Response:
                 self._handle_responding_content(payload)
             elif response_event == RESPONSE_NAME_ERROR:
                 self._callback.on_error(json.dumps(response_json))
+            elif response_event == RESPONSE_NAME_HEART_BEAT:
+                logger.debug("Server response heart beat")
             else:
                 logger.error("Unknown response name: {}", response_event)
         except json.JSONDecodeError:

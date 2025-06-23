@@ -25,3 +25,4 @@ RESPONSE_NAME_RESPONDING_ENDED = "RespondingEnded"  # AI语音应答结束
 RESPONSE_NAME_SPEECH_CONTENT = "SpeechContent"  # 用户语音识别出的文本，流式全量输出
 RESPONSE_NAME_RESPONDING_CONTENT = "RespondingContent"  # 统对外输出的文本，流式全量输出
 RESPONSE_NAME_ERROR = "Error"  # 服务端对话中报错
+RESPONSE_NAME_HEART_BEAT = "HeartBeat"  # 心跳消息
