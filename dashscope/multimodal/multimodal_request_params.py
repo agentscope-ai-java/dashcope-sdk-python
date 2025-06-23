@@ -198,6 +198,7 @@ class BizParams:
     tool_prompts: dict = field(default=None)
     user_prompt_params: dict = field(default=None)
     user_query_params: dict = field(default=None)
+    videos: list = field(default=None)
 
     def to_dict(self):
         params = {}
@@ -211,6 +212,8 @@ class BizParams:
             params["user_prompt_params"] = self.user_prompt_params
         if self.user_query_params is not None:
             params["user_query_params"] = self.user_query_params
+        if self.videos is not None:
+            params["videos"] = self.videos
         return params
 
 
@@ -256,7 +259,7 @@ class RequestToRespondBodyInput(DashPayloadInput):
     app_id: str
     directive: str
     dialog_id: str
-    type_: str = field(metadata={"alias": "type"})
+    type_: str = field(metadata={"alias": "type"}, default= None)
     text: str = field(default="")
 
     def to_dict(self):

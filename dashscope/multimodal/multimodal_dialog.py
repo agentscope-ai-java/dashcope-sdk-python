@@ -185,7 +185,8 @@ class MultiModalDialog:
 
     def _on_close(self, ws, close_status_code, close_msg):
         try:
-            logger.debug("WebSocket connection closed with status {} and message {}".format(close_status_code, close_msg))
+            logger.debug(
+                "WebSocket connection closed with status {} and message {}".format(close_status_code, close_msg))
             if close_status_code is None:
                 close_status_code = 1000
             if close_msg is None:
@@ -255,6 +256,16 @@ class MultiModalDialog:
     def local_responding_ended(self):
         """本地tts播放结束"""
         _send_speech_json = self.request.generate_common_direction_request("LocalRespondingEnded", self.dialog_id)
+        self._send_text_frame(_send_speech_json)
+
+    def send_heart_beat(self):
+        """发送心跳"""
+        _send_speech_json = self.request.generate_common_direction_request("HeartBeat", self.dialog_id)
+        self._send_text_frame(_send_speech_json)
+
+    def update_info(self, parameters: RequestToRespondParameters = None):
+        """更新信息"""
+        _send_speech_json = self.request.generate_update_info_json(direction_name="UpdateInfo", dialog_id=self.dialog_id, parameters=parameters)
         self._send_text_frame(_send_speech_json)
 
     def stop(self):
@@ -428,7 +439,6 @@ class _Request:
         }
         return json.dumps(cmd)
 
-    @abstractmethod
     def generate_request_to_response_json(self, direction_name: str, dialog_id: str, request_type: str, text: str,
                                           parameters: RequestToRespondParameters = None) -> str:
         """
@@ -448,6 +458,29 @@ class _Request:
             dialog_id=dialog_id,
             type_=request_type,
             text=text
+        )
+
+        self._get_dash_request_payload(direction_name, dialog_id, self.app_id, request_params=parameters,
+                                       custom_input=custom_input)
+        cmd = {
+            "header": self.header,
+            "payload": self.payload
+        }
+        return json.dumps(cmd)
+
+    def generate_update_info_json(self, direction_name: str, dialog_id: str,parameters: RequestToRespondParameters = None) -> str:
+        """
+        构建语音聊天服务的命令请求数据.
+        :param direction_name: 命令.
+        :param parameters: 命令请求body中的parameters
+        :return: 命令请求字典.
+        """
+        self._get_dash_request_header(ActionType.CONTINUE)
+
+        custom_input = RequestToRespondBodyInput(
+            app_id=self.app_id,
+            directive=direction_name,
+            dialog_id=dialog_id,
         )
 
         self._get_dash_request_payload(direction_name, dialog_id, self.app_id, request_params=parameters,
