@@ -1,5 +1,4 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
 from urllib.parse import urlencode
 
 import dashscope
@@ -10,8 +9,9 @@ from dashscope.common.constants import (REQUEST_TIMEOUT_KEYWORD,
                                         SERVICE_API_PATH, ApiProtocol,
                                         HTTPMethod)
 from dashscope.common.error import InputDataRequired, UnsupportedApiProtocol
+from dashscope.common.logging import logger
 from dashscope.protocol.websocket import WebsocketStreamingMode
-
+from dashscope.api_entities.encryption import Encryption
 
 def _get_protocol_params(kwargs):
     api_protocol = kwargs.pop('api_protocol', ApiProtocol.HTTPS)
@@ -49,6 +49,9 @@ def _build_api_request(model: str,
      base_address, flattened_output,
      extra_url_parameters) = _get_protocol_params(kwargs)
     task_id = kwargs.pop('task_id', None)
+    enable_encryption = kwargs.pop('enable_encryption', False)
+    encryption = None
+
     if api_protocol in [ApiProtocol.HTTP, ApiProtocol.HTTPS]:
         if base_address is None:
             base_address = dashscope.base_http_api_url
@@ -69,6 +72,12 @@ def _build_api_request(model: str,
         if extra_url_parameters is not None and extra_url_parameters:
             http_url += '?' + urlencode(extra_url_parameters)
 
+        if enable_encryption is True:
+            encryption = Encryption()
+            encryption.initialize()
+            if encryption.is_valid():
+                logger.debug('encryption enabled')
+
         request = HttpRequest(url=http_url,
                               api_key=api_key,
                               http_method=http_method,
@@ -77,7 +86,8 @@ def _build_api_request(model: str,
                               query=query,
                               timeout=request_timeout,
                               task_id=task_id,
-                              flattened_output=flattened_output)
+                              flattened_output=flattened_output,
+                              encryption=encryption)
     elif api_protocol == ApiProtocol.WEBSOCKET:
         if base_address is not None:
             websocket_url = base_address
@@ -102,6 +112,9 @@ def _build_api_request(model: str,
 
     if input is None and form is None:
         raise InputDataRequired('There is no input data and form data')
+
+    if encryption and encryption.is_valid():
+        input = encryption.encrypt(input)
 
     request_data = ApiRequestData(model,
                                   task_group=task_group,

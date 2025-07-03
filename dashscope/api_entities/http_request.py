@@ -2,6 +2,7 @@
 
 import json
 from http import HTTPStatus
+from typing import Optional
 
 import aiohttp
 import requests
@@ -16,6 +17,7 @@ from dashscope.common.utils import (_handle_aio_stream,
                                     _handle_aiohttp_failed_response,
                                     _handle_http_failed_response,
                                     _handle_stream)
+from dashscope.api_entities.encryption import Encryption
 
 
 class HttpRequest(AioBaseRequest):
@@ -28,7 +30,8 @@ class HttpRequest(AioBaseRequest):
                  query: bool = False,
                  timeout: int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
                  task_id: str = None,
-                 flattened_output: bool = False) -> None:
+                 flattened_output: bool = False,
+                 encryption: Optional[Encryption] = None) -> None:
         """HttpSSERequest, processing http server sent event stream.
 
         Args:
@@ -44,11 +47,23 @@ class HttpRequest(AioBaseRequest):
         self.url = url
         self.flattened_output = flattened_output
         self.async_request = async_request
+        self.encryption = encryption
         self.headers = {
             'Accept': 'application/json',
             'Authorization': 'Bearer %s' % api_key,
             **self.headers,
         }
+
+        if encryption and encryption.is_valid():
+            self.headers = {
+                "X-DashScope-EncryptionKey": json.dumps({
+                    "public_key_id": encryption.get_pub_key_id(),
+                    "encrypt_key": encryption.get_encrypted_aes_key_str(),
+                    "iv": encryption.get_base64_iv_str()
+                }),
+                **self.headers,
+            }
+
         self.query = query
         if self.async_request and self.query is False:
             self.headers = {
@@ -168,6 +183,8 @@ class HttpRequest(AioBaseRequest):
                                                code=msg['code'],
                                                message=msg['message'])
                 else:
+                    if self.encryption and self.encryption.is_valid():
+                        output = self.encryption.decrypt(output)
                     yield DashScopeAPIResponse(request_id=request_id,
                                                status_code=HTTPStatus.OK,
                                                output=output,
@@ -183,6 +200,8 @@ class HttpRequest(AioBaseRequest):
                 output[part.name] = await part.read()
             if 'request_id' in output:
                 request_id = output['request_id']
+            if self.encryption and self.encryption.is_valid():
+                output = self.encryption.decrypt(output)
             yield DashScopeAPIResponse(request_id=request_id,
                                        status_code=HTTPStatus.OK,
                                        output=output)
@@ -196,6 +215,8 @@ class HttpRequest(AioBaseRequest):
                 usage = json_content['usage']
             if 'request_id' in json_content:
                 request_id = json_content['request_id']
+            if self.encryption and self.encryption.is_valid():
+                output = self.encryption.decrypt(output)
             yield DashScopeAPIResponse(request_id=request_id,
                                        status_code=HTTPStatus.OK,
                                        output=output,
@@ -243,6 +264,8 @@ class HttpRequest(AioBaseRequest):
                     if self.flattened_output:
                         yield msg
                     else:
+                        if self.encryption and self.encryption.is_valid():
+                            output = self.encryption.decrypt(output)
                         yield DashScopeAPIResponse(request_id=request_id,
                                                    status_code=HTTPStatus.OK,
                                                    output=output,
@@ -263,6 +286,8 @@ class HttpRequest(AioBaseRequest):
             if self.flattened_output:
                 yield json_content
             else:
+                if self.encryption and self.encryption.is_valid():
+                    output = self.encryption.decrypt(output)
                 yield DashScopeAPIResponse(request_id=request_id,
                                            status_code=HTTPStatus.OK,
                                            output=output,
