@@ -23,8 +23,8 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
         name: str = None,
         description: str = None,
         instructions: str = None,
-        tools: Optional[str] = [],
-        file_ids: Optional[str] = [],
+        tools: Optional[List[Dict]] = None,
+        file_ids: Optional[List[str]] = [],
         metadata: Dict = {},
     ):
         obj = {}
@@ -36,7 +36,7 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
             obj['description'] = description
         if instructions:
             obj['instructions'] = instructions
-        if tools:
+        if tools is not None:
             obj['tools'] = tools
         obj['file_ids'] = file_ids
         obj['metadata'] = metadata
@@ -50,7 +50,7 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
              name: str = None,
              description: str = None,
              instructions: str = None,
-             tools: Optional[List[Dict]] = [],
+             tools: Optional[List[Dict]] = None,
              file_ids: Optional[List[str]] = [],
              metadata: Dict = None,
              workspace: str = None,
@@ -93,7 +93,7 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
                name: str = None,
                description: str = None,
                instructions: str = None,
-               tools: Optional[List[Dict]] = [],
+               tools: Optional[List[Dict]] = None,
                file_ids: Optional[List[str]] = [],
                metadata: Dict = None,
                workspace: str = None,
@@ -219,8 +219,8 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
                name: str = None,
                description: str = None,
                instructions: str = None,
-               tools: Optional[str] = [],
-               file_ids: Optional[str] = [],
+               tools: Optional[List[Dict]] = None,
+               file_ids: Optional[List[str]] = [],
                metadata: Dict = None,
                workspace: str = None,
                api_key: str = None,
