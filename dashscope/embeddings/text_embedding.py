@@ -15,6 +15,7 @@ class TextEmbedding(BaseApi):
         text_embedding_v1 = 'text-embedding-v1'
         text_embedding_v2 = 'text-embedding-v2'
         text_embedding_v3 = 'text-embedding-v3'
+        text_embedding_v4 = 'text-embedding-v4'
 
     @classmethod
     def call(cls,
