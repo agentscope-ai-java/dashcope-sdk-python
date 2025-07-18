@@ -83,12 +83,15 @@ class Upstream:
     # sample_rate: int  # 合成音频采样率
 
     def to_dict(self):
-        return {
+        upstream: dict = {
             "type": self.type,
             "mode": self.mode,
             "audio_format": self.audio_format,
             # "sample_rate": self.sample_rate
         }
+        if self.pass_through_params is not None:
+            upstream.update(self.pass_through_params)
+        return upstream
 
 
 @dataclass
@@ -105,6 +108,7 @@ class Downstream:
     volume: int = field(default=50)  # 语音音量 0-100
     pitch_rate: int = field(default=100)  # 语音语调 50-200
     speech_rate: int = field(default=100)  # 语音语速 50-200
+    pass_through_params: dict = field(default=None)
 
     def to_dict(self):
         stream: dict = {
@@ -120,6 +124,8 @@ class Downstream:
             stream["voice"] = self.voice
         if self.sample_rate != 0:
             stream["sample_rate"] = self.sample_rate
+        if self.pass_through_params is not None:
+            stream.update(self.pass_through_params)
         return stream
 
 
@@ -199,6 +205,7 @@ class BizParams:
     user_prompt_params: dict = field(default=None)
     user_query_params: dict = field(default=None)
     videos: list = field(default=None)
+    pass_through_params: dict = field(default=None)
 
     def to_dict(self):
         params = {}
@@ -214,6 +221,8 @@ class BizParams:
             params["user_query_params"] = self.user_query_params
         if self.videos is not None:
             params["videos"] = self.videos
+        if self.pass_through_params is not None:
+            params.update(self.pass_through_params)
         return params
 
 
