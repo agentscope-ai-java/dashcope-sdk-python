@@ -4,6 +4,7 @@ import json
 import platform
 import threading
 import time
+from typing import List
 import uuid
 from enum import Enum, unique
 
@@ -169,7 +170,7 @@ class OmniRealtimeConversation:
         self.ws.send(data)
 
     def update_session(self,
-                       output_modalities: list[MultiModality],
+                       output_modalities: List[MultiModality],
                        voice: str,
                        input_audio_format: AudioFormat = AudioFormat.
                        PCM_16000HZ_MONO_16BIT,
@@ -295,7 +296,7 @@ class OmniRealtimeConversation:
 
     def create_response(self,
                         instructions: str = None,
-                        output_modalities: list[MultiModality] = None) -> None:
+                        output_modalities: List[MultiModality] = None) -> None:
         '''
         create response, use audio and video commited before to request llm.
         When in Server VAD mode, the client does not need to use this method,
