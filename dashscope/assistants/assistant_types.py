@@ -118,6 +118,15 @@ class Assistant(BaseObjectMixin):
     metadata: Optional[object] = None
     tools: List[Tool]
 
+    object: Optional[str] = None
+
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+
+    request_id: Optional[str] = None
+
     def __init__(self, **kwargs):
         self.tools = convert_tools_dict_to_objects(kwargs.pop('tools', []))
         super().__init__(**kwargs)

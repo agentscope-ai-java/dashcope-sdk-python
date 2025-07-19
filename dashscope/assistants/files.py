@@ -1,4 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
+from typing import Optional
 
 from dashscope.assistants.assistant_types import (AssistantFile,
                                                   AssistantFileList,
@@ -148,7 +149,7 @@ class Files(CreateMixin, DeleteMixin, ListObjectMixin, GetStatusMixin):
             assistant_id: str,
             workspace: str = None,
             api_key: str = None,
-            **kwargs) -> AssistantFile:
+            **kwargs) -> Optional[AssistantFile]:
         """Retrieve file information.
 
         Args:
@@ -160,6 +161,11 @@ class Files(CreateMixin, DeleteMixin, ListObjectMixin, GetStatusMixin):
         Returns:
             AssistantFile: The `AssistantFile` object.
         """
+        response = super().get(target=assistant_id + '/files/' + file_id, api_key=api_key, workspace=workspace, **kwargs)
+        if response.status_code == 200 and response.output:
+            return AssistantFile(**response.output)
+        else:
+            return None
 
     @classmethod
     def delete(cls,
