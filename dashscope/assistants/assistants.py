@@ -26,6 +26,10 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
         tools: Optional[List[Dict]] = None,
         file_ids: Optional[List[str]] = [],
         metadata: Dict = {},
+        top_p: Optional[float] = None,
+        top_k: Optional[int] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ):
         obj = {}
         if model:
@@ -40,6 +44,15 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
             obj['tools'] = tools
         obj['file_ids'] = file_ids
         obj['metadata'] = metadata
+
+        if top_p is not None:
+            obj['top_p'] = top_p
+        if top_k is not None:
+            obj['top_k'] = top_k
+        if temperature is not None:
+            obj['temperature'] = temperature
+        if max_tokens is not None:
+            obj['max_tokens'] = max_tokens
 
         return obj
 
@@ -98,6 +111,10 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
                metadata: Dict = None,
                workspace: str = None,
                api_key: str = None,
+               top_p: Optional[float] = None,
+               top_k: Optional[int] = None,
+               temperature: Optional[float] = None,
+               max_tokens: Optional[int] = None,
                **kwargs) -> Assistant:
         """Create Assistant.
 
@@ -111,6 +128,10 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
             metadata (Dict, optional): Custom key-value pairs associate with assistant. Defaults to None.
             workspace (str, optional): The DashScope workspace id. Defaults to None.
             api_key (str, optional): The DashScope api key. Defaults to None.
+            top_p (float, optional): top_p parameter for model. Defaults to None.
+            top_k (int, optional): top_p parameter for model. Defaults to None.
+            temperature (float, optional): temperature parameter for model. Defaults to None.
+            max_tokens (int, optional): max_tokens parameter for model. Defaults to None.
 
         Raises:
             ModelRequired: The model is required.
@@ -122,7 +143,7 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
             raise ModelRequired('Model is required!')
         data = cls._create_assistant_object(model, name, description,
                                             instructions, tools, file_ids,
-                                            metadata)
+                                            metadata, top_p, top_k, temperature, max_tokens)
         response = super().call(data=data,
                                 api_key=api_key,
                                 flattened_output=True,
@@ -224,6 +245,10 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
                metadata: Dict = None,
                workspace: str = None,
                api_key: str = None,
+               top_p: Optional[float] = None,
+               top_k: Optional[int] = None,
+               temperature: Optional[float] = None,
+               max_tokens: Optional[int] = None,
                **kwargs) -> Assistant:
         """Update an exist assistants
 
@@ -238,6 +263,10 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
             metadata (Dict, optional): Custom key-value pairs associate with assistant. Defaults to None.
             workspace (str): The DashScope workspace id.
             api_key (str, optional): The DashScope workspace id. Defaults to None.
+            top_p (float, optional): top_p parameter for model. Defaults to None.
+            top_k (int, optional): top_p parameter for model. Defaults to None.
+            temperature (float, optional): temperature parameter for model. Defaults to None.
+            max_tokens (int, optional): max_tokens parameter for model. Defaults to None.
 
         Returns:
             Assistant: The updated assistant.
@@ -247,7 +276,7 @@ class Assistants(CreateMixin, CancelMixin, DeleteMixin, ListObjectMixin,
         response = super().update(assistant_id,
                                   cls._create_assistant_object(
                                       model, name, description, instructions,
-                                      tools, file_ids, metadata),
+                                      tools, file_ids, metadata, top_p, top_k, temperature, max_tokens),
                                   api_key=api_key,
                                   workspace=workspace,
                                   flattened_output=True,
