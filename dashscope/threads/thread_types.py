@@ -51,6 +51,13 @@ class Usage(BaseObjectMixin):
 
     total_tokens: int
     """Total number of tokens used (prompt + completion)."""
+
+    input_tokens: int
+    """Input tokens used (prompt)."""
+
+    output_tokens: int
+    """Output tokens used (completion)."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
