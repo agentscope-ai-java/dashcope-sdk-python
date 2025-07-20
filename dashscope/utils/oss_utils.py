@@ -154,6 +154,8 @@ def check_and_upload_local(model: str, content: str, api_key: str):
             return True, file_url
         else:
             raise InvalidInput('The file: %s is not exists!' % file_path)
+    elif content.startswith('oss://'):
+        return True, content
     elif not content.startswith('http'):
         if os.path.isfile(content):
             file_url = OssUtils.upload(model=model,

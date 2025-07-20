@@ -2,12 +2,14 @@
 import argparse
 import sys
 import time
+import os
 from http import HTTPStatus
 
 import dashscope
 from dashscope.aigc import Generation
 from dashscope.common.constants import (DeploymentStatus, FilePurpose,
                                         TaskStatus)
+from dashscope.utils.oss_utils import OssUtils
 
 
 def print_failed_message(rsp):
@@ -193,6 +195,34 @@ class FineTunes:
         else:
             print_failed_message(rsp)
 
+class Oss:
+    @classmethod
+    def upload(cls, args):
+        print('Start oss.upload: model=%s, file=%s, api_key=%s' % (args.model, args.file, args.api_key))
+        if not args.file or not args.model:
+            print('Please specify the model and file path')
+            return
+
+        file_path = os.path.expanduser(args.file)
+        if not os.path.exists(file_path):
+            print('File %s does not exist' % file_path)
+            return
+
+        api_key = os.environ.get('DASHSCOPE_API_KEY', args.api_key)
+        if not api_key:
+            print('Please set your DashScope API key as environment variable '
+                  'DASHSCOPE_API_KEY or pass it as argument by -k/--api_key')
+            return
+
+        oss_url = OssUtils.upload(model=args.model,
+                                  file_path=file_path,
+                                  api_key=api_key)
+
+        if not oss_url:
+            print('Failed to upload file: %s' % file_path)
+            return
+
+        print('Uploaded oss url: %s' % oss_url)
 
 class Files:
     @classmethod
@@ -476,6 +506,30 @@ def main():
                                   required=True,
                                   help='The fine-tune job id.')
     fine_tune_cancel.set_defaults(func=FineTunes.cancel)
+
+    oss_upload = sub_parsers.add_parser('oss.upload')
+    oss_upload.add_argument(
+        '-f',
+        '--file',
+        type=str,
+        required=True,
+        help='The file path to upload',
+    )
+    oss_upload.add_argument(
+        '-m',
+        '--model',
+        type=str,
+        required=True,
+        help='The model name',
+    )
+    oss_upload.add_argument(
+        '-k',
+        '--api_key',
+        type=str,
+        required=False,
+        help='The dashscope api key',
+    )
+    oss_upload.set_defaults(func=Oss.upload)
 
     file_upload = sub_parsers.add_parser('files.upload')
     file_upload.add_argument(
