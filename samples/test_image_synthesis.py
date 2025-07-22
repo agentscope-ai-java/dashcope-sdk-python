@@ -13,8 +13,7 @@ rsp = ImageSynthesis.call(api_key=os.getenv("DASHSCOPE_API_KEY"),
                           model="wanx2.1-t2i-turbo",
                           prompt=prompt,
                           n=1,
-                          size='1024*1024',
-                          enable_encryption=True)
+                          size='1024*1024')
 
 print('response: %s' % rsp)
 if rsp.status_code == HTTPStatus.OK:

@@ -157,6 +157,7 @@ def check_and_upload_local(model: str, content: str, api_key: str):
     elif content.startswith('oss://'):
         return True, content
     elif not content.startswith('http'):
+        content = os.path.expanduser(content)
         if os.path.isfile(content):
             file_url = OssUtils.upload(model=model,
                                        file_path=content,
