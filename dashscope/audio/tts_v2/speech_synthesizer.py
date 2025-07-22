@@ -43,28 +43,39 @@ class ResultCallback:
 
 @unique
 class AudioFormat(Enum):
-    DEFAULT = ('Default', 0, '0', '0')
-    WAV_8000HZ_MONO_16BIT = ('wav', 8000, 'mono', '16bit')
-    WAV_16000HZ_MONO_16BIT = ('wav', 16000, 'mono', '16bit')
-    WAV_22050HZ_MONO_16BIT = ('wav', 22050, 'mono', '16bit')
-    WAV_24000HZ_MONO_16BIT = ('wav', 24000, 'mono', '16bit')
-    WAV_44100HZ_MONO_16BIT = ('wav', 44100, 'mono', '16bit')
-    WAV_48000HZ_MONO_16BIT = ('wav', 48000, 'mono', '16bit')
+    DEFAULT = ('Default', 0, '0', 0)
+    WAV_8000HZ_MONO_16BIT = ('wav', 8000, 'mono', 0)
+    WAV_16000HZ_MONO_16BIT = ('wav', 16000, 'mono', 16)
+    WAV_22050HZ_MONO_16BIT = ('wav', 22050, 'mono', 16)
+    WAV_24000HZ_MONO_16BIT = ('wav', 24000, 'mono', 16)
+    WAV_44100HZ_MONO_16BIT = ('wav', 44100, 'mono', 16)
+    WAV_48000HZ_MONO_16BIT = ('wav', 48000, 'mono', 16)
 
-    MP3_8000HZ_MONO_128KBPS = ('mp3', 8000, 'mono', '128kbps')
-    MP3_16000HZ_MONO_128KBPS = ('mp3', 16000, 'mono', '128kbps')
-    MP3_22050HZ_MONO_256KBPS = ('mp3', 22050, 'mono', '256kbps')
-    MP3_24000HZ_MONO_256KBPS = ('mp3', 24000, 'mono', '256kbps')
-    MP3_44100HZ_MONO_256KBPS = ('mp3', 44100, 'mono', '256kbps')
-    MP3_48000HZ_MONO_256KBPS = ('mp3', 48000, 'mono', '256kbps')
+    MP3_8000HZ_MONO_128KBPS = ('mp3', 8000, 'mono', 128)
+    MP3_16000HZ_MONO_128KBPS = ('mp3', 16000, 'mono', 128)
+    MP3_22050HZ_MONO_256KBPS = ('mp3', 22050, 'mono', 256)
+    MP3_24000HZ_MONO_256KBPS = ('mp3', 24000, 'mono', 256)
+    MP3_44100HZ_MONO_256KBPS = ('mp3', 44100, 'mono', 256)
+    MP3_48000HZ_MONO_256KBPS = ('mp3', 48000, 'mono', 256)
 
-    PCM_8000HZ_MONO_16BIT = ('pcm', 8000, 'mono', '16bit')
-    PCM_16000HZ_MONO_16BIT = ('pcm', 16000, 'mono', '16bit')
-    PCM_22050HZ_MONO_16BIT = ('pcm', 22050, 'mono', '16bit')
-    PCM_24000HZ_MONO_16BIT = ('pcm', 24000, 'mono', '16bit')
-    PCM_44100HZ_MONO_16BIT = ('pcm', 44100, 'mono', '16bit')
-    PCM_48000HZ_MONO_16BIT = ('pcm', 48000, 'mono', '16bit')
+    PCM_8000HZ_MONO_16BIT = ('pcm', 8000, 'mono', 16)
+    PCM_16000HZ_MONO_16BIT = ('pcm', 16000, 'mono', 16)
+    PCM_22050HZ_MONO_16BIT = ('pcm', 22050, 'mono', 16)
+    PCM_24000HZ_MONO_16BIT = ('pcm', 24000, 'mono', 16)
+    PCM_44100HZ_MONO_16BIT = ('pcm', 44100, 'mono', 16)
+    PCM_48000HZ_MONO_16BIT = ('pcm', 48000, 'mono', 16)
 
+    OGG_OPUS_8KHZ_MONO_32KBPS = ("opus", 8000, "mono", 32)
+    OGG_OPUS_8KHZ_MONO_16KBPS = ("opus", 8000, "mono", 16)
+    OGG_OPUS_16KHZ_MONO_16KBPS = ("opus", 16000, "mono", 16)
+    OGG_OPUS_16KHZ_MONO_32KBPS = ("opus", 16000, "mono", 32)
+    OGG_OPUS_16KHZ_MONO_64KBPS = ("opus", 16000, "mono", 64)
+    OGG_OPUS_24KHZ_MONO_16KBPS = ("opus", 24000, "mono", 16)
+    OGG_OPUS_24KHZ_MONO_32KBPS = ("opus", 24000, "mono", 32)
+    OGG_OPUS_24KHZ_MONO_64KBPS = ("opus", 24000, "mono", 64)
+    OGG_OPUS_48KHZ_MONO_16KBPS = ("opus", 48000, "mono", 16)
+    OGG_OPUS_48KHZ_MONO_32KBPS = ("opus", 48000, "mono", 32)
+    OGG_OPUS_48KHZ_MONO_64KBPS = ("opus", 48000, "mono", 64)
     def __init__(self, format, sample_rate, channels, bit_rate):
         self.format = format
         self.sample_rate = sample_rate
@@ -83,6 +94,7 @@ class Request:
         voice,
         format='wav',
         sample_rate=16000,
+        bit_rate=64000,
         volume=50,
         speech_rate=1.0,
         pitch_rate=1.0,
@@ -93,6 +105,7 @@ class Request:
         self.model = model
         self.format = format
         self.sample_rate = sample_rate
+        self.bit_rate = bit_rate
         self.volume = volume
         self.speech_rate = speech_rate
         self.pitch_rate = pitch_rate
@@ -146,6 +159,8 @@ class Request:
                 },
             },
         }
+        if self.format == 'opus':
+            cmd['payload']['parameters']['bit_rate'] = self.bit_rate
         if additional_params:
             cmd['payload']['parameters'].update(additional_params)
         return json.dumps(cmd)
@@ -252,6 +267,7 @@ class SpeechSynthesizer:
             voice=voice,
             format=format.format,
             sample_rate=format.sample_rate,
+            bit_rate = format.bit_rate,
             volume=volume,
             speech_rate=speech_rate,
             pitch_rate=pitch_rate,
