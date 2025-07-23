@@ -82,6 +82,10 @@ class Runs(CreateMixin, CancelMixin, ListObjectMixin, GetStatusMixin,
                workspace: str = None,
                extra_body: Optional[Dict] = None,
                api_key: str = None,
+               top_p: Optional[float] = None,
+               top_k: Optional[int] = None,
+               temperature: Optional[float] = None,
+               max_tokens: Optional[int] = None,
                **kwargs) -> Run:
         """Create a run.
 
@@ -121,6 +125,15 @@ class Runs(CreateMixin, CancelMixin, ListObjectMixin, GetStatusMixin,
         data['stream'] = stream
         if extra_body is not None and extra_body:
             data = {**data, **extra_body}
+
+        if top_p is not None:
+            data['top_p'] = top_p
+        if top_k is not None:
+            data['top_k'] = top_k
+        if temperature is not None:
+            data['temperature'] = temperature
+        if max_tokens is not None:
+            data['max_tokens'] = max_tokens
 
         response = super().call(data=data,
                                 path=f'threads/{thread_id}/runs',
@@ -180,6 +193,10 @@ class Runs(CreateMixin, CancelMixin, ListObjectMixin, GetStatusMixin,
              workspace: str = None,
              extra_body: Optional[Dict] = None,
              api_key: str = None,
+             top_p: Optional[float] = None,
+             top_k: Optional[int] = None,
+             temperature: Optional[float] = None,
+             max_tokens: Optional[int] = None,
              **kwargs) -> Run:
         """Create a run.
 
@@ -214,6 +231,10 @@ class Runs(CreateMixin, CancelMixin, ListObjectMixin, GetStatusMixin,
                           workspace=workspace,
                           extra_body=extra_body,
                           api_key=api_key,
+                          top_p=top_p,
+                          top_k=top_k,
+                          temperature=temperature,
+                          max_tokens=max_tokens,
                           **kwargs)
 
     @classmethod

@@ -309,6 +309,11 @@ class Run(BaseObjectMixin):
 
     tools: List[Tool]
 
+    top_p: Optional[float] = None
+    top_k: Optional[int] = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+
     usage: Optional[Usage] = None
 
     def __init__(self, **kwargs):
