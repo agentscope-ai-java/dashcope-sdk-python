@@ -81,6 +81,7 @@ class Upstream:
     type: str = field(default="AudioOnly")  # 上行类型：AudioOnly 仅语音通话; AudioAndVideo 上传视频
     mode: str = field(default="tap2talk")  # 客户端交互模式 push2talk/tap2talk/duplex
     # sample_rate: int  # 合成音频采样率
+    pass_through_params: dict = field(default=None)
 
     def to_dict(self):
         upstream: dict = {
