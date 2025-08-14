@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import json
 import sys
 import time
 import os
@@ -216,7 +217,8 @@ class Oss:
 
         oss_url = OssUtils.upload(model=args.model,
                                   file_path=file_path,
-                                  api_key=api_key)
+                                  api_key=api_key,
+                                  base_address=args.base_url)
 
         if not oss_url:
             print('Failed to upload file: %s' % file_path)
@@ -229,7 +231,8 @@ class Files:
     def upload(cls, args):
         rsp = dashscope.Files.upload(file_path=args.file,
                                      purpose=args.purpose,
-                                     description=args.description)
+                                     description=args.description,
+                                     base_address=args.base_url)
         print(rsp)
         if rsp.status_code == HTTPStatus.OK:
             print('Upload success, file id: %s' %
@@ -239,32 +242,31 @@ class Files:
 
     @classmethod
     def get(cls, args):
-        rsp = dashscope.Files.get(file_id=args.id)
+        rsp = dashscope.Files.get(file_id=args.id, base_address=args.base_url)
         if rsp.status_code == HTTPStatus.OK:
-            print('file_id: %s, name: %s, description: %s' %
-                  (rsp.output['file_id'], rsp.output['name'],
-                   rsp.output['description']))
-        else:
-            print_failed_message(rsp)
-
-    @classmethod
-    def list(cls, args):
-        rsp = dashscope.Files.list(page=args.start_page,
-                                   page_size=args.page_size)
-        if rsp.status_code == HTTPStatus.OK:
-            if rsp.output is not None:
-                for f in rsp.output['files']:
-                    print('file_id: %s, name: %s, description: %s, time: %s' %
-                          (f['file_id'], f['name'], f['description'],
-                           f['gmt_create']))
+            if rsp.output:
+                print('file info:\n%s' % json.dumps(rsp.output, ensure_ascii=False, indent=4))
             else:
                 print('There is no uploaded file.')
         else:
             print_failed_message(rsp)
 
     @classmethod
+    def list(cls, args):
+        rsp = dashscope.Files.list(page=args.start_page,
+                                   page_size=args.page_size,
+                                   base_address=args.base_url)
+        if rsp.status_code == HTTPStatus.OK:
+            if rsp.output:
+                print('file list info:\n%s' % json.dumps(rsp.output, ensure_ascii=False, indent=4))
+            else:
+                print('There is no uploaded files.')
+        else:
+            print_failed_message(rsp)
+
+    @classmethod
     def delete(cls, args):
-        rsp = dashscope.Files.delete(args.id)
+        rsp = dashscope.Files.delete(args.id, base_address=args.base_url)
         if rsp.status_code == HTTPStatus.OK:
             print('Delete success')
         else:
@@ -529,6 +531,13 @@ def main():
         required=False,
         help='The dashscope api key',
     )
+    oss_upload.add_argument(
+        '-u',
+        '--base_url',
+        type=str,
+        help='The base url.',
+        required=False,
+    )
     oss_upload.set_defaults(func=Oss.upload)
 
     file_upload = sub_parsers.add_parser('files.upload')
@@ -555,21 +564,45 @@ def main():
         help='The file description.',
         required=False,
     )
+    file_upload.add_argument(
+        '-u',
+        '--base_url',
+        type=str,
+        help='The base url.',
+        required=False,
+    )
     file_upload.set_defaults(func=Files.upload)
+
     file_get = sub_parsers.add_parser('files.get')
     file_get.add_argument('-i',
                           '--id',
                           type=str,
                           required=True,
                           help='The file ID')
+    file_get.add_argument(
+        '-u',
+        '--base_url',
+        type=str,
+        help='The base url.',
+        required=False,
+    )
     file_get.set_defaults(func=Files.get)
+
     file_delete = sub_parsers.add_parser('files.delete')
     file_delete.add_argument('-i',
                              '--id',
                              type=str,
                              required=True,
                              help='The files ID')
+    file_delete.add_argument(
+        '-u',
+        '--base_url',
+        type=str,
+        help='The base url.',
+        required=False,
+    )
     file_delete.set_defaults(func=Files.delete)
+
     file_list = sub_parsers.add_parser('files.list')
     file_list.add_argument('-s',
                            '--start_page',
@@ -581,6 +614,13 @@ def main():
                            type=int,
                            default=10,
                            help='The page size, default 10')
+    file_list.add_argument(
+        '-u',
+        '--base_url',
+        type=str,
+        help='The base url.',
+        required=False,
+    )
     file_list.set_defaults(func=Files.list)
 
     deployments_call = sub_parsers.add_parser('deployments.call')

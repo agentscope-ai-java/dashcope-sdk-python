@@ -47,7 +47,7 @@ class OssUtils(GetMixin):
         Returns:
             DashScopeAPIResponse: The upload information
         """
-        upload_info = cls.get_upload_certificate(model=model, api_key=api_key)
+        upload_info = cls.get_upload_certificate(model=model, api_key=api_key, **kwargs)
         if upload_info.status_code != HTTPStatus.OK:
             raise UploadFileException(
                 'Get upload certificate failed, code: %s, message: %s' %
