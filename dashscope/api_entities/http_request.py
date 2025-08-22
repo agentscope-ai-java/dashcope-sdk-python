@@ -1,10 +1,12 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
+import ssl
 from http import HTTPStatus
 from typing import Optional
 
 import aiohttp
+import certifi
 import requests
 
 from dashscope.api_entities.base_request import AioBaseRequest
@@ -119,12 +121,18 @@ class HttpRequest(AioBaseRequest):
 
     async def _handle_aio_request(self):
         try:
+            connector = aiohttp.TCPConnector(
+                ssl=ssl.create_default_context(
+                    cafile=certifi.where()))
             async with aiohttp.ClientSession(
+                    connector=connector,
                     timeout=aiohttp.ClientTimeout(total=self.timeout),
                     headers=self.headers) as session:
                 logger.debug('Starting request: %s' % self.url)
                 if self.method == HTTPMethod.POST:
-                    is_form, obj = self.data.get_aiohttp_payload()
+                    is_form, obj = False, {}
+                    if hasattr(self, 'data') and self.data is not None:
+                        is_form, obj = self.data.get_aiohttp_payload()
                     if is_form:
                         headers = {**self.headers, **obj.headers}
                         response = await session.post(url=self.url,
@@ -136,8 +144,12 @@ class HttpRequest(AioBaseRequest):
                                                          json=obj,
                                                          headers=self.headers)
                 elif self.method == HTTPMethod.GET:
+                    # 添加条件判断
+                    params = {}
+                    if hasattr(self, 'data') and self.data is not None:
+                        params = getattr(self.data, 'parameters', {})
                     response = await session.get(url=self.url,
-                                                 params=self.data.parameters,
+                                                 params=params,
                                                  headers=self.headers)
                 else:
                     raise UnsupportedHTTPMethod('Unsupported http method: %s' %
@@ -211,6 +223,12 @@ class HttpRequest(AioBaseRequest):
             usage = None
             if 'output' in json_content and json_content['output'] is not None:
                 output = json_content['output']
+            # Compatible with wan
+            elif 'data' in json_content and json_content['data'] is not None\
+                    and isinstance(json_content['data'], list)\
+                    and len(json_content['data']) > 0\
+                    and 'task_id' in json_content['data'][0]:
+                output = json_content
             if 'usage' in json_content:
                 usage = json_content['usage']
             if 'request_id' in json_content:

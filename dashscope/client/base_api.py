@@ -1,19 +1,22 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
-
+import asyncio
+import collections
 import time
 from http import HTTPStatus
 from typing import Any, Dict, Iterator, List, Union
+from urllib.parse import urlencode
 
 import requests
 
 import dashscope
-from dashscope.api_entities.api_request_factory import _build_api_request
+from dashscope.api_entities.api_request_factory import (_build_api_request,
+                                                        _build_simple_http_request)
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
 from dashscope.common.api_key import get_default_api_key
 from dashscope.common.constants import (DEFAULT_REQUEST_TIMEOUT_SECONDS,
                                         REPEATABLE_STATUS,
                                         REQUEST_TIMEOUT_KEYWORD,
-                                        SSE_CONTENT_TYPE, TaskStatus)
+                                        SSE_CONTENT_TYPE, TaskStatus, HTTPMethod)
 from dashscope.common.error import InvalidParameter, InvalidTask, ModelRequired
 from dashscope.common.logging import logger
 from dashscope.common.utils import (_handle_http_failed_response,
@@ -21,8 +24,297 @@ from dashscope.common.utils import (_handle_http_failed_response,
                                     _handle_http_stream_response,
                                     default_headers, join_url)
 
+class AsyncAioTaskGetMixin:
+    @classmethod
+    async def _get(cls,
+             task_id: str,
+             api_key: str = None,
+             workspace: str = None,
+             **kwargs) -> DashScopeAPIResponse:
+        base_url = kwargs.pop('base_address', None)
+        status_url = _normalization_url(base_url, 'tasks', task_id)
+        kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
+        request = _build_simple_http_request(http_url=status_url,
+                                            api_key=api_key,
+                                            **kwargs)
+        return await cls._handle_request(request)
 
-class BaseAioApi():
+    @classmethod
+    def _handle_kwargs(cls, api_key: str = None ,workspace: str = None, **kwargs):
+        custom_headers = kwargs.pop('headers', None)
+        headers = {
+            **_workspace_header(workspace),
+            **default_headers(api_key),
+        }
+        if custom_headers:
+            headers = {
+                **custom_headers,
+                **headers,
+            }
+        if workspace is not None:
+            headers = {
+                'X-DashScope-WorkSpace': workspace,
+                **kwargs.pop('headers', {})
+            }
+        kwargs['headers'] = headers
+        kwargs['http_method'] = HTTPMethod.GET
+        return kwargs
+
+    @classmethod
+    async def _handle_request(cls, request):
+        # 如果 aio_call 返回的是异步生成器，则需要从中获取响应
+        response = await request.aio_call()
+        # 处理异步生成器的情况
+        if (isinstance(response, collections.abc.AsyncGenerator)
+                or hasattr(response, '__aiter__')):
+            result = None
+            async for item in response:
+                result = item
+            return result
+        else:
+            return response
+
+class BaseAsyncAioApi(AsyncAioTaskGetMixin):
+    """BaseApi, internal use only.
+
+    """
+    @classmethod
+    def _validate_params(cls, api_key, model):
+        if api_key is None:
+            api_key = get_default_api_key()
+        if model is None or not model:
+            raise ModelRequired('Model is required!')
+        return api_key, model
+
+    @classmethod
+    async def async_call(cls,
+                   model: str,
+                   input: object,
+                   task_group: str,
+                   task: str = None,
+                   function: str = None,
+                   api_key: str = None,
+                   workspace: str = None,
+                   **kwargs) -> DashScopeAPIResponse:
+        api_key, model = cls._validate_params(api_key, model)
+        if workspace is not None:
+            headers = {
+                'X-DashScope-WorkSpace': workspace,
+                **kwargs.pop('headers', {})
+            }
+            kwargs['headers'] = headers
+        kwargs['async_request'] = True
+        request = _build_api_request(model=model,
+                                     input=input,
+                                     task_group=task_group,
+                                     task=task,
+                                     function=function,
+                                     api_key=api_key,
+                                     **kwargs)
+        # call request service.
+        return await request.aio_call()
+
+    @classmethod
+    async def call(cls,
+                  model: str,
+                  input: object,
+                  task_group: str,
+                  task: str = None,
+                  function: str = None,
+                  api_key: str = None,
+                  workspace: str = None,
+                  **kwargs) -> DashScopeAPIResponse:
+        # call request service.
+        response = await BaseAsyncAioApi.async_call(model, input, task_group, task,
+                                        function, api_key, workspace,
+                                        **kwargs)
+        response = await BaseAsyncAioApi.wait(response,
+                                  api_key=api_key,
+                                  workspace=workspace,
+                                  **kwargs)
+        return response
+
+
+    @classmethod
+    def _get_task_id(cls, task):
+        if isinstance(task, str):
+            task_id = task
+        elif isinstance(task, DashScopeAPIResponse):
+            if task.status_code == HTTPStatus.OK:
+                task_id = task.output['task_id']
+            else:
+                raise InvalidTask('Invalid task, task create failed: %s' %
+                                  task)
+        else:
+            raise InvalidParameter('Task invalid!')
+        if task_id is None or task_id == '':
+            raise InvalidParameter('Task id required!')
+        return task_id
+
+    @classmethod
+    async def wait(cls,
+             task: Union[str, DashScopeAPIResponse],
+             api_key: str = None,
+             workspace: str = None,
+             **kwargs) -> DashScopeAPIResponse:
+        """Wait for async task completion and return task result.
+
+        Args:
+            task (Union[str, DashScopeAPIResponse]): The task_id, or
+                async_call response.
+            api_key (str, optional): The api_key. Defaults to None.
+
+        Returns:
+            DashScopeAPIResponse: The async task information.
+        """
+        task_id = cls._get_task_id(task)
+        wait_seconds = 1
+        max_wait_seconds = 5
+        increment_steps = 3
+        step = 0
+        while True:
+            step += 1
+            # we start by querying once every second, and double
+            # the query interval after every 3(increment_steps)
+            # intervals, until we hit the max waiting interval
+            # of 5(seconds）
+            # (server side return immediately when ready)
+            if wait_seconds < max_wait_seconds and step % increment_steps == 0:
+                wait_seconds = min(wait_seconds * 2, max_wait_seconds)
+            rsp = await cls._get(task_id, api_key, workspace=workspace, **kwargs)
+            if rsp.status_code == HTTPStatus.OK:
+                if rsp.output is None:
+                    return rsp
+
+                task_status = rsp.output['task_status']
+                if task_status in [
+                        TaskStatus.FAILED, TaskStatus.CANCELED,
+                        TaskStatus.SUCCEEDED, TaskStatus.UNKNOWN
+                ]:
+                    return rsp
+                else:
+                    logger.info('The task %s is  %s' % (task_id, task_status))
+                    await asyncio.sleep(wait_seconds)  # 异步等待
+            elif rsp.status_code in REPEATABLE_STATUS:
+                logger.warn(
+                    ('Get task: %s temporary failure, \
+                        status_code: %s, code: %s message: %s, will try again.'
+                     ) % (task_id, rsp.status_code, rsp.code, rsp.message))
+                await asyncio.sleep(wait_seconds)  # 异步等待
+            else:
+                return rsp
+
+    @classmethod
+    async def cancel(
+        cls,
+        task: Union[str, DashScopeAPIResponse],
+        api_key: str = None,
+        workspace: str = None,
+        **kwargs,
+    ) -> DashScopeAPIResponse:
+        """Cancel PENDING task.
+
+        Args:
+            task (Union[str, DashScopeAPIResponse]): The task_id, or
+                async_call response.
+            api_key (str, optional): The api-key. Defaults to None.
+
+        Returns:
+            DashScopeAPIResponse: The cancel result.
+        """
+        task_id = cls._get_task_id(task)
+        base_url = kwargs.pop('base_address', None)
+        url = _normalization_url(base_url, 'tasks', task_id, 'cancel')
+        kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
+        request = _build_simple_http_request(http_url=url,
+                                            api_key=api_key,
+                                            **kwargs)
+        return await cls._handle_request(request)
+
+    @classmethod
+    async def list(cls,
+             start_time: str = None,
+             end_time: str = None,
+             model_name: str = None,
+             api_key_id: str = None,
+             region: str = None,
+             status: str = None,
+             page_no: int = 1,
+             page_size: int = 10,
+             api_key: str = None,
+             workspace: str = None,
+             **kwargs) -> DashScopeAPIResponse:
+        """List async tasks.
+
+        Args:
+            start_time (str, optional): The tasks start time,
+                for example: 20230420000000. Defaults to None.
+            end_time (str, optional): The tasks end time,
+                for example: 20230420000000. Defaults to None.
+            model_name (str, optional): The tasks model name.
+                Defaults to None.
+            api_key_id (str, optional): The tasks api-key-id.
+                Defaults to None.
+            region (str, optional): The service region,
+                for example: cn-beijing. Defaults to None.
+            status (str, optional): The status of tasks[PENDING,
+                RUNNING, SUCCEEDED, FAILED, CANCELED]. Defaults to None.
+            page_no (int, optional): The page number. Defaults to 1.
+            page_size (int, optional): The page size. Defaults to 10.
+            api_key (str, optional): The user api-key. Defaults to None.
+
+        Returns:
+            DashScopeAPIResponse: The response data.
+        """
+        base_url = kwargs.pop('base_address', None)
+        url = _normalization_url(base_url, 'tasks')
+        params = {'page_no': page_no, 'page_size': page_size}
+        if start_time is not None:
+            params['start_time'] = start_time
+        if end_time is not None:
+            params['end_time'] = end_time
+        if model_name is not None:
+            params['model_name'] = model_name
+        if api_key_id is not None:
+            params['api_key_id'] = api_key_id
+        if region is not None:
+            params['region'] = region
+        if status is not None:
+            params['status'] = status
+        if params:
+            query_string = urlencode(params)
+            url = f"{url}?{query_string}"
+        kwargs['http_method'] = HTTPMethod.GET
+        request = _build_simple_http_request(http_url=url,
+                                             api_key=api_key,
+                                             headers={
+                                                 **_workspace_header(workspace),
+                                                 **default_headers(api_key),
+                                             },
+                                             **kwargs)
+        return await cls._handle_request(request)
+
+    @classmethod
+    async def fetch(cls,
+                    task: Union[str, DashScopeAPIResponse],
+                    api_key: str = None,
+                    workspace: str = None,
+                    **kwargs) -> DashScopeAPIResponse:
+        """Query async task status.
+
+        Args:
+            task (Union[str, DashScopeAPIResponse]): The task_id, or
+                async_call response.
+            api_key (str, optional): The api_key. Defaults to None.
+
+        Returns:
+            DashScopeAPIResponse: The async task information.
+        """
+        task_id = cls._get_task_id(task)
+        return await cls._get(task_id, api_key, workspace, **kwargs)
+
+
+class BaseAioApi:
     """BaseApi, internal use only.
 
     """

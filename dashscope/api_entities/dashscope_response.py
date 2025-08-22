@@ -445,8 +445,8 @@ class ImageSynthesisOutput(DictMixin):
     results: List[ImageSynthesisResult]
 
     def __init__(self,
-                 task_id: str,
-                 task_status: str,
+                 task_id: str =  None,
+                 task_status: str =  None,
                  results: List[ImageSynthesisResult] = [],
                  **kwargs):
         res = []
