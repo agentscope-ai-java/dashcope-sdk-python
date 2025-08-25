@@ -4,13 +4,11 @@ import collections
 import time
 from http import HTTPStatus
 from typing import Any, Dict, Iterator, List, Union
-from urllib.parse import urlencode
 
 import requests
 
 import dashscope
-from dashscope.api_entities.api_request_factory import (_build_api_request,
-                                                        _build_simple_http_request)
+from dashscope.api_entities.api_request_factory import _build_api_request
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
 from dashscope.common.api_key import get_default_api_key
 from dashscope.common.constants import (DEFAULT_REQUEST_TIMEOUT_SECONDS,
@@ -32,11 +30,14 @@ class AsyncAioTaskGetMixin:
              workspace: str = None,
              **kwargs) -> DashScopeAPIResponse:
         base_url = kwargs.pop('base_address', None)
-        status_url = _normalization_url(base_url, 'tasks', task_id)
+        url = _normalization_url(base_url, 'tasks', task_id)
         kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
-        request = _build_simple_http_request(http_url=status_url,
-                                            api_key=api_key,
-                                            **kwargs)
+        kwargs["base_address"] = url
+        if not api_key:
+            api_key = get_default_api_key()
+        request = _build_api_request("", "", "",
+                                     "", "", api_key=api_key,
+                                     is_service=False, **kwargs)
         return await cls._handle_request(request)
 
     @classmethod
@@ -65,8 +66,7 @@ class AsyncAioTaskGetMixin:
         # 如果 aio_call 返回的是异步生成器，则需要从中获取响应
         response = await request.aio_call()
         # 处理异步生成器的情况
-        if (isinstance(response, collections.abc.AsyncGenerator)
-                or hasattr(response, '__aiter__')):
+        if isinstance(response, collections.abc.AsyncGenerator):
             result = None
             async for item in response:
                 result = item
@@ -226,9 +226,12 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         base_url = kwargs.pop('base_address', None)
         url = _normalization_url(base_url, 'tasks', task_id, 'cancel')
         kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
-        request = _build_simple_http_request(http_url=url,
-                                            api_key=api_key,
-                                            **kwargs)
+        kwargs["base_address"] = url
+        if not api_key:
+            api_key = get_default_api_key()
+        request = _build_api_request("", "", "",
+                                     "", "",api_key=api_key,
+                                     is_service=False, **kwargs)
         return await cls._handle_request(request)
 
     @classmethod
@@ -281,17 +284,14 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             params['region'] = region
         if status is not None:
             params['status'] = status
-        if params:
-            query_string = urlencode(params)
-            url = f"{url}?{query_string}"
-        kwargs['http_method'] = HTTPMethod.GET
-        request = _build_simple_http_request(http_url=url,
-                                             api_key=api_key,
-                                             headers={
-                                                 **_workspace_header(workspace),
-                                                 **default_headers(api_key),
-                                             },
-                                             **kwargs)
+        kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
+        kwargs["base_address"] = url
+        if not api_key:
+            api_key = get_default_api_key()
+        request = _build_api_request(model_name, "", "",
+                                     "", "", api_key=api_key,
+                                     is_service=False, extra_url_parameters=params,
+                                     **kwargs)
         return await cls._handle_request(request)
 
     @classmethod

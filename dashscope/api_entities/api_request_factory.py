@@ -128,30 +128,3 @@ def _build_api_request(model: str,
     request_data.add_parameters(**kwargs)
     request.data = request_data
     return request
-
-def _build_simple_http_request(http_url: str,
-                              api_key: str = None,
-                              **kwargs):
-    http_method = kwargs.pop('http_method', HTTPMethod.POST)
-    request = HttpRequest(url=http_url,
-                          api_key=api_key,
-                          http_method=http_method)
-    headers = kwargs.pop('headers', None)
-    if headers is not None:
-        request.add_headers(headers=headers)
-    form = kwargs.pop('form', None)
-    model = kwargs.pop('model', None)
-    task_group = kwargs.pop('task_group', None)
-    task = kwargs.pop('task', None)
-    function = kwargs.pop('function', None)
-    inputs = kwargs.pop('input', None)
-    is_binary_input = kwargs.pop('is_binary_input', None)
-    api_protocol = kwargs.pop('api_protocol', None)
-    request_data = ApiRequestData(model, task_group, task,
-                                  function, inputs, form,
-                                  is_binary_input, api_protocol)
-    resources = kwargs.pop('resources', None)
-    request_data.add_resources(resources)
-    request_data.add_parameters(**kwargs)
-    request.data = request_data
-    return request
