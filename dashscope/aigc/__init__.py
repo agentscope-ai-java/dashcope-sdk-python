@@ -3,7 +3,7 @@
 from .conversation import Conversation, History, HistoryItem
 from .generation import Generation
 from .image_synthesis import ImageSynthesis
-from .multimodal_conversation import MultiModalConversation
+from .multimodal_conversation import MultiModalConversation, AioMultiModalConversation
 from .video_synthesis import VideoSynthesis
 
 __all__ = [
@@ -13,5 +13,6 @@ __all__ = [
     History,
     ImageSynthesis,
     MultiModalConversation,
+    AioMultiModalConversation,
     VideoSynthesis,
 ]

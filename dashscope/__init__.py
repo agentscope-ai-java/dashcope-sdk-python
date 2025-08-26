@@ -7,7 +7,7 @@ from dashscope.aigc.code_generation import CodeGeneration
 from dashscope.aigc.conversation import Conversation, History, HistoryItem
 from dashscope.aigc.generation import AioGeneration, Generation
 from dashscope.aigc.image_synthesis import ImageSynthesis
-from dashscope.aigc.multimodal_conversation import MultiModalConversation
+from dashscope.aigc.multimodal_conversation import MultiModalConversation, AioMultiModalConversation
 from dashscope.aigc.video_synthesis import VideoSynthesis
 from dashscope.app.application import Application
 from dashscope.assistants import Assistant, AssistantList, Assistants
@@ -60,6 +60,7 @@ __all__ = [
     MultiModalEmbeddingItemText,
     SpeechSynthesizer,
     MultiModalConversation,
+    AioMultiModalConversation,
     BatchTextEmbedding,
     BatchTextEmbeddingResponse,
     Understanding,

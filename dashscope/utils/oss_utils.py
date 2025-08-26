@@ -188,6 +188,6 @@ def check_and_upload(model, elem: dict, api_key):
     return has_upload
 
 
-def preprocess_message_element(model: str, elem: List[dict], api_key: str):
+def preprocess_message_element(model: str, elem: dict, api_key: str):
     is_upload = check_and_upload(model, elem, api_key)
     return is_upload
