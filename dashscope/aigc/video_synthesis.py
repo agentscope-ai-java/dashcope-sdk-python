@@ -38,7 +38,6 @@ class VideoSynthesis(BaseAsyncApi):
              negative_prompt: str = None,
              template: str = None,
              img_url: str = None,
-             audio_url: str = None,
              api_key: str = None,
              extra_input: Dict = None,
              workspace: str = None,
@@ -57,7 +56,6 @@ class VideoSynthesis(BaseAsyncApi):
             negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
             img_url (str): The input image url, Generate the URL of the image referenced by the video.
-            audio_url (str): The input audio url
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
@@ -78,7 +76,6 @@ class VideoSynthesis(BaseAsyncApi):
         return super().call(model,
                             prompt,
                             img_url=img_url,
-                            audio_url=audio_url,
                             api_key=api_key,
                             extend_prompt=extend_prompt,
                             negative_prompt=negative_prompt,
@@ -97,7 +94,6 @@ class VideoSynthesis(BaseAsyncApi):
                    model: str,
                    prompt: Any = None,
                    img_url: str = None,
-                   audio_url: str = None,
                    # """@deprecated, use prompt_extend in parameters """
                    extend_prompt: bool = True,
                    negative_prompt: str = None,
@@ -128,13 +124,6 @@ class VideoSynthesis(BaseAsyncApi):
             if is_upload:
                 has_upload = True
             inputs['img_url'] = res_img_url
-
-        if audio_url is not None and audio_url:
-            is_upload, res_audio_url = check_and_upload_local(
-                model, audio_url, api_key)
-            if is_upload:
-                has_upload = True
-            inputs['audio_url'] = res_audio_url
 
         if head_frame is not None and head_frame:
             is_upload, res_head_frame = check_and_upload_local(
@@ -183,7 +172,6 @@ class VideoSynthesis(BaseAsyncApi):
                    model: str,
                    prompt: Any = None,
                    img_url: str = None,
-                   audio_url: str = None,
                    # """@deprecated, use prompt_extend in parameters """
                    extend_prompt: bool = True,
                    negative_prompt: str = None,
@@ -206,7 +194,6 @@ class VideoSynthesis(BaseAsyncApi):
             negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
             img_url (str): The input image url, Generate the URL of the image referenced by the video.
-            audio_url (str): The input audio url.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
@@ -228,7 +215,7 @@ class VideoSynthesis(BaseAsyncApi):
         task_group, function = _get_task_group_and_task(__name__)
 
         inputs, kwargs, task = cls._get_input(
-            model, prompt, img_url, audio_url, extend_prompt, negative_prompt, template, api_key,
+            model, prompt, img_url, extend_prompt, negative_prompt, template, api_key,
             extra_input, task, function, head_frame, tail_frame,
             first_frame_url, last_frame_url, **kwargs)
 
@@ -352,7 +339,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
                    model: str,
                    prompt: Any = None,
                    img_url: str = None,
-                   audio_url: str = None,
                    # """@deprecated, use prompt_extend in parameters """
                    extend_prompt: bool = True,
                    negative_prompt: str = None,
@@ -375,7 +361,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
             img_url (str): The input image url, Generate the URL of the image referenced by the video.
-            audio_url (str): The input audio url.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
@@ -395,7 +380,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         """
         task_group, f = _get_task_group_and_task(__name__)
         inputs, kwargs, task = VideoSynthesis._get_input(
-            model, prompt, img_url, audio_url, extend_prompt, negative_prompt, template, api_key,
+            model, prompt, img_url, extend_prompt, negative_prompt, template, api_key,
             extra_input, task, f, head_frame, tail_frame,
             first_frame_url, last_frame_url, **kwargs)
         response = await super().call(model, inputs, task_group, task, f, api_key, workspace, **kwargs)
@@ -406,7 +391,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
                    model: str,
                    prompt: Any = None,
                    img_url: str = None,
-                   audio_url: str = None,
                    # """@deprecated, use prompt_extend in parameters """
                    extend_prompt: bool = True,
                    negative_prompt: str = None,
@@ -429,7 +413,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
             img_url (str): The input image url, Generate the URL of the image referenced by the video.
-            audio_url (str): The input audio url.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
@@ -451,7 +434,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         task_group, function = _get_task_group_and_task(__name__)
 
         inputs, kwargs, task = VideoSynthesis._get_input(
-            model, prompt, img_url, audio_url, extend_prompt, negative_prompt, template, api_key,
+            model, prompt, img_url, extend_prompt, negative_prompt, template, api_key,
             extra_input, task, function, head_frame, tail_frame,
             first_frame_url, last_frame_url, **kwargs)
 

@@ -4,7 +4,6 @@ import json
 import platform
 import threading
 import time
-from dataclasses import field, dataclass
 from typing import List
 import uuid
 from enum import Enum, unique
@@ -28,26 +27,6 @@ class OmniRealtimeCallback:
 
     def on_event(self, message: str) -> None:
         pass
-
-
-@dataclass
-class TranslationParams:
-    """
-    TranslationParams
-    """
-    language: str = field(default=None)
-
-
-@dataclass
-class TranscriptionParams:
-    """
-    TranscriptionParams
-    """
-    language: str = field(default=None)
-    sample_rate: int = field(default=16000)
-    input_audio_format: str = field(default="pcm")
-    corpus: dict = field(default=None)
-    corpus_text: str = field(default=None)
 
 
 @unique
@@ -192,7 +171,7 @@ class OmniRealtimeConversation:
 
     def update_session(self,
                        output_modalities: List[MultiModality],
-                       voice: str = None,
+                       voice: str,
                        input_audio_format: AudioFormat = AudioFormat.
                        PCM_16000HZ_MONO_16BIT,
                        output_audio_format: AudioFormat = AudioFormat.
@@ -205,8 +184,6 @@ class OmniRealtimeConversation:
                        turn_detection_threshold: float = 0.2,
                        turn_detection_silence_duration_ms: int = 800,
                        turn_detection_param: dict = None,
-                       translation_params: TranslationParams = None,
-                       transcription_params: TranscriptionParams = None,
                        **kwargs) -> None:
         '''
         update session configuration, should be used before create response
@@ -229,13 +206,6 @@ class OmniRealtimeConversation:
             In a quiet environment, it may be necessary to decrease the threshold to improve sensitivity
         turn_detection_silence_duration_ms: int
             duration of silence in milliseconds to detect turn, range [200, 6000]
-        translation_params: TranslationParams
-            translation params, include language. Only effective with qwen3-livetranslate-flash-realtime model or
-             further models. Do not set this parameter for other models.
-        transcription_params: TranscriptionParams
-            transcription params, include language, sample_rate, input_audio_format, corpus.
-            Only effective with qwen3-asr-flash-realtime model or
-            further models. Do not set this parameter for other models.
         '''
         self.config = {
             'modalities': [m.value for m in output_modalities],
@@ -260,20 +230,6 @@ class OmniRealtimeConversation:
                 self.config['turn_detection'].update(turn_detection_param)
         else:
             self.config['turn_detection'] = None
-        if translation_params is not None:
-            self.config['translation'] = {
-                'language': translation_params.language
-            }
-        if transcription_params is not None:
-            self.config['language'] = transcription_params.language
-            if transcription_params.corpus is not None:
-                self.config['corpus'] = transcription_params.corpus
-            if transcription_params.corpus_text is not None:
-                self.config['corpus'] = {
-                    "text": transcription_params.corpus_text
-                }
-            self.config['input_audio_format'] = transcription_params.input_audio_format
-            self.config['sample_rate']= transcription_params.sample_rate
         self.config.update(kwargs)
         self.__send_str(
             json.dumps({
