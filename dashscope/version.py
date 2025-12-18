@@ -1,3 +1,3 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-__version__ = '1.25.4'
+__version__ = '1.25.5'
