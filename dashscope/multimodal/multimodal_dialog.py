@@ -445,10 +445,12 @@ class _Request:
         )
         self.ws_headers = {
             "User-Agent": ua,
-            "Authorization": f"bearer {api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Accept": "application/json",
         }
-        logger.info("websocket header: %s", self.ws_headers)
+        log_headers = self.ws_headers.copy()
+        log_headers["Authorization"] = "REDACTED"
+        logger.info("websocket header: %s", log_headers)
         return self.ws_headers
 
     def generate_start_request(
