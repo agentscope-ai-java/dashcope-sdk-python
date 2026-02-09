@@ -8,7 +8,9 @@ import random
 import threading
 import time
 import uuid
+from dataclasses import dataclass
 from enum import Enum, unique
+from typing import Dict, List, Optional
 
 import websocket
 
@@ -24,6 +26,35 @@ from dashscope.protocol.websocket import (
     EventType,
     WebsocketStreamingMode,
 )
+
+
+@dataclass
+class HotFix:
+    """
+    Hot fix parameters for pronunciation and text replacement.
+
+    Attributes:
+        pronunciation: List of pronunciation, e.g., [{"草地": "cao3 di4"}]
+        replace: List of text replacement, e.g., [{"草地": "草弟"}]
+
+    Example:
+        hot_fix = HotFix(
+             pronunciation=[{"草地": "cao3 di4"}],
+             replace=[{"草地": "草弟"}]
+         )
+         hot_fix_dict = hot_fix.to_dict()
+    """
+
+    pronunciation: Optional[List[Dict[str, str]]] = None
+    replace: Optional[List[Dict[str, str]]] = None
+
+    def to_dict(self) -> Dict[str, List[Dict[str, str]]]:
+        result = {}
+        if self.pronunciation is not None:
+            result["pronunciation"] = self.pronunciation
+        if self.replace is not None:
+            result["replace"] = self.replace
+        return result
 
 
 class ResultCallback:
@@ -246,6 +277,7 @@ class SpeechSynthesizer:
         callback: ResultCallback = None,
         workspace=None,
         url=None,
+        hot_fix=None,
         additional_params=None,
     ):
         """
@@ -282,6 +314,14 @@ class SpeechSynthesizer:
             The language hints of the synthesizer. supported language: zh, en.
         additional_params: Dict
             Additional parameters for the Dashscope API.
+        hot_fix: Dict or HotFix
+            Hot fix parameters for pronunciation and text replacement.
+            Example: {
+                "pronunciation": [{"草地": "cao3 di4"}],
+                "replace": [{"草地": "草弟"}]
+            }
+        enable_markdown_filter: bool
+            Whether to enable markdown filter. should be set into additional_params.
         """
         self.ws = None
         self.start_event = threading.Event()
@@ -316,6 +356,7 @@ class SpeechSynthesizer:
             workspace,
             url,
             additional_params,
+            hot_fix,
         )
 
     def __send_str(self, data: str):
@@ -404,6 +445,7 @@ class SpeechSynthesizer:
         url=None,
         additional_params=None,
         close_ws_after_use=True,
+        hot_fix=None,
     ):
         if model is None:
             raise ModelRequired("Model is required!")
@@ -417,6 +459,17 @@ class SpeechSynthesizer:
             raise InputRequired("apikey is required!")
         self.headers = headers
         self.workspace = workspace
+
+        # Merge hot_fix into additional_params
+        if hot_fix is not None:
+            if additional_params is None:
+                additional_params = {}
+            # Support both HotFix instance and dict
+            if isinstance(hot_fix, HotFix):
+                additional_params["hot_fix"] = hot_fix.to_dict()
+            else:
+                additional_params["hot_fix"] = hot_fix
+
         self.additional_params = additional_params
         self.model = model
         self.voice = voice

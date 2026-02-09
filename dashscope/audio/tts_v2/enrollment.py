@@ -88,6 +88,7 @@ class VoiceEnrollmentService(BaseApi):
         prefix: str,
         url: str,
         language_hints: List[str] = None,
+        max_prompt_audio_length: float = None,
     ) -> str:
         """
         创建新克隆音色
@@ -95,6 +96,7 @@ class VoiceEnrollmentService(BaseApi):
         param: prefix 音色自定义前缀，仅允许数字和小写字母，小于十个字符。
         param: url 用于克隆的音频文件url
         param: language_hints 克隆音色目标语言
+        param: max_prompt_audio_length 音频预处理输出的prompt audio最长长度。单位为秒。默认为10s。
         return: voice_id
         """
 
@@ -106,6 +108,8 @@ class VoiceEnrollmentService(BaseApi):
         }
         if language_hints is not None:
             input_params["language_hints"] = language_hints
+        if max_prompt_audio_length is not None:
+            input_params["max_prompt_audio_length"] = max_prompt_audio_length
         response = self.__call_with_input(input_params)
         self._last_request_id = response.request_id
         if response.status_code == 200:
