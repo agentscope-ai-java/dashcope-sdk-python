@@ -356,6 +356,7 @@ class SpeechSynthesizer:
             workspace,
             url,
             additional_params,
+            self._close_ws_after_use,
             hot_fix,
         )
 
