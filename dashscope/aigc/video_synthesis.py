@@ -64,7 +64,7 @@ class VideoSynthesis(BaseAsyncApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
-        media: list = None,
+        media: List[Dict] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -152,7 +152,7 @@ class VideoSynthesis(BaseAsyncApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
-        media: list = None,
+        media: List[Dict] = None,
         **kwargs,
     ):
         inputs = {PROMPT: prompt, "extend_prompt": extend_prompt}
@@ -339,7 +339,7 @@ class VideoSynthesis(BaseAsyncApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
-        media: list = None,
+        media: List[Dict] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -354,7 +354,7 @@ class VideoSynthesis(BaseAsyncApi):
             audio_url (str): The input audio url.
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
             reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
+            reference_url (str): reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
@@ -558,7 +558,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
-        media: list = None,
+        media: List[Dict] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -573,7 +573,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             audio_url (str): The input audio url.
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
             reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
+            reference_url (str): reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
@@ -661,7 +661,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
-        media: list = None,
+        media: List[Dict] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -676,7 +676,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             audio_url (str): The input audio url.
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
             reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
+            reference_url (str): reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
