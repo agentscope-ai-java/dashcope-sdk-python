@@ -3,12 +3,19 @@
 
 from typing import Any, Dict, Union, List
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from dashscope.api_entities.dashscope_response import (
     DashScopeAPIResponse,
     VideoSynthesisResponse,
 )
 from dashscope.client.base_api import BaseAsyncApi, BaseAsyncAioApi
-from dashscope.common.constants import PROMPT, REFERENCE_VIDEO_URLS
+from dashscope.common.constants import (
+    PROMPT,
+    REFERENCE_VIDEO_URLS,
+    REFERENCE_URLS,
+    MEDIA_URLS,
+)
 from dashscope.common.utils import _get_task_group_and_task
 from dashscope.utils.oss_utils import check_and_upload_local
 
@@ -46,6 +53,8 @@ class VideoSynthesis(BaseAsyncApi):
         img_url: str = None,
         audio_url: str = None,
         reference_video_urls: List[str] = None,
+        reference_urls: List[str] = None,
+        reference_url: str = None,
         reference_video_description: List[str] = None,
         api_key: str = None,
         extra_input: Dict = None,
@@ -55,6 +64,7 @@ class VideoSynthesis(BaseAsyncApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
+        media: list = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -68,13 +78,18 @@ class VideoSynthesis(BaseAsyncApi):
             img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
             audio_url (str): The input audio url
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
+            head_frame (str): The URL of the first frame image for generating the video.
+            tail_frame (str): The URL of the last frame image for generating the video.
             first_frame_url (str): The URL of the first frame image for generating the video.
             last_frame_url (str): The URL of the last frame image for generating the video.
+            media (list): media file list
             **kwargs:
                 size(str, `optional`): The output video size(width*height).
                 duration(
@@ -95,6 +110,8 @@ class VideoSynthesis(BaseAsyncApi):
             img_url=img_url,
             audio_url=audio_url,
             reference_video_urls=reference_video_urls,
+            reference_urls=reference_urls,
+            reference_url=reference_url,
             reference_video_description=reference_video_description,
             api_key=api_key,
             extend_prompt=extend_prompt,
@@ -107,6 +124,7 @@ class VideoSynthesis(BaseAsyncApi):
             tail_frame=tail_frame,
             first_frame_url=first_frame_url,
             last_frame_url=last_frame_url,
+            media=media,
             **kwargs,
         )
 
@@ -119,6 +137,8 @@ class VideoSynthesis(BaseAsyncApi):
         img_url: str = None,
         audio_url: str = None,
         reference_video_urls: List[str] = None,
+        reference_urls: List[str] = None,
+        reference_url: str = None,
         reference_video_description: List[str] = None,
         # """@deprecated, use prompt_extend in parameters """
         extend_prompt: bool = True,
@@ -132,6 +152,7 @@ class VideoSynthesis(BaseAsyncApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
+        media: list = None,
         **kwargs,
     ):
         inputs = {PROMPT: prompt, "extend_prompt": extend_prompt}
@@ -147,117 +168,138 @@ class VideoSynthesis(BaseAsyncApi):
         has_upload = False
         upload_certificate = None
 
-        if img_url is not None and img_url:
-            (
-                is_upload,
-                res_img_url,
-                upload_certificate,
-            ) = check_and_upload_local(
-                model,
-                img_url,
-                api_key,
-                upload_certificate,  # type: ignore[arg-type]
-            )
-            if is_upload:
-                has_upload = True
-            inputs["img_url"] = res_img_url
+        tasks: List[Dict] = []
 
-        if audio_url is not None and audio_url:
-            (
-                is_upload,
-                res_audio_url,
-                upload_certificate,
-            ) = check_and_upload_local(
-                model,
-                audio_url,
-                api_key,
-                upload_certificate,  # type: ignore[arg-type]
-            )
-            if is_upload:
-                has_upload = True
-            inputs["audio_url"] = res_audio_url
+        single_params = {
+            "img_url": img_url,
+            "audio_url": audio_url,
+            "head_frame": head_frame,
+            "tail_frame": tail_frame,
+            "first_frame_url": first_frame_url,
+            "last_frame_url": last_frame_url,
+            "reference_url": reference_url,
+        }
 
-        if head_frame is not None and head_frame:
-            (
-                is_upload,
-                res_head_frame,
-                upload_certificate,
-            ) = check_and_upload_local(
-                model,
-                head_frame,
-                api_key,
-                upload_certificate,  # type: ignore[arg-type]
-            )
-            if is_upload:
-                has_upload = True
-            inputs["head_frame"] = res_head_frame
-
-        if tail_frame is not None and tail_frame:
-            (
-                is_upload,
-                res_tail_frame,
-                upload_certificate,
-            ) = check_and_upload_local(
-                model,
-                tail_frame,
-                api_key,
-                upload_certificate,  # type: ignore[arg-type]
-            )
-            if is_upload:
-                has_upload = True
-            inputs["tail_frame"] = res_tail_frame
-
-        if first_frame_url is not None and first_frame_url:
-            (
-                is_upload,
-                res_first_frame_url,
-                upload_certificate,
-            ) = check_and_upload_local(
-                model,
-                first_frame_url,
-                api_key,
-                upload_certificate,  # type: ignore[arg-type]
-            )
-            if is_upload:
-                has_upload = True
-            inputs["first_frame_url"] = res_first_frame_url
-
-        if last_frame_url is not None and last_frame_url:
-            (
-                is_upload,
-                res_last_frame_url,
-                upload_certificate,
-            ) = check_and_upload_local(
-                model,
-                last_frame_url,
-                api_key,
-                upload_certificate,  # type: ignore[arg-type]
-            )
-            if is_upload:
-                has_upload = True
-            inputs["last_frame_url"] = res_last_frame_url
-
-        if (
-            reference_video_urls is not None
-            and reference_video_urls
-            and len(reference_video_urls) > 0
-        ):
-            new_videos = []
-            for video in reference_video_urls:
-                (
-                    is_upload,
-                    new_video,
-                    upload_certificate,
-                ) = check_and_upload_local(
-                    model,
-                    video,
-                    api_key,
-                    upload_certificate,  # type: ignore[arg-type]
+        for key, url in single_params.items():
+            if url is not None and url:
+                tasks.append(
+                    {
+                        "type": "single",
+                        "key": key,
+                        "url": url,
+                    },
                 )
-                if is_upload:
-                    has_upload = True
-                new_videos.append(new_video)
-            inputs[REFERENCE_VIDEO_URLS] = new_videos
+
+        if reference_video_urls:
+            for idx, url in enumerate(reference_video_urls):
+                if url:
+                    tasks.append(
+                        {
+                            "type": "list_ref_video",
+                            "index": idx,
+                            "url": url,
+                        },
+                    )
+
+        if reference_urls:
+            for idx, url in enumerate(reference_urls):
+                if url:
+                    tasks.append(
+                        {
+                            "type": "list_ref_file",
+                            "index": idx,
+                            "url": url,
+                        },
+                    )
+
+        if media:
+            for i, m_file in enumerate(media):
+                if isinstance(m_file, dict):
+                    if m_file.get("url"):
+                        tasks.append(
+                            {
+                                "type": "media",
+                                "index": i,
+                                "field": "url",
+                                "url": m_file["url"],
+                            },
+                        )
+                    if m_file.get("reference_voice"):
+                        tasks.append(
+                            {
+                                "type": "media",
+                                "index": i,
+                                "field": "reference_voice",
+                                "url": m_file["reference_voice"],
+                            },
+                        )
+
+        def upload_worker(task_item, current_cert):
+            url = task_item["url"]
+            is_up, res_url, cert = check_and_upload_local(
+                model,
+                url,
+                api_key,
+                current_cert,
+            )
+            return task_item, is_up, res_url, cert
+
+        results = []
+
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [
+                executor.submit(upload_worker, t, upload_certificate)
+                for t in tasks
+            ]
+
+            for future in as_completed(futures):
+                task_item, is_up, res_url, cert = future.result()
+
+                results.append(
+                    {
+                        "task": task_item,
+                        "is_upload": is_up,
+                        "new_url": res_url,
+                        "cert": cert,
+                    },
+                )
+
+        for res in results:
+            if res["is_upload"]:
+                has_upload = True
+
+            new_url = res["new_url"]
+            task_info = res["task"]
+            t_type = task_info["type"]
+
+            if t_type == "single":
+                inputs[task_info["key"]] = new_url
+
+            elif t_type == "list_ref_video":
+                if REFERENCE_VIDEO_URLS not in inputs:
+                    inputs[REFERENCE_VIDEO_URLS] = (
+                        list(reference_video_urls)
+                        if reference_video_urls
+                        else []
+                    )
+
+                inputs[REFERENCE_VIDEO_URLS][task_info["index"]] = new_url
+
+            elif t_type == "list_ref_file":
+                if REFERENCE_URLS not in inputs:
+                    inputs[REFERENCE_URLS] = (
+                        list(reference_urls) if reference_urls else []
+                    )
+                inputs[REFERENCE_URLS][task_info["index"]] = new_url
+
+            elif t_type == "media":
+                if MEDIA_URLS not in inputs:
+                    inputs[MEDIA_URLS] = media
+
+                idx = task_info["index"]
+                field = task_info["field"]
+                if idx < len(inputs[MEDIA_URLS]):
+                    inputs[MEDIA_URLS][idx][field] = new_url
 
         if extra_input is not None and extra_input:
             inputs = {**inputs, **extra_input}
@@ -282,6 +324,8 @@ class VideoSynthesis(BaseAsyncApi):
         img_url: str = None,
         audio_url: str = None,
         reference_video_urls: List[str] = None,
+        reference_urls: List[str] = None,
+        reference_url: str = None,
         reference_video_description: List[str] = None,
         # """@deprecated, use prompt_extend in parameters """
         extend_prompt: bool = True,
@@ -295,6 +339,7 @@ class VideoSynthesis(BaseAsyncApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
+        media: list = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -308,13 +353,18 @@ class VideoSynthesis(BaseAsyncApi):
             img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
             audio_url (str): The input audio url.
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
+            head_frame (str): The URL of the first frame image for generating the video.
+            tail_frame (str): The URL of the last frame image for generating the video.
             first_frame_url (str): The URL of the first frame image for generating the video.
             last_frame_url (str): The URL of the last frame image for generating the video.
+            media (list): media file list
             **kwargs:
                 size(str, `optional`): The output video size(width*height).
                 duration(
@@ -338,6 +388,8 @@ class VideoSynthesis(BaseAsyncApi):
             img_url,
             audio_url,
             reference_video_urls,
+            reference_urls,
+            reference_url,
             reference_video_description,
             extend_prompt,
             negative_prompt,
@@ -350,6 +402,7 @@ class VideoSynthesis(BaseAsyncApi):
             tail_frame,
             first_frame_url,
             last_frame_url,
+            media,
             **kwargs,
         )
 
@@ -490,6 +543,8 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         img_url: str = None,
         audio_url: str = None,
         reference_video_urls: List[str] = None,
+        reference_urls: List[str] = None,
+        reference_url: str = None,
         reference_video_description: List[str] = None,
         # """@deprecated, use prompt_extend in parameters """
         extend_prompt: bool = True,
@@ -503,6 +558,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
+        media: list = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -516,13 +572,18 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
             audio_url (str): The input audio url.
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
+            head_frame (str): The URL of the first frame image for generating the video.
+            tail_frame (str): The URL of the last frame image for generating the video.
             first_frame_url (str): The URL of the first frame image for generating the video.
             last_frame_url (str): The URL of the last frame image for generating the video.
+            media (list): media file list
             **kwargs:
                 size(str, `optional`): The output video size(width*height).
                 duration(
@@ -546,6 +607,8 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             img_url,
             audio_url,
             reference_video_urls,
+            reference_urls,
+            reference_url,
             reference_video_description,
             extend_prompt,
             negative_prompt,
@@ -558,6 +621,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             tail_frame,
             first_frame_url,
             last_frame_url,
+            media,
             **kwargs,
         )
         response = await super().call(
@@ -582,6 +646,8 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         img_url: str = None,
         audio_url: str = None,
         reference_video_urls: List[str] = None,
+        reference_urls: List[str] = None,
+        reference_url: str = None,
         reference_video_description: List[str] = None,
         # """@deprecated, use prompt_extend in parameters """
         extend_prompt: bool = True,
@@ -595,6 +661,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         tail_frame: str = None,
         first_frame_url: str = None,
         last_frame_url: str = None,
+        media: list = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -608,13 +675,18 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
             audio_url (str): The input audio url.
             reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
+            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
             reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
+            head_frame (str): The URL of the first frame image for generating the video.
+            tail_frame (str): The URL of the last frame image for generating the video.
             first_frame_url (str): The URL of the first frame image for generating the video.
             last_frame_url (str): The URL of the last frame image for generating the video.
+            media (list): media file list
             **kwargs:
                 size(str, `optional`): The output video size(width*height).
                 duration(
@@ -640,6 +712,8 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             img_url,
             audio_url,
             reference_video_urls,
+            reference_urls,
+            reference_url,
             reference_video_description,
             extend_prompt,
             negative_prompt,
@@ -652,6 +726,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             tail_frame,
             first_frame_url,
             last_frame_url,
+            media,
             **kwargs,
         )
 
