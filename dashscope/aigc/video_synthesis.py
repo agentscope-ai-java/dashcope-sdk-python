@@ -41,6 +41,16 @@ class VideoSynthesis(BaseAsyncApi):
         wanx_2_1_kf2v_plus = "wanx2.1-kf2v-plus"
         wanx_kf2v = "wanx-kf2v"
 
+    class MediaType:
+        FIRST_FRAME = "first_frame"
+        LAST_FRAME = "last_frame"
+        REFERENCE_IMAGE = "reference_image"
+        REFERENCE_VIDEO = "reference_video"
+        REFERENCE_VOICE = "reference_voice"
+        VIDEO = "video"
+        FIRST_CLIP = "first_clip"
+        DRIVING_AUDIO = "driving_audio"
+
     @classmethod
     def call(  # type: ignore[override]
         cls,
