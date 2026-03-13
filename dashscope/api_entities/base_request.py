@@ -6,25 +6,13 @@ import platform
 from abc import ABC, abstractmethod
 
 from dashscope.common.constants import DASHSCOPE_DISABLE_DATA_INSPECTION_ENV
+from dashscope.common.utils import get_user_agent
 from dashscope.version import __version__
 
 
 class BaseRequest(ABC):
     def __init__(self, user_agent: str = "") -> None:
-        try:
-            platform_info = platform.platform()
-        except Exception:
-            platform_info = "unknown"
-
-        try:
-            processor_info = platform.processor()
-        except Exception:
-            processor_info = "unknown"
-
-        ua = (
-            f"dashscope/{__version__}; python/{platform.python_version()}; "
-            f"platform/{platform_info}; processor/{processor_info}"
-        )
+        ua = get_user_agent()
 
         # Append user_agent if provided and not empty
         if user_agent:

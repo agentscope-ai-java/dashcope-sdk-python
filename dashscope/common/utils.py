@@ -132,20 +132,26 @@ def async_to_sync(async_generator):
 
 
 def get_user_agent():
+    try:
+        platform_ = platform.platform().replace('\n', '').replace('\r', '').strip()
+    except Exception:
+        platform_ = "unknown"
+
+    try:
+        processor_ = platform.processor().replace('\n', '').replace('\r', '').strip()
+    except Exception:
+        processor_ = "unknown"
+
     ua = (
         f"dashscope/{__version__}; python/{platform.python_version()}; "
-        f"platform/{platform.platform()}; "
-        f"processor/{platform.processor()}"
+        f"platform/{platform_}; "
+        f"processor/{processor_}"
     )
     return ua
 
 
 def default_headers(api_key: str = None) -> Dict[str, str]:
-    ua = (
-        f"dashscope/{__version__}; python/{platform.python_version()}; "
-        f"platform/{platform.platform()}; "
-        f"processor/{platform.processor()}"
-    )
+    ua = get_user_agent()
     headers = {"user-agent": ua}
     if api_key is None:
         api_key = get_default_api_key()

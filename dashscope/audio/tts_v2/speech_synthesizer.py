@@ -17,6 +17,7 @@ import websocket
 import dashscope
 from dashscope.common.error import InputRequired, InvalidTask, ModelRequired
 from dashscope.common.logging import logger
+from dashscope.common.utils import get_user_agent
 from dashscope.protocol.websocket import (
     ACTION_KEY,
     EVENT_KEY,
@@ -171,11 +172,7 @@ class Request:
         return uuid.uuid4().hex
 
     def getWebsocketHeaders(self, headers, workspace):
-        ua = (
-            f"dashscope/1.18.0; python/{platform.python_version()}; "
-            f"platform/{platform.platform()}; "
-            f"processor/{platform.processor()}"
-        )
+        ua = get_user_agent()
         self.headers = {
             "user-agent": ua,
             "Authorization": "Bearer " + self.apikey,

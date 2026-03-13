@@ -13,6 +13,7 @@ import websocket  # pylint: disable=wrong-import-order
 import dashscope
 from dashscope.common.error import ModelRequired
 from dashscope.common.logging import logger
+from dashscope.common.utils import get_user_agent
 
 
 class QwenTtsRealtimeCallback:
@@ -113,11 +114,7 @@ class QwenTtsRealtime:
         return "event_" + uuid.uuid4().hex
 
     def _get_websocket_header(self):
-        ua = (
-            f"dashscope/1.18.0; python/{platform.python_version()}; "
-            f"platform/{platform.platform()}; "
-            f"processor/{platform.processor()}"
-        )
+        ua = get_user_agent()
         headers = {
             "user-agent": ua,
             "Authorization": "Bearer " + self.apikey,

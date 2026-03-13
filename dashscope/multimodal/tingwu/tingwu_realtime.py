@@ -15,6 +15,7 @@ import websocket  # pylint: disable=wrong-import-order
 
 # pylint: disable=ungrouped-imports
 from dashscope.common.logging import logger
+from dashscope.common.utils import get_user_agent
 from dashscope.protocol.websocket import ActionType
 
 
@@ -338,11 +339,7 @@ class _Request:
         self.workspace_id = None
 
     def get_websocket_header(self, api_key):
-        ua = (
-            f"dashscope/1.18.0; python/{platform.python_version()}; "
-            f"platform/{platform.platform()}; "
-            f"processor/{platform.processor()}"
-        )
+        ua = get_user_agent()
         self.ws_headers = {
             "User-Agent": ua,
             "Authorization": f"Bearer {api_key}",
