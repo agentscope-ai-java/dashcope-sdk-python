@@ -2,7 +2,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import json
-import platform
 import threading
 import time
 from dataclasses import field, dataclass

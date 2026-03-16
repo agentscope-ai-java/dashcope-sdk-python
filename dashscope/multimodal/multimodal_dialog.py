@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import json
-import platform
 import time
 import threading
 from abc import abstractmethod

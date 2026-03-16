@@ -2,7 +2,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
-import platform
 from abc import ABC, abstractmethod
 
 from dashscope.common.constants import DASHSCOPE_DISABLE_DATA_INSPECTION_ENV

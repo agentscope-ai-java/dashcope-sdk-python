@@ -3,7 +3,6 @@
 # mypy: disable-error-code="annotation-unchecked"
 
 import json
-import platform
 import random
 import threading
 import time
