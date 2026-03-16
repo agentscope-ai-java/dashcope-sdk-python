@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 
 from dashscope.common.constants import DASHSCOPE_DISABLE_DATA_INSPECTION_ENV
 from dashscope.common.utils import get_user_agent
-from dashscope.version import __version__
 
 
 class BaseRequest(ABC):
