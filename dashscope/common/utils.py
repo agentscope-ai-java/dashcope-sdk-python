@@ -133,12 +133,16 @@ def async_to_sync(async_generator):
 
 def get_user_agent():
     try:
-        platform_ = platform.platform().replace('\n', '').replace('\r', '').strip()
+        platform_ = (
+            platform.platform().replace("\n", "").replace("\r", "").strip()
+        )
     except Exception:
         platform_ = "unknown"
 
     try:
-        processor_ = platform.processor().replace('\n', '').replace('\r', '').strip()
+        processor_ = (
+            platform.processor().replace("\n", "").replace("\r", "").strip()
+        )
     except Exception:
         processor_ = "unknown"
 

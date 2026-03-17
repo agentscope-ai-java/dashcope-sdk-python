@@ -16,6 +16,7 @@ from dashscope.common.error import ModelRequired
 from dashscope.common.logging import logger
 from dashscope.common.utils import get_user_agent
 
+
 class OmniRealtimeCallback:
     """
     An interface that defines callback methods for getting omni-realtime results. # noqa E501
