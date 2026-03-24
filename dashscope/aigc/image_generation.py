@@ -597,20 +597,24 @@ class AioImageGeneration(BaseAioApi, BaseAsyncAioApi):
         upload_certificate = None
 
         for message in messages:
-            content = message["content"]
-            for elem in content:
-                if not isinstance(
-                    elem,
-                    (int, float, bool, str, bytes, bytearray),
-                ):
-                    is_upload, upload_certificate = preprocess_message_element(
-                        model,
+            if message.get("role", "") == "user":
+                content = message["content"]
+                for elem in content:
+                    if not isinstance(
                         elem,
-                        api_key,
-                        upload_certificate,  # type: ignore[arg-type]
-                    )
-                    if is_upload and not has_upload:
-                        has_upload = True
+                        (int, float, bool, str, bytes, bytearray),
+                    ):
+                        (
+                            is_upload,
+                            upload_certificate,
+                        ) = preprocess_message_element(
+                            model,
+                            elem,
+                            api_key,
+                            upload_certificate,  # type: ignore[arg-type]
+                        )
+                        if is_upload and not has_upload:
+                            has_upload = True
         return has_upload
 
     @classmethod
