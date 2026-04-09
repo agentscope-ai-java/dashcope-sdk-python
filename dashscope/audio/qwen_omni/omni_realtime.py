@@ -182,9 +182,9 @@ class OmniRealtimeConversation:
         self.ws = websocket.WebSocketApp(
             self.url,
             header=self._get_websocket_header(),
-            on_message=self.on_message,
-            on_error=self.on_error,
-            on_close=self.on_close,
+            on_message=self._on_message,
+            on_error=self._on_error,
+            on_close=self._on_close,
         )
         self.thread = threading.Thread(target=self.ws.run_forever)
         self.thread.daemon = True
@@ -199,7 +199,8 @@ class OmniRealtimeConversation:
         if not (self.ws.sock and self.ws.sock.connected):
             raise TimeoutError(
                 "websocket connection could not established within 5s. "
-                "Please check your network connection, firewall settings, or server status.",  # noqa: E501  # pylint: disable=line-too-long
+                "Please check your network connection, firewall settings,"
+                "or server status.",
             )
         self.callback.on_open()
 
@@ -207,6 +208,21 @@ class OmniRealtimeConversation:
         if enable_log:
             logger.debug("[omni realtime] send string: %s", data)
         self.ws.send(data)
+
+    def create_item(self, item: dict):
+        """
+        send item.create request
+        """
+        self.__send_str(
+            json.dumps(
+                {
+                    "event_id": self._generate_event_id(),
+                    "type": "conversation.item.create",
+                    "item": item,
+                },
+            ),
+            enable_log=True,
+        )
 
     def update_session(
         self,
@@ -496,7 +512,7 @@ class OmniRealtimeConversation:
         self.ws.close()
 
     # 监听消息的回调函数
-    def on_message(  # pylint: disable=unused-argument,too-many-branches
+    def _on_message(  # pylint: disable=unused-argument,too-many-branches
         self,
         ws,
         message,
@@ -567,7 +583,7 @@ class OmniRealtimeConversation:
                 len(message),
             )
 
-    def on_close(  # pylint: disable=unused-argument
+    def _on_close(  # pylint: disable=unused-argument
         self,
         ws,
         close_status_code,
@@ -576,7 +592,7 @@ class OmniRealtimeConversation:
         self.callback.on_close(close_status_code, close_msg)
 
     # WebSocket发生错误的回调函数
-    def on_error(self, ws, error):  # pylint: disable=unused-argument
+    def _on_error(self, ws, error):  # pylint: disable=unused-argument
         print(f"websocket closed due to {error}")
         # pylint: disable=broad-exception-raised
         raise Exception(f"websocket closed due to {error}")
