@@ -1,0 +1,60 @@
+# config.yaml
+job_name: "test-0428-1"
+workspace_dir: "./"
+
+model: "qwen3-4b-instruct-2507"
+mode: "reinforcement"
+
+functions:
+  - type: "rollout"
+    names: "rollout-1"
+    classpaths: "functions.rollout.demo_rollout.CalcXRolloutProcessor"
+    runtimes:
+      cpu: 2
+      memory_size: 4096
+      disk_size: 512
+      concurrency: 30
+      env: {}
+      capacity: 30
+      min_capacity: 30
+      max_capacity: 60
+      memory_scale_threshold: 0.6
+      concurrency_scale_threshold: 0.6
+  - type: "reward"
+    names:
+      - "rewards-1"
+    weights:
+      - 1.0
+    classpaths:
+      - "functions.reward.demo_reward.DemoRewardProcessor"
+    runtimes:
+      - cpu: 2
+        memory_size: 4096
+        disk_size: 512
+        concurrency: 30
+        env: {}
+        capacity: 30
+        min_capacity: 30
+        max_capacity: 60
+        memory_scale_threshold: 0.6
+        concurrency_scale_threshold: 0.6
+#  - type: "group_reward"
+#    names:
+#      - "group-rewards-1"
+#    classpaths:
+#      - "functions.reward.demo_group_reward.DemoGroupRewardProcessor"
+#    runtimes:
+#      - cpu: 2
+#        memory_size: 4096
+#        disk_size: 10240
+#        concurrency: 10
+training_files:
+  - "./data/calc_train.jsonl"
+validation_files:
+  - "./data/calc_validation.jsonl"
+
+hyper_parameters:
+  n_epochs: 1
+  learning_rate: 1e-4
+  max_prompt_length: 2048
+  batch_size: 128

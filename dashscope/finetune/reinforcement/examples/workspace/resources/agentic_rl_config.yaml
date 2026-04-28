@@ -1,0 +1,55 @@
+# agentic_rl_config.yaml
+job_name: "qwen-rl-demo"
+workspace_dir: "./"
+
+model: "qwen3-32b"
+mode: "reinforcement"
+tuned_model_name: "qwen-max-rl-v1"
+
+functions:
+  - type: "rollout"
+    names: "rollout-1"
+    classpaths: "functions.rollout.demo_rollout.DemoRolloutProcessor"
+    runtimes:
+      cpu: 2
+      memory_size: 4
+      disk_size: 50
+      concurrency: 10
+      env:
+        ENABLE_TRAJECTORY: true
+      capacity: 8
+      memory_scale_threshold: 0.7
+      enable_vpc_config: true
+  - type: "reward"
+    names:
+      - "rewards-1"
+      - "rewards-2"
+    weights:
+      - 0.5
+      - 1.5
+    classpaths:
+      - "functions.reward.demo_reward.DemoRewardProcessor"
+      - "functions/reward/demo_reward_decorator.py:SafetyProcessor"
+    runtimes:
+      - cpu: 2
+        memory_size: 4
+        disk_size: 50
+        concurrency: 10
+#  - type: "group_reward"
+#    names:
+#      - "group-rewards-1"
+#    classpaths:
+#      - "functions.reward.group_reward.DemoGroupRewardProcessor"
+#    runtimes:
+#      - cpu: 2
+#        memory_size: 4
+#        disk_size: 50
+#        concurrency: 10
+training_files:
+  - "data/training.jsonl"
+validation_files:
+  - "data/validation.jsonl"
+
+hyper_parameters:
+  learning_rate: 1e-4
+  batch_size: 256

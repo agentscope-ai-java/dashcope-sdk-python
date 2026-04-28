@@ -1,0 +1,316 @@
+import pytest
+import asyncio
+from unittest.mock import AsyncMock, patch, MagicMock
+from pydantic import ValidationError
+
+from dashscope.finetune.reinforcement import (
+    AgenticRLTuning,
+    TuningModel,
+    AgenticRLFunctionComponent,
+    FunctionType,
+    TrainingType,
+    FileSpec,
+    Datasets,
+    FoundationModel,
+    Training,
+    FunctionComponentModel,
+    FunctionComponentRuntime,
+    RegistrationError,
+    OSSUploadError,
+    get_filepath_classname,
+)
+
+
+@pytest.fixture
+def sample_tuning_model():
+    return TuningModel(
+        name="test-tuning",
+        datasets=Datasets(
+            training_files=[
+                FileSpec(path="train1.jsonl"),
+                FileSpec(path="train2.jsonl")
+            ],
+            validation_files=[FileSpec(path="val.jsonl")]
+        ),
+        model=FoundationModel(name="qwen-max"),
+        training=Training(
+            type=TrainingType.TRAINING_TYPE,
+            hyperparameters={"learning_rate": "1e-4"},
+            tuned_model_name="qwen-tuned"
+        )
+    )
+
+
+@pytest.fixture
+def sample_function_components():
+    return [
+        AgenticRLFunctionComponent(
+            type=FunctionType.ROLLOUT,
+            fcmodel=FunctionComponentModel(
+                zipdir="./",
+                filepath="functions/rollout.py",
+                classname="RolloutProcessor"
+            ),
+            runtime=FunctionComponentRuntime(
+                cpu=2,
+                memory_size=4,
+                concurrency=10
+            )
+        ),
+        AgenticRLFunctionComponent(
+            type=FunctionType.REWARD,
+            fcmodel=FunctionComponentModel(
+                zipdir="./",
+                filepath="functions/reward.py",
+                classname="RewardProcessor"
+            ),
+            runtime=FunctionComponentRuntime(
+                cpu=1,
+                memory_size=2,
+                concurrency=5
+            )
+        )
+    ]
+
+
+@pytest.fixture
+def agentic_rl_tuning(sample_tuning_model, sample_function_components):
+    tuning = AgenticRLTuning()
+    tuning.tuning = sample_tuning_model
+    tuning.tuning.fcs = sample_function_components
+    return tuning
+
+
+class TestAgenticRLTuning:
+    def test_initialization(self):
+        """Test class initialization"""
+        tuning = AgenticRLTuning()
+        assert tuning.tuning_id == ""
+        assert isinstance(tuning.tuning, TuningModel)
+        assert tuning.tuning.name == "agentic-rl"
+
+    def test_add_function_components(self):
+        """Test adding function components"""
+        tuning = AgenticRLTuning()
+
+        # Add Rollout component
+        tuning.tuning.add_function_components(
+            type=FunctionType.ROLLOUT,
+            classpaths="path/to/rollout.py:RolloutProcessor",
+            workspace_dir="./"
+        )
+        for fc in tuning.tuning.fcs:
+            fc.fcmodel.filepath, fc.fcmodel.classname = get_filepath_classname(fc.fcmodel.classpath)
+
+        assert len(tuning.tuning.fcs) == 1
+        fc = tuning.tuning.fcs[0]
+        assert fc.type == FunctionType.ROLLOUT
+        assert fc.fcmodel.filepath == "path/to/rollout.py"
+        assert fc.fcmodel.classname == "RolloutProcessor"
+
+        # Add multiple Reward components
+        tuning.tuning.add_function_components(
+            type=FunctionType.REWARD,
+            classpaths=["path/to/reward1.py:Reward1", "path/to/reward2.py:Reward2"],
+            runtimes=[{"cpu": 1}, {"cpu": 2}],
+            workspace_dir="./"
+        )
+        for fc in tuning.tuning.fcs:
+            fc.fcmodel.filepath, fc.fcmodel.classname = get_filepath_classname(fc.fcmodel.classpath)
+
+        assert len(tuning.tuning.fcs) == 3
+        assert tuning.tuning.fcs[1].type == FunctionType.REWARD
+        assert tuning.tuning.fcs[1].fcmodel.filepath == "path/to/reward1.py"
+        assert tuning.tuning.fcs[1].runtime.cpu == 1
+
+        assert tuning.tuning.fcs[2].type == FunctionType.REWARD
+        assert tuning.tuning.fcs[2].fcmodel.filepath == "path/to/reward2.py"
+        assert tuning.tuning.fcs[2].runtime.cpu == 2
+
+    @pytest.mark.asyncio
+    async def test_register_functions_success(self, agentic_rl_tuning):
+        """Test successful function component registration"""
+        # Create mocks for each component
+        for fc in agentic_rl_tuning.tuning.fcs:
+            fc.register = AsyncMock(return_value=MagicMock(
+                status=MagicMock(success=True),
+                output={"entity_id": f"entity-{fc.type}"}
+            ))
+            fc.load = AsyncMock(return_value=MagicMock(
+                status=MagicMock(success=True),
+                output={"instance_id": f"instance-{fc.type}"}
+            ))
+
+        # Call registration method
+        result = await agentic_rl_tuning.tuning.register_functions(lazy_load=False)
+
+        # Verify results
+        rollout_ids, reward_ids, group_reward_ids, rollout_instances, reward_instances, group_reward_instances = result
+
+        assert rollout_ids == ["entity-rollout"]
+        assert reward_ids == ["entity-reward"]
+        assert group_reward_ids == []
+        assert rollout_instances == ["instance-rollout"]
+        assert reward_instances == ["instance-reward"]
+        assert group_reward_instances == []
+
+        # Verify each component called register and load
+        for fc in agentic_rl_tuning.tuning.fcs:
+            fc.register.assert_called_once()
+            fc.load.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_register_functions_failure(self, agentic_rl_tuning):
+        """Test function component registration failure"""
+        # Mock registration process with patch.object
+        with patch.object(agentic_rl_tuning.tuning.fcs[0], 'register', AsyncMock(return_value=MagicMock(
+                status=MagicMock(success=False, message="Registration failed")
+        ))), patch.object(agentic_rl_tuning.tuning.fcs[1], 'register', AsyncMock(return_value=MagicMock(
+                              status=MagicMock(success=True),
+                              output={"entity_id": "entity-reward"}
+                          ))), patch.object(agentic_rl_tuning.tuning.fcs[1], 'load',
+                                                    AsyncMock(return_value=MagicMock(
+                                                        status=MagicMock(success=False, message="Load failed")
+                                                    ))):
+            # Call and verify exception
+            with pytest.raises(RegistrationError) as exc_info:
+                await agentic_rl_tuning.tuning.register_functions()
+
+            assert "Function component registration error" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_register_datasets_success(self, agentic_rl_tuning):
+        """Test successful dataset registration"""
+        # Patch the to_bailian_data function in the correct location
+        with patch(
+                "dashscope.finetune.reinforcement.common.model.to_bailian_data",
+                new_callable=AsyncMock,
+                side_effect=[
+                    ["train-id-1", "train-id-2"],  # training_files
+                    ["val-id"]  # validation_files
+                ]
+        ):
+            train_ids, val_ids = await agentic_rl_tuning.tuning.register_datasets()
+
+            assert train_ids == ["train-id-1", "train-id-2"]
+            assert val_ids == ["val-id"]
+
+            # Verify model state update
+            assert agentic_rl_tuning.tuning.datasets.uploaded_training_ids == ["train-id-1", "train-id-2"]
+            assert agentic_rl_tuning.tuning.datasets.uploaded_validation_ids == ["val-id"]
+
+    @pytest.mark.asyncio
+    async def test_register_datasets_failure(self, agentic_rl_tuning):
+        """Test dataset registration failure"""
+        # Mock file system operations
+        with patch("os.path.exists", return_value=True), \
+                patch("os.path.isfile", return_value=True), \
+                patch("os.path.getsize", return_value=100), \
+                patch(
+                    "dashscope.finetune.reinforcement.common.utils.to_bailian_data",
+                    new_callable=AsyncMock,
+                    side_effect=Exception("Upload failed")
+                ):
+            with pytest.raises(OSSUploadError) as exc_info:
+                await agentic_rl_tuning.tuning.register_datasets()
+
+            assert "Critical failure in dataset registration process" in str(exc_info.value)
+
+    def test_get_entity_ids(self, agentic_rl_tuning):
+        """Test getting entity IDs"""
+        # Set entity IDs
+        agentic_rl_tuning.tuning.fcs[0].entity_id = "rollout-entity"
+        agentic_rl_tuning.tuning.fcs[1].entity_id = "reward-entity"
+
+        # Test getting Rollout entity ID
+        rollout_ids = agentic_rl_tuning.tuning.get_entity_ids(FunctionType.ROLLOUT)
+        assert rollout_ids == ["rollout-entity"]
+
+        # Test getting Reward entity ID
+        reward_ids = agentic_rl_tuning.tuning.get_entity_ids(FunctionType.REWARD)
+        assert reward_ids == ["reward-entity"]
+
+        # Test getting Group Reward entity ID (none)
+        group_ids = agentic_rl_tuning.tuning.get_entity_ids(FunctionType.GROUP_REWARD)
+        assert group_ids == []
+
+    def test_get_runtimes(self, agentic_rl_tuning):
+        """Test getting runtime configurations"""
+        # Test getting Rollout runtime
+        rollout_runtimes = agentic_rl_tuning.tuning.get_runtimes(FunctionType.ROLLOUT)
+        assert len(rollout_runtimes) == 1
+        assert rollout_runtimes[0]["cpu"] == 2
+
+        # Test getting Reward runtime
+        reward_runtimes = agentic_rl_tuning.tuning.get_runtimes(FunctionType.REWARD)
+        assert len(reward_runtimes) == 1
+        assert reward_runtimes[0]["cpu"] == 1
+
+        # Test getting Group Reward runtime (none)
+        group_runtimes = agentic_rl_tuning.tuning.get_runtimes(FunctionType.GROUP_REWARD)
+        assert group_runtimes == []
+
+    def test_combine_ids_runtimes(self, agentic_rl_tuning):
+        """Test combining IDs and runtime configurations"""
+        # Set entity IDs
+        agentic_rl_tuning.tuning.fcs[0].entity_id = "rollout-entity"
+        agentic_rl_tuning.tuning.fcs[1].entity_id = "reward-entity"
+
+        # Test Rollout combination
+        rollout_functions = agentic_rl_tuning.tuning.combine_ids_runtimes(
+            FunctionType.ROLLOUT,
+            None,  # Use model's IDs
+            None  # Use model's runtime
+        )
+        assert len(rollout_functions) == 1
+        # Check only the fields we care about
+        assert rollout_functions[0]["rollout_id"] == "rollout-entity"
+        assert rollout_functions[0]["cpu"] == 2
+        assert rollout_functions[0]["memory_size"] == 4
+        assert rollout_functions[0]["concurrency"] == 10
+
+        # Test Reward combination (override with parameters)
+        reward_functions = agentic_rl_tuning.tuning.combine_ids_runtimes(
+            FunctionType.REWARD,
+            ["custom-reward-id"],  # Provide custom ID
+            [{"cpu": 3}]  # Provide custom runtime
+        )
+        assert len(reward_functions) == 1
+        assert reward_functions[0]["reward_id"] == "custom-reward-id"
+        assert reward_functions[0]["cpu"] == 3
+
+        # Test Group Reward combination (no components)
+        group_functions = agentic_rl_tuning.tuning.combine_ids_runtimes(
+            FunctionType.GROUP_REWARD,
+            None,
+            None
+        )
+        assert group_functions == []
+
+    def test_combine_ids_runtimes_edge_cases(self):
+        """Test edge cases for combining IDs and runtime configurations"""
+        # Create empty model
+        tuning_model = TuningModel()
+        # Test different types
+        for func_type in FunctionType:
+            result = tuning_model.combine_ids_runtimes(func_type, [], [])
+            assert result == []
+
+        # Test ID and runtime count mismatch
+        tuning_model.add_function_components(
+            FunctionType.ROLLOUT,
+            classpaths=["path1.py:Class1", "path2.py:Class2"],
+            runtimes=[{"cpu": 1}],  # Only one runtime provided
+            workspace_dir="./"
+        )
+        assert len(tuning_model.fcs) == 2
+
+        # Should have two components but only one runtime
+        functions = tuning_model.combine_ids_runtimes(FunctionType.ROLLOUT, ['rollout-id-1', 'rollout-id-2'], None)
+        assert len(functions) == 2
+
+        # First has runtime
+        assert functions[0]["cpu"] == 1
+
+        # Second has no runtime
+        assert "cpu" not in functions[1]

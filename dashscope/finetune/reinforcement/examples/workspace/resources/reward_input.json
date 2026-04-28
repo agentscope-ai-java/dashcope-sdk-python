@@ -1,0 +1,13 @@
+{
+  "func_type": "reward",
+  "ground_truth": "0.5",
+  "request_metadata": null,
+  "agent_output": {
+    "messages": [{"role": "user", "content": "Test question"}],
+    "rollout_extra": {
+      "content": "This is a test content that exceeds 50 characters in length and should receive a reward score of 0.5"
+    },
+    "rollout_metrics": {"accuracy": 0.95},
+    "reward_score": null
+  }
+}
