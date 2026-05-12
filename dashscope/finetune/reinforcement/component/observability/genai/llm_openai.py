@@ -7,33 +7,34 @@ import concurrent.futures
 import inspect
 import os
 import random
-import sys
 import threading
 import time
 import types
-from typing import Any, Dict, Optional
-
 from opentelemetry import context as otel_context
 from opentelemetry import trace as otel_trace
 from opentelemetry.trace.status import Status, StatusCode
+from typing import Any, Dict, Optional
 
 from dashscope.finetune.reinforcement.common.log import logger
-from dashscope.finetune.reinforcement.component.observability.genai._core import GENAI_AVAILABLE, get_handler
+from dashscope.finetune.reinforcement.component.observability.genai._core import \
+    GENAI_AVAILABLE, get_handler
 from dashscope.finetune.reinforcement.component.observability.genai.messages import (
     openai_chat_messages_to_input_messages,
     openai_completion_to_output_messages,
     unwrap_openai_completion,
 )
-from dashscope.finetune.reinforcement.component.observability.tracing import is_tracing_enabled, log_trace_id
+from dashscope.finetune.reinforcement.component.observability.tracing import \
+    is_tracing_enabled, log_trace_id
 
-
-_DEBUG_LLM_OUTPUT = os.environ.get("AGENTIC_RL_DEBUG_LLM_OUTPUT", "").lower() in ("1", "true", "yes", "y")
-_DEBUG_TRACE_CLIENT_BRANCH = os.environ.get("AGENTIC_RL_DEBUG_TRACE_CLIENT_BRANCH", "").lower() in (
-    "1",
-    "true",
-    "yes",
-    "y",
-)
+_DEBUG_LLM_OUTPUT = os.environ.get("AGENTIC_RL_DEBUG_LLM_OUTPUT",
+                                   "").lower() in ("1", "true", "yes", "y")
+_DEBUG_TRACE_CLIENT_BRANCH = os.environ.get(
+    "AGENTIC_RL_DEBUG_TRACE_CLIENT_BRANCH", "").lower() in (
+                                 "1",
+                                 "true",
+                                 "yes",
+                                 "y",
+                             )
 
 
 def _debug_sample_rate() -> float:
@@ -186,7 +187,8 @@ def _sync_create_return_value(unwrapped: Any) -> Any:
     return _SyncCreateCompletionAdapter(unwrapped)
 
 
-def _fill_llm_invocation_from_openai_kwargs(inv: Any, kwargs: Dict[str, Any], provider: str) -> None:
+def _fill_llm_invocation_from_openai_kwargs(inv: Any, kwargs: Dict[str, Any],
+                                            provider: str) -> None:
     inv.provider = provider
     inv.request_model = kwargs.get("model")
     messages = kwargs.get("messages")
@@ -250,7 +252,8 @@ def _best_effort_mark_error(inv: Any, exc: BaseException) -> None:
     if span is None:
         return
     try:
-        if callable(getattr(span, "is_recording", None)) and not span.is_recording():
+        if callable(getattr(span, "is_recording",
+                            None)) and not span.is_recording():
             return
     except Exception:
         pass
@@ -348,19 +351,21 @@ def _resolve_completions(client: Any) -> Any:
     Returns ``None`` when neither shape is matched.
     """
     # Shape 2: already a completions object
-    if callable(getattr(client, "create", None)) and not hasattr(client, "chat"):
+    if callable(getattr(client, "create", None)) and not hasattr(client,
+                                                                 "chat"):
         return client
     # Shape 1: full client with .chat.completions
     chat = getattr(client, "chat", None)
-    completions = getattr(chat, "completions", None) if chat is not None else None
+    completions = getattr(chat, "completions",
+                          None) if chat is not None else None
     return completions
 
 
 def instrument_openai_chat_completions(
-    client: Any,
-    *,
-    provider: str = "openai",
-    handler: Any = None,
+        client: Any,
+        *,
+        provider: str = "openai",
+        handler: Any = None,
 ) -> Any:
     """
     Monkey-patch the ``create`` method on an OpenAI-compatible completions resource
@@ -430,7 +435,8 @@ def instrument_openai_chat_completions(
                     _dbg_trace_client(
                         "llm_async_wrapper:return",
                         completion_type=type(completion).__name__,
-                        return_has_parse=callable(getattr(completion, "parse", None)),
+                        return_has_parse=callable(
+                            getattr(completion, "parse", None)),
                     )
                     return completion
                 except Exception as e:
@@ -484,7 +490,8 @@ def instrument_openai_chat_completions(
                     _dbg_trace_client(
                         "llm_sync_wrapper:return_sync",
                         completion_type=type(completion).__name__,
-                        return_has_parse=callable(getattr(completion, "parse", None)),
+                        return_has_parse=callable(
+                            getattr(completion, "parse", None)),
                     )
                     return _sync_create_return_value(completion)
 
@@ -495,14 +502,17 @@ def instrument_openai_chat_completions(
                     token = None
                     exc: Optional[BaseException] = None
                     try:
-                        _dbg_trace_client("llm_sync_wrapper:awaitable_wrap:enter")
+                        _dbg_trace_client(
+                            "llm_sync_wrapper:awaitable_wrap:enter")
                         token = otel_context.attach(otel_ctx)
                         resolved = await _await_and_apply(inv, awaitable)
                         _dbg_trace_client(
                             "llm_sync_wrapper:awaitable_wrap:done",
-                            total_elapsed_ms=int((time.perf_counter() - t0) * 1000),
+                            total_elapsed_ms=int(
+                                (time.perf_counter() - t0) * 1000),
                             completion_type=type(resolved).__name__,
-                            return_has_parse=callable(getattr(resolved, "parse", None)),
+                            return_has_parse=callable(
+                                getattr(resolved, "parse", None)),
                         )
                         return _sync_create_return_value(resolved)
                     except asyncio.CancelledError as e:
@@ -510,7 +520,8 @@ def instrument_openai_chat_completions(
                         _best_effort_mark_error(inv, e)
                         _dbg_trace_client(
                             "llm_sync_wrapper:awaitable_wrap:cancelled",
-                            total_elapsed_ms=int((time.perf_counter() - t0) * 1000),
+                            total_elapsed_ms=int(
+                                (time.perf_counter() - t0) * 1000),
                         )
                         raise
                     except Exception as e:
@@ -520,7 +531,8 @@ def instrument_openai_chat_completions(
                             "llm_sync_wrapper:awaitable_wrap:error",
                             err_type=type(e).__name__,
                             err=str(e),
-                            total_elapsed_ms=int((time.perf_counter() - t0) * 1000),
+                            total_elapsed_ms=int(
+                                (time.perf_counter() - t0) * 1000),
                         )
                         raise
                     finally:

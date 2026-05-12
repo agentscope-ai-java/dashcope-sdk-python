@@ -4,14 +4,19 @@ component/processor/abstract_reward_processor.py
 Abstract base class for Reward business processors.
 Users should inherit this class and implement process() for custom reward calculation logic.
 """
-from typing import Optional
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor, Executor
+from typing import Optional
 
-from dashscope.finetune.reinforcement.component.processor.abstract_processor import AbstractProcessor
-from dashscope.finetune.reinforcement.component.data.reward_input import RewardInput
-from dashscope.finetune.reinforcement.component.data.reward_output import RewardOutput
-from dashscope.finetune.reinforcement.component.func_decorator import RewardProcessorMeta, SubRewardFunction, AggregateFunction
+from dashscope.finetune.reinforcement.component.data.reward_input import \
+    RewardInput
+from dashscope.finetune.reinforcement.component.data.reward_output import \
+    RewardOutput
+from dashscope.finetune.reinforcement.component.func_decorator import \
+    RewardProcessorMeta, SubRewardFunction, AggregateFunction
+from dashscope.finetune.reinforcement.component.processor.abstract_processor import \
+    AbstractProcessor
+
 
 class AbstractRewardProcessor(AbstractProcessor):
     """
@@ -97,7 +102,8 @@ class AbstractRewardProcessor(AbstractProcessor):
 
     def __del__(self):
         """Ensure executor is cleaned up on garbage collection"""
-        if hasattr(self, '_executor_owned') and self._executor_owned and self._executor is not None:
+        if hasattr(self,
+                   '_executor_owned') and self._executor_owned and self._executor is not None:
             self._executor.shutdown(wait=False)
 
     def get_weights(self):
@@ -114,14 +120,16 @@ class AbstractRewardProcessor(AbstractProcessor):
             if name not in self._reward_meta.sub_functions:
                 raise ValueError(
                     f"Sub-reward function '{name}' is not registered. Available: {list(self._reward_meta.sub_functions.keys())}")
-            total += reward_output.reward.reward_score * self._reward_meta.sub_functions[name].weight
+            total += reward_output.reward.reward_score * \
+                     self._reward_meta.sub_functions[name].weight
         return total
 
     def get_reward_metrics(self, sub_rewards: dict[str, RewardOutput]):
         reward_metrics = {}
         for name, reward_output in sub_rewards.items():
             # Add namespace prefix to avoid key collisions
-            for key, value in (reward_output.reward.reward_metrics or {}).items():
+            for key, value in (
+                    reward_output.reward.reward_metrics or {}).items():
                 prefixed_key = f"{name}.{key}"
                 reward_metrics[prefixed_key] = value
 

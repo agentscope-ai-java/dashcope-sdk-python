@@ -69,13 +69,16 @@ def trace_client(client: Any) -> None:
 
     # 1. Full OpenAI client: has .chat.completions.create
     chat = getattr(client, "chat", None)
-    completions = getattr(chat, "completions", None) if chat is not None else None
-    if completions is not None and callable(getattr(completions, "create", None)):
+    completions = getattr(chat, "completions",
+                          None) if chat is not None else None
+    if completions is not None and callable(
+            getattr(completions, "create", None)):
         instrument_openai_chat_completions(client)
         return
 
     # 2. Completions resource directly: has .create but no .chat
-    if callable(getattr(client, "create", None)) and not hasattr(client, "chat"):
+    if callable(getattr(client, "create", None)) and not hasattr(client,
+                                                                 "chat"):
         instrument_openai_chat_completions(client)
         return
 
@@ -83,9 +86,11 @@ def trace_client(client: Any) -> None:
     sync_client = getattr(client, "client", None)
     async_client = getattr(client, "async_client", None)
     if sync_client is not None or async_client is not None:
-        if sync_client is not None and callable(getattr(sync_client, "create", None)):
+        if sync_client is not None and callable(
+                getattr(sync_client, "create", None)):
             instrument_openai_chat_completions(sync_client)
-        if async_client is not None and callable(getattr(async_client, "create", None)):
+        if async_client is not None and callable(
+                getattr(async_client, "create", None)):
             instrument_openai_chat_completions(async_client)
         return
 

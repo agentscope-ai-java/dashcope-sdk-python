@@ -41,7 +41,8 @@ from enum import Enum
 from typing import Any, Dict, Optional, Set
 
 try:
-    from opentelemetry.util.genai.extended_handler import get_extended_telemetry_handler
+    from opentelemetry.util.genai.extended_handler import \
+        get_extended_telemetry_handler
     from opentelemetry.util.genai.extended_types import ExecuteToolInvocation
     from opentelemetry.util.genai.types import (
         InputMessage,
@@ -57,14 +58,14 @@ except ImportError:  # pragma: no cover
     InputMessage = OutputMessage = Text = ToolCall = None  # type: ignore[assignment]
     GENAI_AVAILABLE = False
 
-
 _logger = logging.getLogger(__name__)
 
-_DEBUG_BINDING = os.environ.get("AGENTIC_RL_DEBUG_SPAN_BINDING", "").strip().lower() in (
-    "1",
-    "true",
-    "yes",
-)
+_DEBUG_BINDING = os.environ.get("AGENTIC_RL_DEBUG_SPAN_BINDING",
+                                "").strip().lower() in (
+                     "1",
+                     "true",
+                     "yes",
+                 )
 
 
 def _truncate_str(s: str, max_len: int) -> str:
@@ -80,7 +81,8 @@ class _SerializeLimits:
     max_str_len: int = 8192
 
 
-def to_jsonable(obj: Any, *, limits: _SerializeLimits = _SerializeLimits()) -> Any:
+def to_jsonable(obj: Any, *,
+                limits: _SerializeLimits = _SerializeLimits()) -> Any:
     """Best-effort conversion to a JSON-serializable, size-bounded structure.
 
     This is intentionally conservative: it prefers safety (never raising) and
@@ -95,7 +97,8 @@ def to_jsonable(obj: Any, *, limits: _SerializeLimits = _SerializeLimits()) -> A
         if isinstance(x, str):
             return _truncate_str(x, limits.max_str_len)
         if isinstance(x, bytes):
-            return {"__type__": "bytes", "len": len(x), "preview": _truncate_str(repr(x[:64]), limits.max_str_len)}
+            return {"__type__": "bytes", "len": len(x),
+                    "preview": _truncate_str(repr(x[:64]), limits.max_str_len)}
         if isinstance(x, Enum):
             return x.value
 
@@ -137,7 +140,8 @@ def to_jsonable(obj: Any, *, limits: _SerializeLimits = _SerializeLimits()) -> A
                 arr.append(_inner(item, depth + 1))
             return arr
 
-        return {"__type__": type(x).__name__, "__repr__": _truncate_str(repr(x), limits.max_str_len)}
+        return {"__type__": type(x).__name__,
+                "__repr__": _truncate_str(repr(x), limits.max_str_len)}
 
     try:
         converted = _inner(obj, 0)
@@ -173,24 +177,31 @@ class SafeSpanProxy:
     def set_attributes(self, attributes: Dict[str, Any]) -> None:
         try:
             if self._span is not None:
-                safe_attrs = {str(k): to_jsonable(v) for k, v in (attributes or {}).items()}
+                safe_attrs = {str(k): to_jsonable(v) for k, v in
+                              (attributes or {}).items()}
                 self._span.set_attributes(safe_attrs)
         except Exception:
             return
 
-    def add_event(self, name: str, attributes: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
+    def add_event(self, name: str, attributes: Optional[Dict[str, Any]] = None,
+                  **kwargs: Any) -> None:
         try:
             if self._span is not None:
-                safe_attrs = None if attributes is None else {str(k): to_jsonable(v) for k, v in attributes.items()}
+                safe_attrs = None if attributes is None else {
+                    str(k): to_jsonable(v) for k, v in attributes.items()}
                 self._span.add_event(name, attributes=safe_attrs, **kwargs)
         except Exception:
             return
 
-    def record_exception(self, exception: BaseException, attributes: Optional[Dict[str, Any]] = None, **kwargs: Any) -> None:
+    def record_exception(self, exception: BaseException,
+                         attributes: Optional[Dict[str, Any]] = None,
+                         **kwargs: Any) -> None:
         try:
             if self._span is not None:
-                safe_attrs = None if attributes is None else {str(k): to_jsonable(v) for k, v in attributes.items()}
-                self._span.record_exception(exception, attributes=safe_attrs, **kwargs)
+                safe_attrs = None if attributes is None else {
+                    str(k): to_jsonable(v) for k, v in attributes.items()}
+                self._span.record_exception(exception, attributes=safe_attrs,
+                                            **kwargs)
         except Exception:
             return
 
@@ -307,7 +318,8 @@ class NoopHandler:
     def llm(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover
         return _noop_cm()
 
-    def execute_tool(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover
+    def execute_tool(self, *args: Any,
+                     **kwargs: Any) -> Any:  # pragma: no cover
         return _noop_cm()
 
 
@@ -337,7 +349,9 @@ class _WrappedCM:
         except Exception as e:
             _breaker.record_failure()
             if _DEBUG_BINDING:
-                _logger.warning("[OTel] %s __enter__ error (degrading to noop): %s", self._label, e)
+                _logger.warning(
+                    "[OTel] %s __enter__ error (degrading to noop): %s",
+                    self._label, e)
             else:
                 _logger.debug("[OTel] %s __enter__ error: %s", self._label, e)
             self._last_inv = None
@@ -350,7 +364,8 @@ class _WrappedCM:
         except Exception as e:
             _breaker.record_failure()
             if _DEBUG_BINDING:
-                _logger.warning("[OTel] %s __exit__ error (suppressed): %s", self._label, e)
+                _logger.warning("[OTel] %s __exit__ error (suppressed): %s",
+                                self._label, e)
             else:
                 _logger.debug("[OTel] %s __exit__ error: %s", self._label, e)
             # Critical: if the underlying handler failed in __exit__, it may have
@@ -359,7 +374,8 @@ class _WrappedCM:
             # spans from being exported. Best-effort cleanup here.
             try:
                 inv = self._last_inv
-                token = getattr(inv, "context_token", None) if inv is not None else None
+                token = getattr(inv, "context_token",
+                                None) if inv is not None else None
                 span = getattr(inv, "span", None) if inv is not None else None
                 if token is not None:
                     try:

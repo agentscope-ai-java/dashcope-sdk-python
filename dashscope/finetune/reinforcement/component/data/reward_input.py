@@ -5,11 +5,11 @@ Data model definitions for Reward processor input parameters.
 Corresponds to the RewardInput structure in protocol.py.
 """
 
+from pydantic import Field
 from typing import Any, Dict, Optional
 
-from pydantic import Field
-
-from dashscope.finetune.reinforcement.common.model_types import FunctionType as FuncType
+from dashscope.finetune.reinforcement.common.model_types import \
+    FunctionType as FuncType
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     BaseDataModel,
     AgentOutput,

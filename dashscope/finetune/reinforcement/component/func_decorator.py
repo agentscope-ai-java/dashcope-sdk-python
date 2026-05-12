@@ -1,11 +1,11 @@
-import copy
 import asyncio
+import copy
 from functools import wraps
-from typing import Callable, Dict, List, Optional, Tuple, Type
-from concurrent.futures import ThreadPoolExecutor, Executor
+from typing import Callable, Dict, Optional, Type
 
 from dashscope.finetune.reinforcement.common.log import logger
-from dashscope.finetune.reinforcement.component.data import RewardInput, RewardOutput, Reward, TaskStatus
+from dashscope.finetune.reinforcement.component.data import RewardInput, \
+    RewardOutput, Reward, TaskStatus
 
 
 class SubRewardFunction:
@@ -59,7 +59,8 @@ class RewardProcessorMeta:
 
         # Deep copy aggregate function if exists
         if self.aggregate_function:
-            new_meta.aggregate_function = copy.deepcopy(self.aggregate_function, memo)
+            new_meta.aggregate_function = copy.deepcopy(
+                self.aggregate_function, memo)
 
         return new_meta
 
@@ -78,9 +79,6 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
         # Create metadata object and attach to class
         meta = RewardProcessorMeta(processor_id)
         setattr(cls, '_reward_meta', meta)
-
-        # Override the class's process method to include aggregation logic
-        original_process = getattr(cls, 'process', None)
 
         async def process(self, input_data: RewardInput) -> RewardOutput:
             """Processes input by executing all sub-reward functions and aggregating results"""
@@ -111,7 +109,8 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
                     sub_rewards[name] = result
 
                 except Exception as e:
-                    logger.error(f"Error in sub-reward function {name}: {str(e)}")
+                    logger.error(
+                        f"Error in sub-reward function {name}: {str(e)}")
                     # Store error as a zero score
                     sub_rewards[name] = RewardOutput(
                         reward=Reward(reward_score=0.0, reward_metrics={}),
@@ -162,7 +161,8 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
     return decorator
 
 
-def sub_reward_func(name: Optional[str] = None, sub_weight: float = 1.0) -> Callable[[Callable], Callable]:
+def sub_reward_func(name: Optional[str] = None, sub_weight: float = 1.0) -> \
+Callable[[Callable], Callable]:
     """Decorator to mark sub-reward functions and specify weights"""
 
     def decorator(func: Callable) -> Callable:

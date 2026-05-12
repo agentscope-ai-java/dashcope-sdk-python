@@ -7,10 +7,13 @@
 **Agentic RL SDK/CLI** 提供了一套完整的工具链，用于为大语言模型（LLMs）构建、训练和管理强化学习（RL）模型。它简化了定义智能体行为、收集轨迹和优化策略的复杂工作流。
 
 SDK 包含两个核心模块：
-1.  **函数模块**：管理用于 **Rollout**（轨迹生成）、**Reward**（评分）和 **Group Reward**（批量评分）的自定义 Python 代码。支持自动注册、测试和内置**可观测性（Tracing）**。
-2.  **调优模块**：处理数据集管理、超参数配置、作业提交和生命周期管理（状态、日志、取消）。
+
+1. **函数模块**：管理用于 **Rollout**（轨迹生成）、**Reward**（评分）和 **Group Reward**（批量评分）的自定义 Python
+   代码。支持自动注册、测试和内置**可观测性（Tracing）**。
+2. **调优模块**：处理数据集管理、超参数配置、作业提交和生命周期管理（状态、日志、取消）。
 
 **工作流**：
+
 1. 首先，在函数模块中注册函数（Rollout/Reward/Group Reward）。这些函数可以在本地或远程测试。
 2. 然后，使用调优模块上传数据集、配置作业并提交训练。
 
@@ -19,11 +22,13 @@ SDK 包含两个核心模块：
 ## 2. 安装与设置
 
 ### 2.1 通过 PyPI 安装
+
 ```bash
 pip install dashscope>=1.25.18 # 如果dashscope版本未发布，可以通过线下获取whl包来安装
 ```
 
 ### 2.2 从源码安装（开发环境）
+
 ```bash
 git clone https://github.com/dashscope/dashscope-sdk-python.git
 cd dashscope-sdk-python
@@ -31,13 +36,15 @@ pip install -e .  # 以可编辑模式安装，便于开发
 ```
 
 ### 2.3 授权认证
-1.  获取您的 **DashScope API Key**。
-2.  设置环境变量：
-    ```bash
-    export DASHSCOPE_API_KEY='your-api-key-here'
-    ```
+
+1. 获取您的 **DashScope API Key**。
+2. 设置环境变量：
+   ```bash
+   export DASHSCOPE_API_KEY='your-api-key-here'
+   ```
 
 ### 2.4 项目结构
+
 推荐的工作空间结构确保平滑部署和本地测试：
 
 ```text
@@ -58,9 +65,11 @@ workspace/
 ```
 
 ### 2.5 依赖包（requirements.txt 指南）
+
 此文件对于将函数组件部署到云端是**必需的**，必须位于工作空间根目录。
 
 **requirements.txt:**
+
 ```txt
 fastapi==0.136.0
 uvicorn==0.45.0
@@ -75,10 +84,12 @@ tenacity==9.1.4
 ```
 
 **关键注意事项:**
-*   **默认包**：运行时环境中已预装 `dashscope`，请**不要**将其包含在您的 `requirements.txt` 中。
-*   **Protobuf**：必须在指定版本范围内以避免兼容性问题。
+
+* **默认包**：运行时环境中已预装 `dashscope`，请**不要**将其包含在您的 `requirements.txt` 中。
+* **Protobuf**：必须在指定版本范围内以避免兼容性问题。
 
 #### 可观测性（Tracing）依赖项
+
 为使用 **Tracing（链路跟踪）** 能力（处理器 / LLM / 工具调用链路），请在您的 `requirements.txt` 中添加以下依赖（推荐固定版本以保证部署可复现）：
 
 ```txt
@@ -97,6 +108,7 @@ SDK 通过环境变量 `ENABLE_TRAJECTORY` 控制是否启用 OpenTelemetry **Tr
 - **显式关闭**：配置为 `false` 即关闭。
 
 ### 2.6 日志配置
+
 通过 `LOG_LEVEL` 环境变量配置日志详细程度：
 
 ```bash
@@ -110,6 +122,7 @@ export LOG_LEVEL="CRITICAL"
 ---
 
 ## 3. 编写函数
+
 参考：workspace/functions 目录，输出 rollout.py、reward.py 等文件
 
 ### 3.1 实现函数
@@ -117,6 +130,7 @@ export LOG_LEVEL="CRITICAL"
 函数必须继承 SDK 提供的抽象基类。
 
 #### Rollout 处理器
+
 生成智能体轨迹（与环境/LLM 的交互）。
 
 ```python
@@ -129,6 +143,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 ```
 
 #### Reward 处理器
+
 评分单个步骤或最终输出。
 
 ```python
@@ -141,32 +156,36 @@ class DemoRewardProcessor(AbstractRewardProcessor):
 ```
 
 #### 使用装饰器的高级 Reward 处理器
+
 ```python
 from dashscope.finetune.reinforcement import reward_func, sub_reward_func, aggregate_func
+
 
 @reward_func("SafetyProcessor")
 class SafetyProcessor(AbstractRewardProcessor):
     @sub_reward_func("toxicity", sub_weight=0.7)
     def toxicity(self, input: RewardInput) -> RewardOutput: ...
-    
+
     @sub_reward_func("refusal", sub_weight=0.3)
     async def refusal(self, input: RewardInput) -> RewardOutput: ...
 
     @aggregate_func
-    async def aggregate(self, sub_rewards: dict[str, RewardOutput]) -> RewardOutput: # 自定义聚合逻辑
+    async def aggregate(self, sub_rewards: dict[str, RewardOutput]) -> RewardOutput:  # 自定义聚合逻辑
         weights = self.get_weights()
         scores = self.get_scores(sub_rewards)
         reward_metrics = self.get_reward_metrics(sub_rewards)
-        
+
         total = ...  # 计算总奖励
         return RewardOutput(...)
 ```
 
 #### Group Reward 处理器
+
 批量评分轨迹（例如用于排名）。
 
 ```python
 from dashscope.finetune.reinforcement import AbstractGroupRewardProcessor, GroupRewardInput, GroupRewardOutput
+
 
 class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
     def setup(self) -> None:
@@ -179,13 +198,17 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
 
 ### 3.2 可观测性（Tracing）
 
-使用 OpenTelemetry 实现对智能体执行的深度可见性。在控制台完成 ARMS 授权后，链路跟踪数据会自动导出到 **ARMS**（阿里云实时监控服务）；您可以在链路中查看一次 Rollout 内的 LLM 与工具调用等节点。参见 [ARMS 文档](https://help.aliyun.com/zh/arms/?spm=5176.30275541.J_ZGek9Blx07Hclc3Ddt9dg.3.3ce02f3dmKOpPK&scm=20140722.S_card@@%E4%BA%A7%E5%93%81@@596792.S_new~UND~card.ID_card@@%E4%BA%A7%E5%93%81@@596792-RL_arms-LOC_2024SPSearchCard-OR_ser-PAR1_0bc1409817757870159831522e3953-V_4-RE_new5-P0_0-P1_0)。
+使用 OpenTelemetry 实现对智能体执行的深度可见性。在控制台完成 ARMS 授权后，链路跟踪数据会自动导出到 **ARMS**
+（阿里云实时监控服务）；您可以在链路中查看一次 Rollout 内的 LLM
+与工具调用等节点。参见 [ARMS 文档](https://help.aliyun.com/zh/arms/?spm=5176.30275541.J_ZGek9Blx07Hclc3Ddt9dg.3.3ce02f3dmKOpPK&scm=20140722.S_card@@%E4%BA%A7%E5%93%81@@596792.S_new~UND~card.ID_card@@%E4%BA%A7%E5%93%81@@596792-RL_arms-LOC_2024SPSearchCard-OR_ser-PAR1_0bc1409817757870159831522e3953-V_4-RE_new5-P0_0-P1_0)。
 
 #### 先决条件
-1.  将可观测依赖项添加到 `requirements.txt`（见第 2.5 节"可观测性（Tracing）依赖项"）。
-2.  确认未显式关闭链路跟踪（`ENABLE_TRAJECTORY=false` 会关闭）。
+
+1. 将可观测依赖项添加到 `requirements.txt`（见第 2.5 节"可观测性（Tracing）依赖项"）。
+2. 确认未显式关闭链路跟踪（`ENABLE_TRAJECTORY=false` 会关闭）。
 
 #### 检测装饰器
+
 从 `dashscope.finetune.reinforcement.component.observability` 导入。
 
 | 装饰器 | 用法 | 描述 |
@@ -198,9 +221,12 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
 
 > **Setup:** 在服务器启动时调用一次；支持同步和异步。同步 setup 会被卸载以避免阻塞事件循环。
 
-> **快速提示：** `@observe_llm` 适合用于自定义函数：`@observe_llm async def call_llm(*, model, messages, **kwargs): ...`；`@observe_tool` 适合用于普通函数工具：`@observe_tool def my_tool(x: str) -> str: ...`。
+> **快速提示：** `@observe_llm`
+适合用于自定义函数：`@observe_llm async def call_llm(*, model, messages, **kwargs): ...`；`@observe_tool`
+适合用于普通函数工具：`@observe_tool def my_tool(x: str) -> str: ...`。
 
 #### `trace_client()` 支持的内容（鸭子类型）
+
 `trace_client(client)` 通过结构检测（非类名）。它支持：
 
 - **完整的 OpenAI 客户端** 公开 `.chat.completions.create`
@@ -212,6 +238,7 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
 > **DashScope 最小用法：** 对 `Generation` 类调用 `trace_client(Generation)`（传入类，而非实例）。
 
 #### `trace_tool()` 支持的内容
+
 `trace_tool(tools)` 接受以下形式：
 
 - 单个工具对象（例如 LangChain `BaseTool`）
@@ -220,7 +247,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
 - LangGraph `ToolNode`（工具在内部扩展）
 - `langchain-mcp-adapters` 返回的 MCP 工具（提供者自动设置为 `"mcp"`）
 
-> **MCP 注意：** MCP 服务器和客户端在独立进程中运行。在服务器端函数上使用 `@observe_tool` 对客户端没有影响。在客户端调用 `get_tools()` 后始终调用 `trace_tool(tools)`。
+> **MCP 注意：** MCP 服务器和客户端在独立进程中运行。在服务器端函数上使用 `@observe_tool`
+对客户端没有影响。在客户端调用 `get_tools()` 后始终调用 `trace_tool(tools)`。
 
 #### 示例：检测的 Rollout 处理器
 
@@ -235,6 +263,7 @@ from dashscope.finetune.reinforcement.component.observability import (
     trace_client,
     trace_tool,
 )
+
 
 class MyRolloutProcessor(AbstractRolloutProcessor):
 
@@ -260,7 +289,7 @@ class MyRolloutProcessor(AbstractRolloutProcessor):
             model=model,
             messages=messages,
         )
-        
+
         content = response.choices[0].message.content if response.choices else ""
 
         return RolloutOutput(
@@ -274,42 +303,54 @@ class MyRolloutProcessor(AbstractRolloutProcessor):
 ---
 
 ## 4. SDK & CLI 参考
+
 * [SDK] 接口类: dashscope.finetune.agentic_rl.AgenticRL
 * [CLI] 入口点: dashscope rl
 
 ### 4.1 作业配置
+
 使用 YAML 或代码初始化客户端。代码参数会覆盖 YAML 配置。
 
 **[SDK] \_\_init\_\_**
+
 ```python
 def __init__(self, api_key: str = None): ...
 ```
+
 初始化 AgenticRL 实例。
 
 **参数**:
+
 - `api_key`: 认证用的 API 密钥（如未提供则使用环境变量）
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
+
 rl = AgenticRL(api_key="your_api_key")
 ```
 
 **[SDK] [init](examples/workspace/demo_sdk_agentic_rl_workflows.py)**
+
 ```python
 def init(self, config_path: Optional[str] = None, **kwargs) -> Self: ...
 ```
+
 从 YAML 配置文件初始化实例。
 
 **参数**:
+
 - `config_path`: YAML 配置文件路径
 - `**kwargs`: 配置覆盖项
 
 **返回**: 自身实例
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
+
 rl = AgenticRL().init("config.yaml", job_name="custom_job")
 ```
 
@@ -318,24 +359,30 @@ rl = AgenticRL().init("config.yaml", job_name="custom_job")
 上传代码并注册函数组件（FCs）。
 
 **[SDK] [register_functions](examples/workspace/demo_sdk_agentic_rl_workflows.py)**
+
 ```python
-def register_functions(self, functions: Optional[Union[List[Union[RolloutFunctionComponent, RewardFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent]] = None, lazy_load: Optional[bool] = True) -> tuple: ...
+def register_functions(self, functions: Optional[Union[List[Union[
+    RolloutFunctionComponent, RewardFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent]] = None,
+                       lazy_load: Optional[bool] = True) -> tuple: ...
 ```
+
 注册函数组件。
 
 **参数**:
+
 - `functions`: 要注册的函数组件
 - `lazy_load`: 延迟加载直到执行
 
 **返回**: 实体/实例 ID 元组
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL, AgenticRLFunctionComponent, FunctionType, FunctionComponentModel
 
-rl=AgenticRL()
-rollout_eids, reward_eids, group_eids, \
-rollout_iids, reward_iids, group_iids = await rl.register_functions(
+rl = AgenticRL()
+rollout_eids, reward_eids, group_eids,
+    rollout_iids, reward_iids, group_iids = await rl.register_functions(
     functions=[
         AgenticRLFunctionComponent(
             type=FunctionType.ROLLOUT,
@@ -362,7 +409,8 @@ rollout_iids, reward_iids, group_iids = await rl.register_functions(
 
 **[CLI] [register_functions](examples/workspace/demo_cli_agentic_rl_functions_and_tuning.sh)**
 
-**用法: dashscope register_functions [OPTIONS]**                                                                                                                                                             
+**用法: dashscope register_functions [OPTIONS]**
+
 ```bash                                                                                                                                                                                                                       
  🧩 注册 Rollout/Reward 函数组件，返回 entity_id & instance_id                                                                                                                                        
                                                                                                                                                                                                                         
@@ -381,7 +429,9 @@ rollout_iids, reward_iids, group_iids = await rl.register_functions(
 │ --help                                                 显示此消息并退出                                                                                                                                              │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
+
 **示例**:
+
 ```bash
 dashscope rl register_functions \
   --rollout-classpath "functions.rollout.rollout_only.DemoRolloutProcessor" \
@@ -393,6 +443,7 @@ dashscope rl register_functions \
 ### 4.3 测试函数
 
 #### 4.3.1 远程测试
+
 **[SDK] [test_functions](examples/workspace/demo_sdk_agentic_rl_functions_and_tuning.py)**
 
 使用样本数据测试已注册实例。
@@ -402,12 +453,14 @@ def test_functions(cls, instance_id: str, type: FunctionType, input_data: Dict[s
 ```
 
 **参数**:
+
 - `instance_id`: 函数实例 ID
 - `type`: 函数类型 (ROLLOUT/REWARD/GROUP_REWARD)
 - `input_data`: 测试输入数据
 - `api_key`: 认证用的 API 密钥
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL, FunctionType
 
@@ -415,7 +468,7 @@ from dashscope.finetune.agentic_rl import AgenticRL, FunctionType
 result = await AgenticRL.test_functions(
     instance_id=rollout_iids[0],
     type=FunctionType.ROLLOUT,
-    input_data="resouces/rollout_input.json" # JSON 文件路径
+    input_data="resouces/rollout_input.json"  # JSON 文件路径
 )
 
 # 测试 Reward
@@ -436,6 +489,7 @@ result = await AgenticRL.test_functions(
 **[CLI] [test_functions](examples/workspace/demo_cli_agentic_rl_functions_and_tuning.sh)**
 
 **用法: dashscope test_functions [OPTIONS] INSTANCE_ID**
+
 ```bash   
  🧪 使用自定义输入数据测试已注册的 Rollout/Reward 函数实例                                                                                                                                          
                                                                                                                                                                                                                         
@@ -452,6 +506,7 @@ result = await AgenticRL.test_functions(
 ```
 
 **示例**:
+
 ```bash
 dashscope rl test_functions "ro-ins--xxx" \
   --type rollout \
@@ -459,15 +514,23 @@ dashscope rl test_functions "ro-ins--xxx" \
 ```
 
 ### 4.4 一站式工作流
+
 自动注册函数、上传数据并提交作业。
 
 **[SDK] [run](examples/workspace/demo_sdk_agentic_rl_workflows.py)**
+
 ```python
-def run(self, model: Optional[str] = None, training_files: Optional[Union[List[str], str]] = None, validation_files: Optional[Union[List[str], str]] = None, functions: Optional[Union[List[Union[RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]] = None, hyper_parameters: Optional[Dict[str, str]] = None, job_name: Optional[str] = None, workspace_dir: str = "./", **kwargs) -> FineTune: ...
+def run(self, model: Optional[str] = None, training_files: Optional[Union[List[str], str]] = None,
+        validation_files: Optional[Union[List[str], str]] = None, functions: Optional[Union[List[Union[
+            RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]] = None,
+        hyper_parameters: Optional[Dict[str, str]] = None, job_name: Optional[str] = None, workspace_dir: str = "./",
+        **kwargs) -> FineTune: ...
 ```
+
 完整的工作流执行（注册 + 上传 + 提交）。
 
 **参数**:
+
 - `model`: 基础模型名称
 - `training_files`: 训练数据集文件
 - `validation_files`: 验证数据集文件
@@ -479,19 +542,20 @@ def run(self, model: Optional[str] = None, training_files: Optional[Union[List[s
 **返回**: `FineTune` 作业对象
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL, AgenticRLFunctionComponent, FunctionType, FunctionComponentModel
 
-rl=AgenticRL()
+rl = AgenticRL()
 rollout_runtime = {"cpu": 2, "memory_size": 4, "disk_size": 20960, "concurrency": 2,
-                    "env": {}, "capacity": 5}
+                   "env": {}, "capacity": 5}
 reward_runtimes = [
     {"cpu": 2, "memory_size": 4, "disk_size": 20960, "concurrency": 10, "env": {},
      "capacity": 8},
     {"cpu": 2, "memory_size": 4, "disk_size": 20960, "concurrency": 5, "env": {},
      "capacity": 6}
 ]
-functions=[
+functions = [
     AgenticRLFunctionComponent(
         type=FunctionType.ROLLOUT,
         name="rollout-1",
@@ -517,7 +581,8 @@ job = await rl.run(
 
 **[CLI] [run](examples/workspace/demo_cli_agentic_rl_workflows.sh)**
 
-**用法: dashscope run [OPTIONS]**                                                                                                                                                                                   
+**用法: dashscope run [OPTIONS]**
+
 ```bash                                                                                                                                                                                                                   
  🚀 启动完整的 RL 调优工作流（函数注册 → 数据集上传 → 作业提交）                                                                                                                    
                                                                                                                                                                                                                         
@@ -536,6 +601,7 @@ job = await rl.run(
 ```
 
 **示例**: 运行完整工作流（自动）
+
 ```bash
 dashscope rl run \
   --config "config.yaml" \
@@ -545,25 +611,31 @@ dashscope rl run \
 ### 4.7 作业管理
 
 **[SDK] get**
+
 ```python
 def get(cls, job_id: str, api_key: str = None, workspace: str = None, **kwargs) -> FineTune: ...
 ```
+
 获取作业信息。
 
 **参数**:
+
 - `job_id`: 要检索的作业 ID
 - `api_key`: 认证用的 API 密钥
 - `workspace`: 工作空间标识符
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
+
 job = AgenticRL.get("ft-12345")
 ```
 
 **[CLI] get**
 
 **用法: dashscope get [OPTIONS] JOB_ID**
+
 ```bash 
  📊 查询特定作业的当前状态和元数据                                                                                                                                                             
                                                                                                                                                                                                                         
@@ -578,30 +650,37 @@ job = AgenticRL.get("ft-12345")
 ```
 
 **示例**:
+
 ```bash
 dashscope rl get "$JOB_ID" -o json
 ```
 
 **[SDK] cancel**
+
 ```python
 def cancel(cls, job_id: str, api_key: str = None, workspace: str = None, **kwargs) -> FineTuneCancel: ...
 ```
+
 取消正在运行的作业。
 
 **参数**:
+
 - `job_id`: 要取消的作业 ID
 - `api_key`: 认证用的 API 密钥
 - `workspace`: 工作空间标识符
 
 **示例**:
+
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
+
 AgenticRL.cancel("ft-12345")
 ```
 
 **[CLI] cancel**
 
-**用法: dashscope cancel [OPTIONS] JOB_ID**                                                                                                                                                                     
+**用法: dashscope cancel [OPTIONS] JOB_ID**
+
 ```bash                                                                                                                                                                                                                    
  🛑 取消正在运行的作业                                                                                                                                                                                                
                                                                                                                                                                                                                         
@@ -615,6 +694,7 @@ AgenticRL.cancel("ft-12345")
 ```
 
 **示例**:
+
 ```bash
 dashscope rl cancel "$JOB_ID"
 ```
@@ -625,7 +705,8 @@ dashscope rl cancel "$JOB_ID"
 
 CLI 镜像了 SDK 的功能。使用 `dashscope rl --help` 获取详细信息。
 
-### 用法: dashscope [OPTIONS] COMMAND [ARGS]...  
+### 用法: dashscope [OPTIONS] COMMAND [ARGS]...
+
 ```bash
                                                                                                                                                                                                                                                                                                                                                                              
  🚀 Agentic RL 微调 CLI        
@@ -651,20 +732,25 @@ CLI 镜像了 SDK 的功能。使用 `dashscope rl --help` 获取详细信息。
 ## 7. 常见问题与故障排除
 
 **Q: 函数注册失败**
-*   **检查**：类路径是否正确 (`module.path:ClassName`)？
-*   **检查**：工作空间根目录是否存在 `requirements.txt`？
-*   **检查**：所有依赖项是否都列在 `requirements.txt` 中？
+
+* **检查**：类路径是否正确 (`module.path:ClassName`)？
+* **检查**：工作空间根目录是否存在 `requirements.txt`？
+* **检查**：所有依赖项是否都列在 `requirements.txt` 中？
 
 **Q: 作业提交失败**
-*   **检查**：实体 ID 和文件 ID 是否有效？
-*   **检查**：基础模型在您的区域是否可用？
-*   **检查**：`reward_runtimes` 列表长度是否与 `reward_ids` 列表长度匹配？
+
+* **检查**：实体 ID 和文件 ID 是否有效？
+* **检查**：基础模型在您的区域是否可用？
+* **检查**：`reward_runtimes` 列表长度是否与 `reward_ids` 列表长度匹配？
 
 **Q: 如何优化性能？**
-*   对 I/O 密集型任务使用 `async def process`。
-*   如果 CPU/内存允许，在运行时配置中增加 `concurrency`。
-*   控制可观测 payload 的体积（避免过度输入/输出捕获）以降低开销。
+
+* 对 I/O 密集型任务使用 `async def process`。
+* 如果 CPU/内存允许，在运行时配置中增加 `concurrency`。
+* 控制可观测 payload 的体积（避免过度输入/输出捕获）以降低开销。
 
 **Q: 链路跟踪数据在哪里查看？**
-*   在百炼控制台完成 ARMS 授权后，链路跟踪数据会导出到 **ARMS**。请确保 `requirements.txt` 已包含可观测依赖，并且使用了可观测接口（如 `observe_processor`、`trace_client`、`trace_tool` 等）。
-*   **仍无数据时**：确认未将 `ENABLE_TRAJECTORY` 设为 `false`（该值会关闭链路跟踪）。
+
+* 在百炼控制台完成 ARMS 授权后，链路跟踪数据会导出到 **ARMS**。请确保 `requirements.txt`
+  已包含可观测依赖，并且使用了可观测接口（如 `observe_processor`、`trace_client`、`trace_tool` 等）。
+* **仍无数据时**：确认未将 `ENABLE_TRAJECTORY` 设为 `false`（该值会关闭链路跟踪）。

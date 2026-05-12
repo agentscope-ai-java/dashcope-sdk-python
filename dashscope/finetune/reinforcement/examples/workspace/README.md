@@ -1,12 +1,15 @@
 # Agentic RL SDK/CLI User Guide [[中文]](./README-zh.md)
 
 ## 1. Install SDK
+
 ```bash
 pip install dashscope>=1.25.18
 ```
 
 ## 2. Environment Configuration
+
 ### 2.1 Setting Environment Variables
+
 ```bash
 # Required: API key (can also be initialized in code: AgenticRL(api_key="for your api key") )
 export DASHSCOPE_API_KEY="your_api_key_here"
@@ -21,7 +24,9 @@ export LOG_LEVEL="info"
 ```
 
 ### 2.2 Configuring Dependencies File
+
 Create a `requirements.txt` file with the following core dependencies:
+
 ```requirements.txt
 # Framework dependencies
 fastapi==0.136.0
@@ -36,32 +41,42 @@ langchain-openai==1.2.0
 ```
 
 ## 3. Function Development and Data Preparation
+
 ### 3.1 Creating Function Components
+
 Develop functions under the `functions` directory:
+
 - **Reward function templates**:
-  - `functions/reward/reward.py` - Basic implementation
-  - `functions/reward/reward_decorator.py` - Decorator implementation
+    - `functions/reward/reward.py` - Basic implementation
+    - `functions/reward/reward_decorator.py` - Decorator implementation
 - **Rollout function templates**:
-  - `functions/rollout/rollout.py` - Basic implementation
+    - `functions/rollout/rollout.py` - Basic implementation
+
 > Note: The `functions/` directory must contain an `__init__.py` file
 
 ### 3.2 Preparing Training Data
+
 Add dataset files under the `data` directory:
+
 - `data/calc_training_min.jsonl` - Training dataset (JSONL format)
 - `data/calc_validation_min.jsonl` - Validation dataset (JSONL format)
 
 ## 4. Executing Tasks with SDK
+
 ### 4.1 Function Execution (Register + Test)
+
 ```bash
 python test_functions.py
 ```
 
 ### 4.2 Workflow Execution (YAML Config + Lifecycle Management)
+
 ```bash
 python submit_job.py
 ```
 
 ## 5. Executing Tasks with CLI
+
 ```bash
 dashscope rl --help  # View full command help
 ```
@@ -88,15 +103,21 @@ dashscope rl --help  # View full command help
 ```
 
 ## Best Practice Tips
+
 1. **Development & Testing**: Use the `test_functions` command to verify function logic before submission
-2. **Incremental Development**: Simply re-register functions after modification, no need to rebuild the entire environment
+2. **Incremental Development**: Simply re-register functions after modification, no need to rebuild the entire
+   environment
 3. **Log Troubleshooting**: Set `LOG_LEVEL=debug` to obtain detailed debug information
 4. **Resource Management**: Use the `delete` command to release resources after task completion
 
-> Note: All paths and parameters should be adjusted according to the actual project; example scripts are located in the project's `workspace/` directory
-> 
-> Note: All files under the project's `workspace/` directory will be packaged and uploaded to the cloud for online computation; be mindful of data security
-> 
-> Note: To set excluded subdirectories and files under the project's `workspace/` directory for upload, refer to the environment variable: `FC_ZIP_EXCLUDE_PATTERNS`
-> 
-> Note: The total size limit for packaging and uploading all files under the project's `workspace/` directory is 200M; this can be modified via the environment variable `FC_OSS_FILE_SIZE_WARNING`
+> Note: All paths and parameters should be adjusted according to the actual project; example scripts are located in the
+> project's `workspace/` directory
+>
+> Note: All files under the project's `workspace/` directory will be packaged and uploaded to the cloud for online
+> computation; be mindful of data security
+>
+> Note: To set excluded subdirectories and files under the project's `workspace/` directory for upload, refer to the
+> environment variable: `FC_ZIP_EXCLUDE_PATTERNS`
+>
+> Note: The total size limit for packaging and uploading all files under the project's `workspace/` directory is 200M;
+> this can be modified via the environment variable `FC_OSS_FILE_SIZE_WARNING`

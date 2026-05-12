@@ -7,15 +7,11 @@ Demonstrates rule-based scoring for multiple Agent outputs in a group.
 
 from __future__ import annotations
 
-import os
-import sys
-import time
-from typing import Any, Dict
-
+from dashscope.finetune.reinforcement import GroupRewardInput, \
+    GroupRewardOutput, GroupReward, Reward, TaskStatus
 from dashscope.finetune.reinforcement import logger
-from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import AbstractGroupRewardProcessor
-from dashscope.finetune.reinforcement import GroupRewardInput, GroupRewardOutput, GroupReward, Reward, TaskStatus
-from dashscope.finetune.reinforcement.component.observability import observe_processor
+from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import \
+    AbstractGroupRewardProcessor
 
 
 class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
@@ -37,7 +33,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         Demo implementation: Logs startup messages.
         In production, this could load embedding models, initialize databases, etc.
         """
-        logger.info("[DemoGroupRewardProcessor] setup() called - initializing workspace")
+        logger.info(
+            "[DemoGroupRewardProcessor] setup() called - initializing workspace")
         # Demo: No actual initialization needed
         # In production, you might:
         # - Load embedding models for semantic similarity
@@ -56,7 +53,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         Returns:
             GroupRewardOutput object containing standardized group reward calculation
         """
-        logger.info(f"[DemoGroupRewardProcessor] computing group reward for {len(input.agent_outputs)} outputs")
+        logger.info(
+            f"[DemoGroupRewardProcessor] computing group reward for {len(input.agent_outputs)} outputs")
 
         rewards = []
         for idx, agent_output in enumerate(input.agent_outputs):
@@ -66,7 +64,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
             if input.ground_truth is not None and agent_output.messages:
                 gt_str = str(input.ground_truth)
                 for msg in agent_output.messages:
-                    if isinstance(msg.get("content"), str) and gt_str in msg["content"]:
+                    if isinstance(msg.get("content"), str) and gt_str in msg[
+                        "content"]:
                         score = 1.0
                         break
                 if score == 0.0 and len(agent_output.messages) > 0:
@@ -75,12 +74,14 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
             rewards.append(Reward(
                 reward_score=score,
             ))
-            logger.info(f"[DemoGroupRewardProcessor] output {idx}: score={score}")
+            logger.info(
+                f"[DemoGroupRewardProcessor] output {idx}: score={score}")
 
         result = GroupRewardOutput(
             reward=GroupReward(rewards=rewards),
             status=TaskStatus.SUCCESS,
             error=None,
         )
-        logger.info(f"[DemoGroupRewardProcessor] result: rewards_count={len(rewards)}")
+        logger.info(
+            f"[DemoGroupRewardProcessor] result: rewards_count={len(rewards)}")
         return result

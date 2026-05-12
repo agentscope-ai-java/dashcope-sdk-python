@@ -7,11 +7,11 @@ Base classes and common components for processor input parameters.
 import hashlib
 import uuid
 from enum import Enum
+from pydantic import BaseModel, Field, SecretStr
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field, SecretStr
-
-from dashscope.finetune.reinforcement.common.model_types import FunctionType as FuncType
+from dashscope.finetune.reinforcement.common.model_types import \
+    FunctionType as FuncType
 
 
 # ============================================================================ #
@@ -71,7 +71,8 @@ class ModelResource(BaseModel):
         ...,
         description="The specific identifier for the model (e.g., 'gpt-4o', 'llama-3-70b').",
     )
-    base_url: str = Field(..., description="The endpoint URL for the model provider.")
+    base_url: str = Field(...,
+                          description="The endpoint URL for the model provider.")
     api_key: SecretStr = Field(
         ..., description="The authentication key for the provider."
     )

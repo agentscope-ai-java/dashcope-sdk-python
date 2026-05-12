@@ -7,9 +7,12 @@ Users should inherit this class and implement process() for custom group reward 
 
 from abc import abstractmethod
 
-from dashscope.finetune.reinforcement.component.processor.abstract_processor import AbstractProcessor
-from dashscope.finetune.reinforcement.component.data.group_reward_input import GroupRewardInput
-from dashscope.finetune.reinforcement.component.data.group_reward_output import GroupRewardOutput
+from dashscope.finetune.reinforcement.component.data.group_reward_input import \
+    GroupRewardInput
+from dashscope.finetune.reinforcement.component.data.group_reward_output import \
+    GroupRewardOutput
+from dashscope.finetune.reinforcement.component.processor.abstract_processor import \
+    AbstractProcessor
 
 
 class AbstractGroupRewardProcessor(AbstractProcessor):
@@ -36,6 +39,7 @@ class AbstractGroupRewardProcessor(AbstractProcessor):
         ...             status=TaskStatus.SUCCESS,
         ...         )
     """
+
     def setup(self) -> None:
         """
         Initialize workspace before the server starts processing requests.

@@ -1,36 +1,35 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import os
-import time
 import yaml
 from pathlib import Path
-from http import HTTPStatus
-from typing import Iterator, Union, List, Optional, ClassVar, Dict, Any
+from typing import Union, List, Optional, ClassVar, Dict, Any
 from typing_extensions import Self
 
 from dashscope.client.base_api import CreateMixin
-from dashscope.common.constants import TaskStatus
-
 from dashscope.finetune.customize_types import (
     FineTune,
     FineTuneCancel,
     FineTuneDelete,
-    FineTuneEvent,
     FineTuneList,
 )
 from dashscope.finetune.finetunes import FineTunes
-
-from dashscope.finetune.reinforcement.common.errors import (
-   OSSUploadError, RegistrationError, ValidationError, IOErrorWithCode, RuntimeErrorWithCode, ValueErrorWithCode, DatasetsError
-)
-from dashscope.finetune.reinforcement import logger
-from dashscope.finetune.reinforcement import DASHSCOPE_HTTP_BASE_URL
-from dashscope.finetune.reinforcement import set_api_key, get_filepath_classname, generate_random_id, get_func_type_id, deep_remove_none
-from dashscope.finetune.reinforcement import FunctionType, DatasetsType, FileSpec, TrainingType, DataSourceType
-from dashscope.finetune.reinforcement import AgenticRLFunctionComponent, RolloutFunctionComponent, RewardFunctionComponent, Datasets, Dataset, TrainingDataset, ValidationDataset
+from dashscope.finetune.reinforcement import AgenticRLFunctionComponent, \
+    RolloutFunctionComponent, RewardFunctionComponent, Dataset, \
+    TrainingDataset, ValidationDataset
 from dashscope.finetune.reinforcement import AgenticRLTuning, TuningModel
-from dashscope.finetune.reinforcement import RewardInput, RolloutInput, GroupRewardInput
+from dashscope.finetune.reinforcement import DASHSCOPE_HTTP_BASE_URL
+from dashscope.finetune.reinforcement import FunctionType, DatasetsType, \
+    TrainingType, DataSourceType
+from dashscope.finetune.reinforcement import RewardInput, RolloutInput, \
+    GroupRewardInput
+from dashscope.finetune.reinforcement import logger
+from dashscope.finetune.reinforcement import set_api_key, generate_random_id, \
+    get_func_type_id, deep_remove_none
+from dashscope.finetune.reinforcement.common.errors import (
+    RegistrationError, ValidationError, IOErrorWithCode, RuntimeErrorWithCode,
+    ValueErrorWithCode, DatasetsError
+)
 
 
 class AgenticRL(AgenticRLTuning, CreateMixin):
@@ -44,7 +43,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             set_api_key(api_key)
         except Exception as e:
             logger.error("API key initialization failed", exc_info=True)
-            raise ValueErrorWithCode("Invalid API key configuration", error_code=3000) from e
+            raise ValueErrorWithCode("Invalid API key configuration",
+                                     error_code=3000) from e
 
     def _tuningmodel_from_cfg(self, cfg: Dict[str, Any]) -> TuningModel:
         """Map configuration to internal TuningModel state"""
@@ -59,9 +59,10 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         # classpaths & runtimes:
         self.tuning.functions = []
         functions = cfg.get("functions", [])
-        functions = [functions] if not isinstance(functions, List) else functions
+        functions = [functions] if not isinstance(functions,
+                                                  List) else functions
         for f in functions:
-            type = f.get("type", None)
+            ftype = f.get("type", None)
             name = f.get("name", None)
             weight = f.get("weight", None)
             timeout = f.get("timeout", None)
@@ -70,7 +71,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             fcmodel = f.get("fcmodel", None)
 
             self.tuning.add_function_components(
-                type=FunctionType(type) if type is not None else None,
+                function_type=FunctionType(ftype) if ftype is not None else None,
                 classpaths=fcmodel.get("classpath", None) if fcmodel else None,
                 entity_ids=fcmodel.get("entity_id", None) if fcmodel else None,
                 runtimes=runtime,
@@ -82,14 +83,6 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
 
         ########################################################################################## Datasets
         # Sync dataset IDs to Datasets model
-        # if "training_files" in cfg:
-        #     for path in cfg["training_files"]:
-        #         component = FileSpec(path=path)
-        #         self.tuning.datasets.training_files.append(component)
-        # if "validation_files" in cfg:
-        #     for path in cfg["validation_files"]:
-        #         component = FileSpec(path=path)
-        #         self.tuning.datasets.validation_files.append(component)
         if "datasets" in cfg:
             for ds in cfg["datasets"]:
                 type = ds.get("type", None)
@@ -101,7 +94,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
 
                 dataset = Dataset(
                     type=DatasetsType(type) if type else DatasetsType.TRAINING,
-                    data_source_type=DataSourceType(data_source_type) if data_source_type else DataSourceType.FILE_ID,
+                    data_source_type=DataSourceType(
+                        data_source_type) if data_source_type else DataSourceType.FILE_ID,
                     file_name=file_name if data_source_type == DataSourceType.FILE_ID else None,
                     file_id=file_id if data_source_type == DataSourceType.FILE_ID else None,
                     download_url=download_url if data_source_type == DataSourceType.DOWNLOAD_URL else None,
@@ -116,19 +110,22 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         ########################################################################################## Training
         if "mode" in cfg:
             # Support both string and enum types
-            self.tuning.training.type = cfg["mode"] if isinstance(cfg["mode"], TrainingType) else TrainingType(
+            self.tuning.training.type = cfg["mode"] if isinstance(cfg["mode"],
+                                                                  TrainingType) else TrainingType(
                 cfg["mode"])
 
         if "training" in cfg:
             if "hyper_parameters" in cfg["training"]:
                 # Ensure hyperparameters are in Dict[str, str] format
                 self.tuning.training.hyperparameters = {
-                    str(k): str(v) for k, v in cfg["training"]["hyper_parameters"].items()
+                    str(k): str(v) for k, v in
+                    cfg["training"]["hyper_parameters"].items()
                 }
             if "resources" in cfg["training"]:
                 # Ensure resources are in Dict[str, str] format
                 self.tuning.training.resources = {
-                    str(k): str(v) for k, v in cfg["training"]["resources"].items()
+                    str(k): str(v) for k, v in
+                    cfg["training"]["resources"].items()
                 }
 
         return self.tuning
@@ -150,8 +147,11 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                     with open(path, "r", encoding="utf-8") as f:
                         cfg = yaml.safe_load(f) or {}
                 except Exception as e:
-                    logger.error(f"YAML configuration load failed: {str(e)}", exc_info=True)
-                    raise IOErrorWithCode(f"Failed to load configuration: {str(e)}", error_code=3100) from e
+                    logger.error(f"YAML configuration load failed: {str(e)}",
+                                 exc_info=True)
+                    raise IOErrorWithCode(
+                        f"Failed to load configuration: {str(e)}",
+                        error_code=3100) from e
 
         # Merge CLI/code overrides into the configuration
         cfg.update(kwargs)
@@ -163,9 +163,11 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
 
     async def register_functions(
             self,
-            functions: Optional[Union[List[Union[RolloutFunctionComponent, RewardFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent]] = None,
+            functions: Optional[Union[List[Union[
+                RolloutFunctionComponent, RewardFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent]] = None,
             lazy_load: Optional[bool] = True,
-    ) -> tuple[List[str], List[str], List[str], List[str]]:
+    ) -> tuple[
+        List[str], List[str], List[str], List[str], List[str], List[str]]:
         """Register function components and return entity/instance IDs."""
         if functions:
             self.tuning.functions = functions
@@ -181,8 +183,10 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             )
             logger.info("Function components registered")
         except Exception as e:
-            logger.error("Function component registration failed", exc_info=True)
-            raise RegistrationError("Function registration error", error_code=3200) from e
+            logger.error("Function component registration failed",
+                         exc_info=True)
+            raise RegistrationError("Function registration error",
+                                    error_code=3200) from e
 
         return (rollout_entity_ids,
                 reward_entity_ids,
@@ -208,7 +212,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             logger.info("Datasets uploaded")
         except Exception as e:
             logger.error("Datasets upload failed", exc_info=True)
-            raise DatasetsError("Datasets upload error", error_code=3300) from e
+            raise DatasetsError("Datasets upload error",
+                                error_code=3300) from e
 
         return uploaded_training_ids, uploaded_validation_ids
 
@@ -220,7 +225,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             datasets: Optional[List[Dataset]] = None,
             functions: Optional[Union[List[Union[
                 RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]],
-                RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]] = None,
+            RolloutFunctionComponent, RewardFunctionComponent, AgenticRLFunctionComponent]] = None,
             hyper_parameters: Optional[Dict[str, str]] = None,
             job_name: Optional[str] = None,
             **kwargs,
@@ -236,13 +241,16 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         if functions:
             self.tuning.functions = functions
         try:
-            rollouts = self.tuning.combine_ids_runtimes(type=FunctionType.ROLLOUT)
-            rewards = self.tuning.combine_ids_runtimes(type=FunctionType.REWARD)
+            rollouts = self.tuning.combine_ids_runtimes(
+                type=FunctionType.ROLLOUT)
+            rewards = self.tuning.combine_ids_runtimes(
+                type=FunctionType.REWARD)
             rewards.extend(self.tuning.combine_ids_runtimes(
                 type=FunctionType.GROUP_REWARD,
                 id_str=get_func_type_id(FunctionType.REWARD)))
         except Exception as e:
-            logger.error(f"Tuning combine ids and runtimes failed: {str(e)}", exc_info=True)
+            logger.error(f"Tuning combine ids and runtimes failed: {str(e)}",
+                         exc_info=True)
             raise
         # names of functions
         if not self.tuning.check_function_names():
@@ -255,8 +263,10 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         datasets = datasets or self.tuning.datasets
         if not datasets:
             raise ValueError("No datasets specified")
-        training_datasets = [ds for ds in datasets if ds.type == DatasetsType.TRAINING]
-        validation_datasets = [ds for ds in datasets if ds.type == DatasetsType.VALIDATION]
+        training_datasets = [ds for ds in datasets if
+                             ds.type == DatasetsType.TRAINING]
+        validation_datasets = [ds for ds in datasets if
+                               ds.type == DatasetsType.VALIDATION]
 
         # resources
         resource_config = kwargs.get("resource_config")
@@ -266,7 +276,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             # "training_file_ids": training_file_ids or self.tuning.datasets.uploaded_training_ids,
             # "validation_file_ids": validation_file_ids or self.tuning.datasets.uploaded_validation_ids,
             "training_datasets": [ds.model_dump() for ds in training_datasets],
-            "validation_datasets": [ds.model_dump() for ds in validation_datasets],
+            "validation_datasets": [ds.model_dump() for ds in
+                                    validation_datasets],
             "rollout": rollouts[0] if rollouts else None,
             "rewards": rewards,
             "hyper_parameters": hyper_parameters or self.tuning.training.hyperparameters,
@@ -286,7 +297,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             )
         except Exception as e:
             logger.error("Job submission failed", exc_info=True)
-            raise RuntimeErrorWithCode("Job submission error", error_code=3400) from e
+            raise RuntimeErrorWithCode("Job submission error",
+                                       error_code=3400) from e
 
         return FineTune(**resp)
 
@@ -297,7 +309,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             # Datasets parameters
             # training_files: Optional[Union[List[str], str]] = None,
             # validation_files: Optional[Union[List[str], str]] = None,
-            #datasets: Optional[List[Dataset]] = None,
+            # datasets: Optional[List[Dataset]] = None,
             training_datasets: Optional[List[TrainingDataset]] = None,
             validation_datasets: Optional[List[ValidationDataset]] = None,
 
@@ -316,7 +328,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         Execute RL tuning workflow.
         """
         try:
-            logger.info("🟦 Path-Driven mode: Registering functions & uploading datasets...")
+            logger.info(
+                "🟦 Path-Driven mode: Registering functions & uploading datasets...")
             await self.register_functions(
                 functions=functions,
                 lazy_load=True,
@@ -326,7 +339,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             #     training_files=training_files,
             #     validation_files=validation_files,
             # )
-            datasets = list(training_datasets or []) + list(validation_datasets or [])
+            datasets = list(training_datasets or []) + list(
+                validation_datasets or [])
             await self.upload_datasets(
                 datasets=datasets,
             )
@@ -340,7 +354,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             )
         except Exception as e:
             logger.error("RL tuning workflow failed", exc_info=True)
-            raise RuntimeErrorWithCode(f"RL tuning workflow failed: {str(e)}", error_code=3500) from e
+            raise RuntimeErrorWithCode(f"RL tuning workflow failed: {str(e)}",
+                                       error_code=3500) from e
 
     @classmethod
     def cancel(
@@ -442,31 +457,35 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
     async def test_functions(
             cls,
             instance_id: str,
-            type: FunctionType,
+            function_type: FunctionType,
             input_data: Dict[str, Any],
             api_key: str = None):
         try:
             set_api_key(api_key)
 
-            if type == FunctionType.ROLLOUT:
-                input = RolloutInput.model_validate(input_data)
-            elif type == FunctionType.REWARD:
-                input = RewardInput.model_validate(input_data)
-            elif type == FunctionType.GROUP_REWARD:
-                input = GroupRewardInput.model_validate(input_data)
+            if function_type == FunctionType.ROLLOUT:
+                value = RolloutInput.model_validate(input_data)
+            elif function_type == FunctionType.REWARD:
+                value = RewardInput.model_validate(input_data)
+            elif function_type == FunctionType.GROUP_REWARD:
+                value = GroupRewardInput.model_validate(input_data)
             else:
-                raise ValueErrorWithCode(f"Unsupported function type: {type}", error_code=3600)
+                raise ValueErrorWithCode(f"Unsupported function type: {function_type}",
+                                         error_code=3600)
 
             logger.info(
-                f"Starting {str(type)} verification",
+                f"Starting {str(function_type)} verification",
                 extra={
                     "instance_id": instance_id,
-                    "input_params": input.model_dump(exclude={"api_key"})
+                    "input_params": value.model_dump(exclude={"api_key"})
                 }
             )
 
-            return await AgenticRLFunctionComponent.verify_function(input, instance_id)
+            return await AgenticRLFunctionComponent.verify_function(value,
+                                                                    instance_id)
 
         except Exception as e:
-            logger.error(f"Failure during {str(type)} test: {str(e)}", exc_info=True)
-            raise ValidationError(f"Function test failed: {str(e)}", error_code=3601) from e
+            logger.error(f"Failure during {str(function_type)} test: {str(e)}",
+                         exc_info=True)
+            raise ValidationError(f"Function test failed: {str(e)}",
+                                  error_code=3601) from e

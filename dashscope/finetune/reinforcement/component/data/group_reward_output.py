@@ -4,12 +4,13 @@ component/data/group_reward_output.py
 Data model definitions for GroupReward processor output results.
 """
 
+from pydantic import BaseModel, Field
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
-
-from dashscope.finetune.reinforcement.component.data.base_data_model import TaskStatus
-from dashscope.finetune.reinforcement.component.data.reward_output import Reward
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    TaskStatus
+from dashscope.finetune.reinforcement.component.data.reward_output import \
+    Reward
 
 
 # ============================================================================ #

@@ -6,9 +6,11 @@ Request parameter parser for Rollout business type.
 
 from typing import Any, Dict
 
-from dashscope.finetune.reinforcement.component.parser.base_parser import BaseRequestParser
-from dashscope.finetune.reinforcement.component.data.rollout_input import RolloutInput
 from dashscope.finetune.reinforcement.common.log import logger
+from dashscope.finetune.reinforcement.component.data.rollout_input import \
+    RolloutInput
+from dashscope.finetune.reinforcement.component.parser.base_parser import \
+    BaseRequestParser
 
 
 class RolloutRequestParser(BaseRequestParser):

@@ -46,14 +46,11 @@ Method Documentation:
 # client.init(config_path="config.yaml", job_name="agentic-rl")
 # await client.run()  # Uses YAML configuration
 
-import json
-
-from dashscope.finetune.reinforcement import (logger, FunctionType, Datasets, DatasetsType, DataSourceType, Dataset, MountStorage, TrainingDataset, ValidationDataset,
-                                              AgenticRLTuning, RolloutFunctionComponent, RewardFunctionComponent, FunctionComponentModel, FunctionComponentRuntime,
-                                              RolloutInput, RewardInput, RewardOutput, RolloutOutput,
-                                              AgenticRLFunctionComponent)
 from dashscope.finetune.agentic_rl import AgenticRL
-from dashscope.finetune.finetunes import FineTunes
+from dashscope.finetune.reinforcement import (
+    logger, DataSourceType, TrainingDataset, ValidationDataset,
+    RolloutFunctionComponent, RewardFunctionComponent, FunctionComponentModel,
+    FunctionComponentRuntime)
 
 
 async def main_workflow():
@@ -63,11 +60,14 @@ async def main_workflow():
 
         # Defines infrastructure specs for rollout components
         # env: inject global variables or environment-specific configurations into function components. example: "env":{"ENABLE_TRAJECTORY": True}
-        rollout_runtime = {"cpu": 2, "memory_size": 4096, "disk_size": 512, "concurrency": 30,
-                           "capacity": 30, "min_capacity": 30, "max_capacity": 60,
-                           "memory_scale_threshold": 0.6,"concurrency_scale_threshold": 0.6,
+        rollout_runtime = {"cpu": 2, "memory_size": 4096, "disk_size": 512,
+                           "concurrency": 30,
+                           "capacity": 30, "min_capacity": 30,
+                           "max_capacity": 60,
+                           "memory_scale_threshold": 0.6,
+                           "concurrency_scale_threshold": 0.6,
                            "env": {}
-        }
+                           }
         reward_runtime = FunctionComponentRuntime(
             cpu=2,
             memory_size=4096,
@@ -82,7 +82,7 @@ async def main_workflow():
         )
 
         # Main client for agentic reinforcement learning workflows
-        client = AgenticRL() # client = AgenticRL(api_key="sk-***")
+        client = AgenticRL()  # client = AgenticRL(api_key="sk-***")
         result = await client.run(
             job_name="agentic-rl",
             model="qwen3.5-9b",
@@ -104,33 +104,39 @@ async def main_workflow():
                     timeout=600,
                     fcmodel=FunctionComponentModel(
                         classpath="functions.rollout.rollout.CalcXRolloutProcessor"),
-                    runtime = FunctionComponentRuntime(**rollout_runtime)),
+                    runtime=FunctionComponentRuntime(**rollout_runtime)),
                 # RewardFunctionComponent：Reward calculation engine
                 RewardFunctionComponent(
                     name="reward-1",
                     weight=1.0,
                     timeout=120,
-                    reward_metric_weight={"reward_metric_weightA": 0.3, "reward_metric_weightB": 0.7},
+                    reward_metric_weight={"reward_metric_weightA": 0.3,
+                                          "reward_metric_weightB": 0.7},
                     fcmodel=FunctionComponentModel(
                         classpath="functions.reward.reward.DemoRewardProcessor"),
                     runtime=reward_runtime),
             ],
             # Training Configuration
             hyper_parameters={
-                "algorithm": "gspo", # Policy optimization algorithm (Generalized Supervised Policy Optimization)
+                "algorithm": "gspo",
+                # Policy optimization algorithm (Generalized Supervised Policy Optimization)
                 "batch_size": 64,  # Training samples per optimization step
                 "eval_steps": 1,  # Run evaluation every N training steps
-                "kl_loss_coef": 0.002,  # Weight for KL divergence loss (prevents policy divergence)
-                "learning_rate": 2e-6,  # Initial step size for gradient updates (fine-tuning)
+                "kl_loss_coef": 0.002,
+                # Weight for KL divergence loss (prevents policy divergence)
+                "learning_rate": 2e-6,
+                # Initial step size for gradient updates (fine-tuning)
                 "lr_scheduler_type": "linear",  # Learning rate decay strategy
                 "max_length": 8192,  # Max sequence length for model input
                 "n_epochs": 1,  # Full passes through training data
                 "n_rollouts": 8,  # Parallel environment rollouts per batch
-                "ppo_mini_batch_size": 8,  # Samples per PPO optimization sub-step
-                "save_strategy": "epoch",  # Model checkpoint frequency: 'steps' or 'epoch'
+                "ppo_mini_batch_size": 8,
+                # Samples per PPO optimization sub-step
+                "save_strategy": "epoch",
+                # Model checkpoint frequency: 'steps' or 'epoch'
             },
             # Cloud resource specifications
-            resource_config = {
+            resource_config={
                 "charge_type": "mtu_postpaid",
                 "mtu_spec_code": "MTU4",
                 "mtu_capacity": 24
@@ -161,6 +167,7 @@ async def main_workflow():
     except Exception as e:
         logger.error(f"Main execution flow terminated: {e}")
 
+
 async def main_workflow_yaml():
     #### Configuration-Driven (Recommended)
     try:
@@ -175,7 +182,8 @@ async def main_workflow_yaml():
         result = await client.run()  # Automatically reads cached configuration, no arguments required
         if result.status_code == 200:
             job_id = result.output.job_id
-            logger.info(f"agentic rl(from config.yaml) submit: {job_id=}, {result=}")
+            logger.info(
+                f"agentic rl(from config.yaml) submit: {job_id=}, {result=}")
         else:
             raise ValueError(f"agentic rl submit: {result}")
 
@@ -187,8 +195,9 @@ async def main_workflow_yaml():
     except Exception as e:
         logger.error(f"Main execution flow terminated: {e}")
 
+
 if __name__ == "__main__":
     import asyncio
 
     asyncio.run(main_workflow())
-    #asyncio.run(main_workflow_yaml())
+    asyncio.run(main_workflow_yaml())

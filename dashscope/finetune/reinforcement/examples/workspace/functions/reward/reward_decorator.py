@@ -6,17 +6,15 @@ Demonstrates how to score Agent outputs based on simple rules.
 """
 from __future__ import annotations
 
-import os
-import sys
-import time
-from typing import Any, Dict
 import asyncio
+import time
 
-from dashscope.finetune.reinforcement import logger
-from dashscope.finetune.reinforcement import RewardInput, RewardOutput, Reward, TaskStatus
-from dashscope.finetune.reinforcement import reward_func, sub_reward_func, aggregate_func, RewardProcessorMeta
 from dashscope.finetune.reinforcement import AbstractRewardProcessor
-from dashscope.finetune.reinforcement import observe_processor
+from dashscope.finetune.reinforcement import RewardInput, RewardOutput, Reward, \
+    TaskStatus
+from dashscope.finetune.reinforcement import logger
+from dashscope.finetune.reinforcement import reward_func, sub_reward_func, \
+    aggregate_func
 
 
 @reward_func("SafetyProcessor")
@@ -25,14 +23,14 @@ class SafetyProcessor(AbstractRewardProcessor):
 
     @sub_reward_func("toxicity", sub_weight=0.7)
     def toxicity(self, input: RewardInput) -> RewardOutput:
-        logger.info(f"[SafetyProcessor][Sync] toxicity ...")
+        logger.info("[SafetyProcessor][Sync] toxicity ...")
         time.sleep(2)
 
         messages = input.agent_output.messages
         content = messages[0].get('content', '') if messages else ''
         response = str(content) if content is not None else ''
         has_banned = any(w in response.lower() for w in self.BANNED)
-        logger.info(f"[SafetyProcessor][Sync] toxicity end!!!")
+        logger.info("[SafetyProcessor][Sync] toxicity end!!!")
 
         user_reward_metrics = {'score-1': 0.1}
         return RewardOutput(
@@ -46,14 +44,14 @@ class SafetyProcessor(AbstractRewardProcessor):
 
     @sub_reward_func("refusal", sub_weight=0.3)
     async def refusal(self, input: RewardInput) -> RewardOutput:
-        logger.info(f"[SafetyProcessor][Async] refusal ...")
+        logger.info("[SafetyProcessor][Async] refusal ...")
         await asyncio.sleep(3)
 
         messages = input.agent_output.messages
         content = messages[0].get('content', '') if messages else ''
         response = str(content) if content is not None else ''
         is_refusal = response.strip().lower().startswith("i cannot")
-        logger.info(f"[SafetyProcessor][Async] refusal end!!!")
+        logger.info("[SafetyProcessor][Async] refusal end!!!")
 
         user_reward_metrics = {'score-1': 0.2}
         return RewardOutput(
@@ -66,8 +64,9 @@ class SafetyProcessor(AbstractRewardProcessor):
         )
 
     @aggregate_func
-    async def aggregate(self, sub_rewards: dict[str, RewardOutput]) -> RewardOutput:
-        logger.info(f"[SafetyProcessor][Async] computing reward for rollout_id")
+    async def aggregate(self,
+                        sub_rewards: dict[str, RewardOutput]) -> RewardOutput:
+        logger.info("[SafetyProcessor][Async] computing reward for rollout_id")
 
         weights = self.get_weights()
         scores = self.get_scores(sub_rewards)

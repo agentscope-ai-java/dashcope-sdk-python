@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 __all__ = [
     # public API
     "observe_llm",
@@ -73,7 +72,8 @@ def __getattr__(name: str) -> Any:
         "trace_client",
         "trace_tool",
     }:
-        from dashscope.finetune.reinforcement.component.observability import genai as _genai
+        from dashscope.finetune.reinforcement.component.observability import \
+            genai as _genai
 
         return getattr(_genai, name)
 
@@ -103,7 +103,8 @@ def __getattr__(name: str) -> Any:
         "span_payload_preview",
         "trace_processor_process",
     }:
-        from dashscope.finetune.reinforcement.component.observability import tracing as _tracing
+        from dashscope.finetune.reinforcement.component.observability import \
+            tracing as _tracing
 
         return getattr(_tracing, name)
 

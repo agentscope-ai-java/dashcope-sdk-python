@@ -1,11 +1,9 @@
-import os
-import time
-import sys
 import logging
-from logging import Filter, LogRecord
-from typing import Any, Dict, Set
+import sys
 
-from dashscope.finetune.reinforcement.common.constants import LOGGER_NAME, LOG_LEVEL
+from dashscope.finetune.reinforcement.common.constants import LOGGER_NAME, \
+    LOG_LEVEL
+
 
 def setup_logger():
     """Initialize and configure the logger with value masking."""

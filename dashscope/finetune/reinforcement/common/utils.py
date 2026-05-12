@@ -1,37 +1,33 @@
-import os
-import re
-import time
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional, List, Any, Dict, Union, Tuple
-from pydantic import BaseModel, Field, SecretStr
-import tempfile
-import zipfile
-import requests
-import asyncio
 import aiohttp
-from aiohttp import FormData
-import uuid
-import copy
-import json
 import ast
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-import subprocess
-import sys
+import asyncio
+import copy
 import fnmatch
+import json
+import os
+import requests
+import uuid
+import zipfile
+from aiohttp import FormData
+from tenacity import retry, stop_after_attempt, wait_exponential, \
+    retry_if_exception_type
+from typing import Optional, List, Any, Dict, Union, Tuple
 
-
+from dashscope.finetune.reinforcement import (
+    LOG_LEVEL,
+    DASHSCOPE_API_KEY, BAILIAN_FILE_API,
+    BAILIAN_FILE_TIMEOUT, HTTP_REQUEST_TIMEOUT,
+    FC_FILES_START, FC_PYPI_LIB, FC_PYPI_REPO, FC_LAYER_USED,
+    FC_SERVER_CLASSPATH, FC_ZIP_EXCLUDE_PATTERNS, FC_OSS_FILE_SIZE_WARNING,
+    LOGGER_FILTER_FIELDS, FC_WORKERS_COUNT)
 from dashscope.finetune.reinforcement import logger
 from dashscope.finetune.reinforcement.common.errors import (
-    InputError, OutputError, ConnectionError, ConfigurationError, PermissionError, RuntimeErrorWithCode, OSSUploadError
+    InputError, OutputError, ConfigurationError, BasePermissionError,
+    RuntimeErrorWithCode, OSSUploadError
 )
-from dashscope.finetune.reinforcement import (LOG_LEVEL, DASHSCOPE_HTTP_BASE_URL,
-                                                   DASHSCOPE_API_KEY, BAILIAN_FILE_API,
-                                                   BAILIAN_FILE_TIMEOUT, HTTP_REQUEST_TIMEOUT,
-                                                   FC_API_KEY, FC_FILES_START, FC_PYPI_LIB, FC_PYPI_REPO, FC_LAYER_USED,
-                                                   FC_SERVER_CLASSPATH, FC_ZIP_EXCLUDE_PATTERNS, FC_OSS_FILE_SIZE_WARNING,
-                                                   LOGGER_FILTER_FIELDS, FC_WORKERS_COUNT)
-from dashscope.finetune.reinforcement.common.model_types import FileSpec, FunctionType
+from dashscope.finetune.reinforcement.common.model_types import FileSpec, \
+    FunctionType
+
 
 def generate_random_id(type: str = '') -> str:
     """Generate a unique identifier with optional prefix."""
@@ -66,16 +62,20 @@ async def async_http_request(
                 async with session.post(url, data=data) as response:
                     result = await _handle_response(response)
             else:
-                raise InputError(f"Unsupported method: {method}", error_code=4000)
+                raise InputError(f"Unsupported method: {method}",
+                                 error_code=4000)
 
     except aiohttp.ClientError as e:
         result["status"] = {"code": 4001, "message": f"Client error: {str(e)}"}
     except asyncio.TimeoutError:
-        result["status"] = {"code": 4002, "message": f"Request timeout: ({timeout}s)"}
+        result["status"] = {"code": 4002,
+                            "message": f"Request timeout: ({timeout}s)"}
     except InputError as e:
-        result["status"] = {"code": e.error_code, "message": f"Input error: {str(e)}"}
+        result["status"] = {"code": e.error_code,
+                            "message": f"Input error: {str(e)}"}
     except Exception as e:
-        result["status"] = {"code": 4003, "message": f"Unexpected error: {str(e)}"}
+        result["status"] = {"code": 4003,
+                            "message": f"Unexpected error: {str(e)}"}
 
     return result
 
@@ -84,7 +84,8 @@ async def _handle_response(response) -> Dict[str, Any]:
     """Handle HTTP response and extract JSON data."""
     try:
         content = await response.json()
-        content.setdefault("status", {"code": response.status, "message": response.reason})
+        content.setdefault("status", {"code": response.status,
+                                      "message": response.reason})
         return content
     except json.JSONDecodeError:
         return {
@@ -107,7 +108,8 @@ async def client_fc(
     return await async_http_request(
         method=method,
         url=url,
-        headers={'Content-Type': content_type, 'Authorization': 'Bearer ' + api_key},
+        headers={'Content-Type': content_type,
+                 'Authorization': 'Bearer ' + api_key},
         data=input,
         timeout=HTTP_REQUEST_TIMEOUT
     )
@@ -294,7 +296,9 @@ def create_deployment_files(
             logger.debug(f"Found requirements file: {req_path}")
 
         # Create startup script
-        classpath = os.path.normpath(filepath).replace('/', '.').rsplit('.py', 1)[0] + '.' + classname
+        classpath = \
+        os.path.normpath(filepath).replace('/', '.').rsplit('.py', 1)[
+            0] + '.' + classname
         content = generate_agentic_script(
             fc_pypi_lib=FC_PYPI_LIB,
             fc_pypi_repo=FC_PYPI_REPO,
@@ -313,8 +317,10 @@ def create_deployment_files(
 
         logger.debug(f"Generated startup script: {FC_FILES_START}")
     except Exception as e:
-        logger.error(f"Deployment file creation failed: {str(e)}", exc_info=True)
-        raise RuntimeErrorWithCode("Deployment file creation error", error_code=4200) from e
+        logger.error(f"Deployment file creation failed: {str(e)}",
+                     exc_info=True)
+        raise RuntimeErrorWithCode("Deployment file creation error",
+                                   error_code=4200) from e
 
 
 def zip_files(files: List[str], output_zip: str) -> None:
@@ -343,24 +349,28 @@ def zip_dir(
     """
     if exclude_patterns is None:
         env_exclude = FC_ZIP_EXCLUDE_PATTERNS
-        exclude_patterns = [p.strip() for p in env_exclude.split(",") if p.strip()]
+        exclude_patterns = [p.strip() for p in env_exclude.split(",") if
+                            p.strip()]
 
     all_excludes = exclude_patterns
     logger.debug(f"Zip exclusion patterns: {all_excludes}")
 
     try:
-        with zipfile.ZipFile(output_zip, rw_type, zipfile.ZIP_DEFLATED) as zipf:
+        with zipfile.ZipFile(output_zip, rw_type,
+                             zipfile.ZIP_DEFLATED) as zipf:
             # Compress main directory
             if os.path.exists(dirpath):
                 for root, dirs, files in os.walk(dirpath, topdown=True):
                     the_dirs = []
                     for d in dirs:
-                        full_rel_path = os.path.join(os.path.relpath(root, start=dirpath), d)
+                        full_rel_path = os.path.join(
+                            os.path.relpath(root, start=dirpath), d)
                         normalized_path = full_rel_path.replace('\\', '/')
 
                         matched_pattern = None
                         for pattern in all_excludes:
-                            if fnmatch.fnmatch(d, pattern) or fnmatch.fnmatch(normalized_path, pattern):
+                            if fnmatch.fnmatch(d, pattern) or fnmatch.fnmatch(
+                                    normalized_path, pattern):
                                 matched_pattern = pattern
                                 break
 
@@ -376,7 +386,8 @@ def zip_dir(
                         rel_path = os.path.relpath(file_path, start=dirpath)
 
                         if any(
-                                fnmatch.fnmatch(os.path.basename(file), pattern) or
+                                fnmatch.fnmatch(os.path.basename(file),
+                                                pattern) or
                                 fnmatch.fnmatch(file, pattern)
                                 for pattern in all_excludes
                         ):
@@ -392,7 +403,8 @@ def zip_dir(
                 for file in extra_files:
                     if os.path.exists(file):
                         if any(
-                                fnmatch.fnmatch(os.path.basename(file), pattern)
+                                fnmatch.fnmatch(os.path.basename(file),
+                                                pattern)
                                 for pattern in all_excludes
                         ):
                             logger.debug(f"Excluding extra file: {file}")
@@ -404,21 +416,25 @@ def zip_dir(
 
     except Exception as e:
         logger.error(f"Directory compression failed: {str(e)}", exc_info=True)
-        raise RuntimeErrorWithCode("Directory compression error", error_code=4300) from e
+        raise RuntimeErrorWithCode("Directory compression error",
+                                   error_code=4300) from e
 
 
-def _sync_upload_to_oss(signed_url: str, zipfile: str) -> int:
+def _sync_upload_to_oss(signed_url: str, zip_path: str) -> int:
     """Synchronously upload a file to OSS with progress tracking."""
     try:
-        file_size = os.path.getsize(zipfile)
+        file_size = os.path.getsize(zip_path)
         size_mb = file_size / (1024 * 1024)
         if file_size > FC_OSS_FILE_SIZE_WARNING:
-            logger.warning(f"Uploading large file: {zipfile} ({size_mb:.2f}MB) to OSS")
-            raise OSSUploadError(f"Uploading large file: {zipfile} ({size_mb:.2f}MB) to OSS")
+            logger.warning(
+                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS")
+            raise OSSUploadError(
+                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS")
         else:
-            logger.debug(f"Uploading file: {zipfile} ({size_mb:.2f}MB) to OSS")
+            logger.debug(
+                f"Uploading file: {zip_path} ({size_mb:.2f}MB) to OSS")
 
-        with open(zipfile, 'rb') as file:
+        with open(zip_path, 'rb') as file:
             response = requests.put(
                 signed_url,
                 data=file,
@@ -428,7 +444,8 @@ def _sync_upload_to_oss(signed_url: str, zipfile: str) -> int:
 
             if response.status_code != 200:
                 error_msg = response.text
-                raise OSError(f"OSS upload failed ({response.status_code}): {error_msg}")
+                raise OSError(
+                    f"OSS upload failed ({response.status_code}): {error_msg}")
 
             return response.status_code
     except Exception as e:
@@ -446,15 +463,18 @@ def _sync_upload_to_oss(signed_url: str, zipfile: str) -> int:
     )),
     reraise=True
 )
-async def upload_zip_to_oss_and_by_signed_url(signed_url: str, zipfile: str) -> int:
+async def upload_zip_to_oss_and_by_signed_url(signed_url: str,
+                                              zipfile: str) -> int:
     """Asynchronously upload ZIP file to OSS with retry mechanism."""
     try:
-        return await asyncio.to_thread(_sync_upload_to_oss, signed_url, zipfile)
-    except PermissionError:
+        return await asyncio.to_thread(_sync_upload_to_oss, signed_url,
+                                       zipfile)
+    except BasePermissionError:
         raise  # Re-raise permission errors directly
     except Exception as e:
         if "403" in str(e):
-            raise PermissionError("OSS access denied (403)", error_code=4401) from e
+            raise BasePermissionError("OSS access denied (403)",
+                                  error_code=4401) from e
         raise
 
 
@@ -506,7 +526,9 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
 
         # Check if there are any valid files to upload
         if valid_file_count == 0:
-            raise InputError("No valid files found to upload. All files failed validation.", error_code=4600)
+            raise InputError(
+                "No valid files found to upload. All files failed validation.",
+                error_code=4600)
 
         # Execute upload request
         result = await async_http_request(
@@ -523,8 +545,10 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
 
         data = result.get('data', {})
         if 'failed_uploads' in data and data['failed_uploads']:
-            failed_files = ', '.join([f['name'] for f in data['failed_uploads']])
-            raise OutputError(f"Partial upload failed: {failed_files}", error_code=4501)
+            failed_files = ', '.join(
+                [f['name'] for f in data['failed_uploads']])
+            raise OutputError(f"Partial upload failed: {failed_files}",
+                              error_code=4501)
 
         # Collect uploaded file IDs
         for f in data.get('uploaded_files', []):
@@ -538,8 +562,10 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
         logger.error(f"File upload failed: {str(e)}", exc_info=True)
         raise OutputError("File upload error", error_code=4502) from e
 
+
 def secret_part_str(value: str):
     return value[:4] + '*' * 4 + value[-4:] if len(value) > 8 else '****'
+
 
 def deep_mask(data: Any) -> Any:
     """
@@ -559,7 +585,8 @@ def deep_mask(data: Any) -> Any:
 
     if isinstance(data, dict):
         return {
-            key: secret_part_str(val) if key.lower() in LOGGER_FILTER_FIELDS else deep_mask(val)
+            key: secret_part_str(
+                val) if key.lower() in LOGGER_FILTER_FIELDS else deep_mask(val)
             for key, val in data.items()
         }
     elif isinstance(data, list):
@@ -588,7 +615,7 @@ def set_api_key(api_key: Optional[str] = None) -> None:
     if api_key:
         os.environ['DASHSCOPE_API_KEY'] = api_key
         logger.debug(
-            f"Set environ DASHSCOPE_API_KEY: {api_key if LOG_LEVEL=='DEBUG' else deep_mask(api_key)}"
+            f"Set environ DASHSCOPE_API_KEY: {api_key if LOG_LEVEL == 'DEBUG' else deep_mask(api_key)}"
         )
         return
 
@@ -652,8 +679,10 @@ def get_filepath_classname(full_path: str) -> Tuple[str, str]:
 
     return filepath.replace('\\', '/'), classname
 
+
 def get_func_type_id(func_type: FunctionType):
     return str(func_type).lower() + '_id'
+
 
 def deep_remove_none(obj):
     """Recursively remove items with value None from dicts and lists (including nested structures)"""
@@ -675,7 +704,9 @@ def deep_remove_none(obj):
         # Other types are returned as-is
         return obj
 
-def get_weights_from_file(filepath: str, classname: str = "") -> Dict[str, float]:
+
+def get_weights_from_file(filepath: str, classname: str = "") -> Dict[
+    str, float]:
     """
     Extract reward weights from a Python file
 
@@ -702,7 +733,9 @@ def get_weights_from_file(filepath: str, classname: str = "") -> Dict[str, float
     # Try AST method first
     return extract_reward_weights(source_code, classname)
 
-def extract_reward_weights(source_code: str, classname: str) -> Dict[str, float]:
+
+def extract_reward_weights(source_code: str, classname: str) -> Dict[
+    str, float]:
     """
     Static analyzer to extract reward weights from decorated functions.
 
@@ -755,16 +788,19 @@ def extract_reward_weights(source_code: str, classname: str) -> Dict[str, float]
                             # Handle string values
                             if isinstance(arg, ast.Str):
                                 decorator_args["name"] = arg.s
-                            elif isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                            elif isinstance(arg, ast.Constant) and isinstance(
+                                    arg.value, str):
                                 decorator_args["name"] = arg.value
-                            elif isinstance(arg, ast.Num):  # Deprecated but still in some versions
+                            elif isinstance(arg,
+                                            ast.Num):  # Deprecated but still in some versions
                                 decorator_args["name"] = str(arg.n)
 
                         if i == 1:
                             # Handle numeric values
                             if isinstance(arg, ast.Num):
                                 decorator_args["sub_weight"] = arg.n
-                            elif isinstance(arg, ast.Constant) and isinstance(arg.value, (int, float)):
+                            elif isinstance(arg, ast.Constant) and isinstance(
+                                    arg.value, (int, float)):
                                 decorator_args["sub_weight"] = arg.value
 
                     # Keyword arguments
@@ -775,7 +811,9 @@ def extract_reward_weights(source_code: str, classname: str) -> Dict[str, float]
                         if key == "name":
                             if isinstance(value, ast.Str):
                                 decorator_args["name"] = value.s
-                            elif isinstance(value, ast.Constant) and isinstance(value.value, str):
+                            elif isinstance(value,
+                                            ast.Constant) and isinstance(
+                                    value.value, str):
                                 decorator_args["name"] = value.value
                             elif isinstance(value, ast.Num):
                                 decorator_args["name"] = str(value.n)
@@ -783,7 +821,9 @@ def extract_reward_weights(source_code: str, classname: str) -> Dict[str, float]
                         elif key == "sub_weight":
                             if isinstance(value, ast.Num):
                                 decorator_args["sub_weight"] = value.n
-                            elif isinstance(value, ast.Constant) and isinstance(value.value, (int, float)):
+                            elif isinstance(value,
+                                            ast.Constant) and isinstance(
+                                    value.value, (int, float)):
                                 decorator_args["sub_weight"] = value.value
 
                 # Extract values with fallbacks
@@ -832,4 +872,3 @@ def serialize_for_output(data: Any) -> Any:
 
     # Return basic types directly
     return data
-

@@ -109,7 +109,7 @@ async def main_functions():
         # Testing rollout-only functions
         if rollout_instance_ids and rollout_instance_ids[0]:
             result = await AgenticRL.test_functions(instance_id=rollout_instance_ids[0],
-                                                    type=FunctionType.ROLLOUT,
+                                                    function_type=FunctionType.ROLLOUT,
                                                     input_data=rollout_input)
             logger.info(f"agentic rl test rollout: {rollout_instance_ids[0]=}, {result=}")
             status = result.get('status', None)
@@ -118,7 +118,7 @@ async def main_functions():
         # Testing reward functions
         if reward_instance_ids and reward_instance_ids[0]:
             result = await AgenticRL.test_functions(instance_id=reward_instance_ids[0],
-                                                    type=FunctionType.REWARD,
+                                                    function_type=FunctionType.REWARD,
                                                     input_data=reward_input)
             logger.info(f"agentic rl test rewards: {reward_instance_ids[0]=}, {result=}")
             status = result.get('status', None)
@@ -127,7 +127,7 @@ async def main_functions():
         # Testing reward-decorator functions
         if reward_instance_ids and reward_instance_ids[1]:
             result = await AgenticRL.test_functions(instance_id=reward_instance_ids[1],
-                                                    type=FunctionType.REWARD,
+                                                    function_type=FunctionType.REWARD,
                                                     input_data=reward_decorator_input)
             logger.info(f"agentic rl test rewards-decorator: {reward_instance_ids[1]=}, {result=}")
             reward_score = result.get('reward', {}).get('reward_score', 0.0)
@@ -136,7 +136,7 @@ async def main_functions():
         # Testing group-reward functions
         if group_reward_instance_ids and group_reward_instance_ids[0]:
             result = await AgenticRL.test_functions(instance_id=group_reward_instance_ids[0],
-                                                    type=FunctionType.GROUP_REWARD,
+                                                    function_type=FunctionType.GROUP_REWARD,
                                                     input_data=group_reward_input)
             logger.info(f"agentic rl test group-rewards: {group_reward_instance_ids[0]=}, {result=}")
             status = result.get('status', None)

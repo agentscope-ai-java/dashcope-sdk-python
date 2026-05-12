@@ -7,11 +7,15 @@ Demonstrates simple rollout execution flow (simulating Agent invocation).
 
 import time
 
-from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import AbstractRolloutProcessor
-from dashscope.finetune.reinforcement.component.data.rollout_input import RolloutInput
-from dashscope.finetune.reinforcement.component.data.rollout_output import RolloutOutput
-from dashscope.finetune.reinforcement.component.data.base_data_model import AgentOutput, TaskStatus
 from dashscope.finetune.reinforcement.common.log import logger
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    AgentOutput, TaskStatus
+from dashscope.finetune.reinforcement.component.data.rollout_input import \
+    RolloutInput
+from dashscope.finetune.reinforcement.component.data.rollout_output import \
+    RolloutOutput
+from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import \
+    AbstractRolloutProcessor
 
 
 class DemoRolloutProcessor(AbstractRolloutProcessor):
@@ -30,7 +34,8 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         Demo implementation: Logs startup message.
         In production, this could load ML models, establish connections, etc.
         """
-        logger.info("[DemoRolloutProcessor] setup() called - initializing workspace")
+        logger.info(
+            "[DemoRolloutProcessor] setup() called - initializing workspace")
         # Demo: No actual initialization needed
         # In production, you might:
         # - Load ML models into memory
@@ -57,14 +62,14 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 
         # Demo: Return messages as echo content
         messages = list(input.messages)
-        
+
         # Add a simple assistant response
         last_user_msg = ""
         for msg in reversed(messages):
             if msg.get("role") == "user":
                 last_user_msg = msg.get("content", "")
                 break
-        
+
         assistant_content = f"[DemoRolloutProcessor Echo] {last_user_msg}"
         messages.append({"role": "assistant", "content": assistant_content})
 

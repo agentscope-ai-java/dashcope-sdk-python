@@ -1,8 +1,6 @@
 from enum import Enum
+from pydantic import BaseModel
 from typing import Optional, List, Any, Dict
-from pydantic import BaseModel, Field, PrivateAttr, model_validator, computed_field
-
-from dashscope.common.constants import TaskStatus
 
 
 class StatusType(str, Enum):
@@ -26,6 +24,7 @@ class FunctionType(str, Enum):
 
     def __str__(self):
         return self.value
+
 
 class DataSourceType(str, Enum):
     FILE_ID = "file_id"
@@ -95,7 +94,7 @@ class ResponseFC(BaseModel):
 
 
 class RequestTuning(BaseModel):
-    model: str = '' # Foundation model
+    model: str = ''  # Foundation model
     training_file_ids: List[str] = []
     validation_file_ids: Optional[List[str]] = []
     rolloutId: str = ''
@@ -103,7 +102,7 @@ class RequestTuning(BaseModel):
     hyper_parameters: Optional[Dict[str, str]] = {}
     training_type: str = TrainingType.TRAINING_TYPE
     job_name: Optional[str] = ''
-    model_name: Optional[str] = '' # Post-tests model name
+    model_name: Optional[str] = ''  # Post-tests model name
 
 
 class ResponseTuning(BaseModel):

@@ -5,13 +5,19 @@ Demo implementation of GroupReward Processor.
 Demonstrates rule-based scoring for multiple Agent outputs in a group.
 """
 
-from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import AbstractGroupRewardProcessor
-from dashscope.finetune.reinforcement.component.data.group_reward_input import GroupRewardInput
-from dashscope.finetune.reinforcement.component.data.group_reward_output import GroupRewardOutput
-from dashscope.finetune.reinforcement.component.data.group_reward_output import GroupRewardOutput, GroupReward
-from dashscope.finetune.reinforcement.component.data.reward_output import Reward
-from dashscope.finetune.reinforcement.component.data.base_data_model import TaskStatus
 from dashscope.finetune.reinforcement.common.log import logger
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    TaskStatus
+from dashscope.finetune.reinforcement.component.data.group_reward_input import \
+    GroupRewardInput
+from dashscope.finetune.reinforcement.component.data.group_reward_output import \
+    GroupRewardOutput
+from dashscope.finetune.reinforcement.component.data.group_reward_output import \
+    GroupRewardOutput, GroupReward
+from dashscope.finetune.reinforcement.component.data.reward_output import \
+    Reward
+from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import \
+    AbstractGroupRewardProcessor
 
 
 class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
@@ -33,7 +39,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         Demo implementation: Logs startup message.
         In production, this could load embedding models, initialize databases, etc.
         """
-        logger.info("[DemoGroupRewardProcessor] setup() called - initializing workspace")
+        logger.info(
+            "[DemoGroupRewardProcessor] setup() called - initializing workspace")
         # Demo: No actual initialization needed
         # In production, you might:
         # - Load embedding models for semantic similarity
@@ -52,7 +59,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         Returns:
             GroupRewardOutput object containing standardized group reward calculation
         """
-        logger.info(f"[DemoGroupRewardProcessor] computing group reward for {len(input.agent_outputs)} outputs")
+        logger.info(
+            f"[DemoGroupRewardProcessor] computing group reward for {len(input.agent_outputs)} outputs")
 
         rewards = []
         for idx, agent_output in enumerate(input.agent_outputs):
@@ -62,7 +70,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
             if input.ground_truth is not None and agent_output.message:
                 gt_str = str(input.ground_truth)
                 for msg in agent_output.message:
-                    if isinstance(msg.get("content"), str) and gt_str in msg["content"]:
+                    if isinstance(msg.get("content"), str) and gt_str in msg[
+                        "content"]:
                         score = 1.0
                         break
                 if score == 0.0 and len(agent_output.message) > 0:
@@ -72,12 +81,14 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
                 reward_score=score,
                 reward_metrics=agent_output.rollout_metrics,
             ))
-            logger.info(f"[DemoGroupRewardProcessor] output {idx}: score={score}")
+            logger.info(
+                f"[DemoGroupRewardProcessor] output {idx}: score={score}")
 
         result = GroupRewardOutput(
             reward=GroupReward(rewards=rewards),
             status=TaskStatus.SUCCESS,
             error=None,
         )
-        logger.info(f"[DemoGroupRewardProcessor] result: rewards_count={len(rewards)}")
+        logger.info(
+            f"[DemoGroupRewardProcessor] result: rewards_count={len(rewards)}")
         return result

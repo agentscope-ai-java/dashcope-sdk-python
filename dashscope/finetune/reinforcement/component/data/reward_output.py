@@ -4,11 +4,11 @@ component/data/reward_output.py
 Data model definitions for Reward processor output results.
 """
 
+from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
-
-from dashscope.finetune.reinforcement.component.data.base_data_model import TaskStatus
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    TaskStatus
 
 
 # ============================================================================ #

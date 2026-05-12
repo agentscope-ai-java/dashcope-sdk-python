@@ -35,18 +35,22 @@ import asyncio
 import logging
 import os
 import sys
-from types import SimpleNamespace
-from typing import Any, Dict, List, Sequence
-
 from opentelemetry import trace as otel_trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import \
+    InMemorySpanExporter
+from types import SimpleNamespace
+from typing import Any, Dict, List, Sequence
 
-from dashscope.finetune.reinforcement.common.model_types import FunctionType as FuncType
-from dashscope.finetune.reinforcement.component.data.base_data_model import AgentOutput, ModelResource
-from dashscope.finetune.reinforcement.component.data.reward_input import RewardInput
-from dashscope.finetune.reinforcement.component.data.rollout_input import RolloutInput
+from dashscope.finetune.reinforcement.common.model_types import \
+    FunctionType as FuncType
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    AgentOutput, ModelResource
+from dashscope.finetune.reinforcement.component.data.reward_input import \
+    RewardInput
+from dashscope.finetune.reinforcement.component.data.rollout_input import \
+    RolloutInput
 from dashscope.finetune.reinforcement.component.func_manager import FuncManager
 from dashscope.finetune.reinforcement.component.observability import (
     observe_llm,
@@ -62,7 +66,6 @@ from dashscope.finetune.reinforcement.component.processor.abstract_rollout_proce
     AbstractRolloutProcessor,
 )
 
-
 # -----------------------------------------------------------------------------
 # Local OTel setup (print spans via in-memory exporter)
 # -----------------------------------------------------------------------------
@@ -71,7 +74,6 @@ _exporter = InMemorySpanExporter()
 _provider = TracerProvider()
 _provider.add_span_processor(SimpleSpanProcessor(_exporter))
 otel_trace.set_tracer_provider(_provider)
-
 
 _QUIET = False
 
@@ -96,9 +98,9 @@ def _summarize_span(span: Any) -> str:
     # Keep output customer-friendly: only a few meaningful fields.
     interesting: Dict[str, Any] = {}
     for k in (
-        "gen_ai.request.model",
-        "gen_ai.response.model",
-        "gen_ai.tool.name",
+            "gen_ai.request.model",
+            "gen_ai.response.model",
+            "gen_ai.tool.name",
     ):
         if k in attrs:
             interesting[k] = attrs[k]
@@ -162,7 +164,8 @@ class _SmokeRewardProcessor(AbstractRewardProcessor):
 class _SmokeRolloutProcessor(AbstractRolloutProcessor):
     @observe_processor
     def process(self, input: RolloutInput) -> Any:  # type: ignore[override]
-        return {"trajectory": ["step1"], "rollout_id": getattr(input, "rollout_id", "ro-unknown")}
+        return {"trajectory": ["step1"],
+                "rollout_id": getattr(input, "rollout_id", "ro-unknown")}
 
 
 # -----------------------------------------------------------------------------
@@ -172,8 +175,10 @@ class _SmokeRolloutProcessor(AbstractRolloutProcessor):
 
 def smoke_observe_processor_reward() -> bool:
     _log("\n=== 1) @observe_processor (Reward) emits span ===")
-    fm = FuncManager(FuncType.REWARD, processor=_SmokeRewardProcessor(), observe=False)
-    _ = asyncio.run(_await_fm_process(fm, _make_reward_input(rollout_id="ro-smoke-reward")))
+    fm = FuncManager(FuncType.REWARD, processor=_SmokeRewardProcessor(),
+                     observe=False)
+    _ = asyncio.run(_await_fm_process(fm, _make_reward_input(
+        rollout_id="ro-smoke-reward")))
     ok = _print_spans("REWARD")
     _clear_spans()
     return ok
@@ -181,8 +186,10 @@ def smoke_observe_processor_reward() -> bool:
 
 def smoke_observe_processor_rollout() -> bool:
     _log("\n=== 2) @observe_processor (Rollout) emits span ===")
-    fm = FuncManager(FuncType.ROLLOUT, processor=_SmokeRolloutProcessor(), observe=False)
-    _ = asyncio.run(_await_fm_process(fm, _make_rollout_input(rollout_id="ro-smoke-rollout")))
+    fm = FuncManager(FuncType.ROLLOUT, processor=_SmokeRolloutProcessor(),
+                     observe=False)
+    _ = asyncio.run(_await_fm_process(fm, _make_rollout_input(
+        rollout_id="ro-smoke-rollout")))
     ok = _print_spans("ROLLOUT")
     _clear_spans()
     return ok
@@ -191,13 +198,18 @@ def smoke_observe_processor_rollout() -> bool:
 def smoke_observe_llm() -> bool:
     _log("\n=== 3) @observe_llm emits LLM span ===")
 
-    @observe_llm(provider="mock-provider", request_model_arg="model", messages_arg="messages")
+    @observe_llm(provider="mock-provider", request_model_arg="model",
+                 messages_arg="messages")
     def _call_llm(*, model: str, messages: List[Dict[str, str]]) -> Any:
-        choice = SimpleNamespace(message=SimpleNamespace(content="42", role="assistant"), finish_reason="stop")
+        choice = SimpleNamespace(
+            message=SimpleNamespace(content="42", role="assistant"),
+            finish_reason="stop")
         usage = SimpleNamespace(prompt_tokens=5, completion_tokens=2)
-        return SimpleNamespace(model=model, id="mock-id", choices=[choice], usage=usage)
+        return SimpleNamespace(model=model, id="mock-id", choices=[choice],
+                               usage=usage)
 
-    _ = _call_llm(model="mock-model", messages=[{"role": "user", "content": "What is 1+1?"}])
+    _ = _call_llm(model="mock-model",
+                  messages=[{"role": "user", "content": "What is 1+1?"}])
     ok = _print_spans("LLM")
     _clear_spans()
     return ok
@@ -217,14 +229,16 @@ def smoke_observe_tool() -> bool:
 
 
 def smoke_trace_client_openai_shape() -> bool:
-    _log("\n=== 5) trace_client instruments OpenAI-compatible client (chat.completions.create) ===")
+    _log(
+        "\n=== 5) trace_client instruments OpenAI-compatible client (chat.completions.create) ===")
 
     class _Completions:
         def create(self, **kwargs: Any) -> Any:
             msg = SimpleNamespace(role="assistant", content="hello")
             choice = SimpleNamespace(message=msg, finish_reason="stop")
             usage = SimpleNamespace(prompt_tokens=10, completion_tokens=5)
-            return SimpleNamespace(model="fake-model", id="fake-id", choices=[choice], usage=usage)
+            return SimpleNamespace(model="fake-model", id="fake-id",
+                                   choices=[choice], usage=usage)
 
     class _Chat:
         completions = _Completions()
@@ -234,7 +248,8 @@ def smoke_trace_client_openai_shape() -> bool:
 
     client = _Client()
     trace_client(client)
-    _ = client.chat.completions.create(model="gpt-fake", messages=[{"role": "user", "content": "hi"}])
+    _ = client.chat.completions.create(model="gpt-fake", messages=[
+        {"role": "user", "content": "hi"}])
     ok = _print_spans("trace_client")
     _clear_spans()
     return ok
@@ -246,10 +261,12 @@ def smoke_trace_tool_single() -> bool:
     class _Tool:
         name = "single_tool"
 
-        def invoke(self, input: Any, config: Any = None, **kwargs: Any) -> Dict[str, Any]:
+        def invoke(self, input: Any, config: Any = None, **kwargs: Any) -> \
+        Dict[str, Any]:
             return {"ok": True, "input": input}
 
-        async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Dict[str, Any]:
+        async def ainvoke(self, input: Any, config: Any = None,
+                          **kwargs: Any) -> Dict[str, Any]:
             await asyncio.sleep(0)
             return {"ok": True, "input": input}
 
@@ -272,7 +289,8 @@ def _is_tracing_enabled() -> bool:
 
 def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(add_help=True)
-    p.add_argument("--quiet", action="store_true", help="Only print final PASS/FAIL summary.")
+    p.add_argument("--quiet", action="store_true",
+                   help="Only print final PASS/FAIL summary.")
     return p.parse_args(list(argv))
 
 
@@ -309,8 +327,9 @@ if __name__ == "__main__":
             _clear_spans()
 
     total = len(checks)
-    print(f"\nRESULT: {'PASS' if passed == total else 'FAIL'} ({passed}/{total})", flush=True)
+    print(
+        f"\nRESULT: {'PASS' if passed == total else 'FAIL'} ({passed}/{total})",
+        flush=True)
     # Some optional tracing dependencies may segfault at interpreter shutdown
     # (outside of this SDK). Hard-exit keeps this script usable as a smoke check.
     os._exit(0)
-

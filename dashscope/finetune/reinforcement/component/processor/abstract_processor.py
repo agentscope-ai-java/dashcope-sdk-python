@@ -7,7 +7,8 @@ Abstract base class definitions for business processing.
 from abc import ABC, abstractmethod
 from typing import Any
 
-from dashscope.finetune.reinforcement.component.data.base_data_model import BaseDataModel
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    BaseDataModel
 
 
 class AbstractProcessor(ABC):

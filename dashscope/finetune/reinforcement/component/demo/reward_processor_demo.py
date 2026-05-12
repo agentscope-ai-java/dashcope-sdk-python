@@ -5,11 +5,15 @@ Demo implementation of Reward Processor.
 Demonstrates rule-based scoring for Agent outputs.
 """
 
-from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import AbstractRewardProcessor
-from dashscope.finetune.reinforcement.component.data.reward_input import RewardInput
-from dashscope.finetune.reinforcement.component.data.reward_output import RewardOutput, Reward
-from dashscope.finetune.reinforcement.component.data.base_data_model import TaskStatus
 from dashscope.finetune.reinforcement.common.log import logger
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    TaskStatus
+from dashscope.finetune.reinforcement.component.data.reward_input import \
+    RewardInput
+from dashscope.finetune.reinforcement.component.data.reward_output import \
+    RewardOutput, Reward
+from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import \
+    AbstractRewardProcessor
 
 
 class DemoRewardProcessor(AbstractRewardProcessor):
@@ -30,7 +34,8 @@ class DemoRewardProcessor(AbstractRewardProcessor):
         Demo implementation: Logs startup message.
         In production, this could load embedding models, initialize databases, etc.
         """
-        logger.info("[DemoRewardProcessor] setup() called - initializing workspace")
+        logger.info(
+            "[DemoRewardProcessor] setup() called - initializing workspace")
         # Demo: No actual initialization needed
         # In production, you might:
         # - Load embedding models for semantic similarity
@@ -49,14 +54,16 @@ class DemoRewardProcessor(AbstractRewardProcessor):
         Returns:
             RewardOutput object containing standardized reward calculation
         """
-        logger.info(f"[DemoRewardProcessor] computing reward for rollout_id={input.rollout_id}")
+        logger.info(
+            f"[DemoRewardProcessor] computing reward for rollout_id={input.rollout_id}")
 
         score = 0.0
 
         if input.ground_truth is not None and input.agent_output.message:
             gt_str = str(input.ground_truth)
             for msg in input.agent_output.message:
-                if isinstance(msg.get("content"), str) and gt_str in msg["content"]:
+                if isinstance(msg.get("content"), str) and gt_str in msg[
+                    "content"]:
                     score = 1.0
                     break
             if score == 0.0 and len(input.agent_output.message) > 0:

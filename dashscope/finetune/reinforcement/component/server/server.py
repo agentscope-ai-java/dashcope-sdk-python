@@ -27,21 +27,17 @@ Extensible HTTP POST server supporting function type configuration via environme
     POST /api/v1       Execute business logic (request body parsing based on FUNC_TYPE)
     GET  /health       Health check
 """
-
-import asyncio
-import inspect
 import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict
-
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from dashscope.finetune.reinforcement.common.log import logger
-from dashscope.finetune.reinforcement.common.model_types import FunctionType as FuncType
+from dashscope.finetune.reinforcement.common.model_types import \
+    FunctionType as FuncType
 from dashscope.finetune.reinforcement.component.func_manager import FuncManager
 from dashscope.finetune.reinforcement.component.observability.tracing import (
     ensure_agentic_rl_baggage_span_processor,
@@ -58,7 +54,8 @@ from dashscope.finetune.reinforcement.component.observability.tracing import (
 _FUNC_TYPE_ENV = os.getenv("FUNC_TYPE", "").strip().lower()
 _PROCESSOR_CLASS_ENV = os.getenv("PROCESSOR_CLASS", "").strip()
 _SERVER_PORT = int(os.getenv("SERVER_PORT", "8000"))
-_ENABLE_LOGGING = os.getenv("ENABLE_LOGGING", "true").strip().lower() not in ("false", "0", "no")
+_ENABLE_LOGGING = os.getenv("ENABLE_LOGGING", "true").strip().lower() not in (
+"false", "0", "no")
 _THREAD_POOL_WORKERS = int(os.getenv("THREAD_POOL_WORKERS", "4"))
 _THREAD_POOL_QUEUE = int(os.getenv("THREAD_POOL_QUEUE", "100"))
 
@@ -121,7 +118,6 @@ logger.info(
     f"processor={type(func_manager.processor).__name__}"
 )
 
-
 # ============================================================================ #
 #                              FastAPI App                                     #
 # ============================================================================ #
@@ -134,7 +130,6 @@ app = FastAPI(
         f"Processor class: {type(func_manager.processor).__name__}"
     ),
 )
-
 
 
 @app.exception_handler(RequestValidationError)
@@ -256,14 +251,16 @@ async def handle_endpoint(request: Request) -> JSONResponse:
             raw_body = await request.json()
         except Exception as ex:
             logger.error(f"[Server] Failed to parse JSON body: {ex}")
-            raise HTTPException(status_code=400, detail=f"Invalid JSON body: {str(ex)}")
+            raise HTTPException(status_code=400,
+                                detail=f"Invalid JSON body: {str(ex)}")
 
         # 2. Parse request using FuncManager
         try:
             processor_input = func_manager.parses(raw_body)
         except Exception as ex:
             logger.error(f"[Server] Request parsing failed: {ex}")
-            raise HTTPException(status_code=422, detail=f"Request parsing error: {str(ex)}")
+            raise HTTPException(status_code=422,
+                                detail=f"Request parsing error: {str(ex)}")
 
         # 3. Check thread pool queue capacity
         queue_size = _executor._work_queue.qsize()
@@ -273,7 +270,8 @@ async def handle_endpoint(request: Request) -> JSONResponse:
                 f"Thread pool queue is full (queue_size={queue_size}, max={_THREAD_POOL_QUEUE})"
             )
             logger.error(f"[Server] {error_msg}")
-            raise HTTPException(status_code=503, detail="Server is busy, please try again later.")
+            raise HTTPException(status_code=503,
+                                detail="Server is busy, please try again later.")
 
         # 4. Execute processor
         result = await func_manager.processes(processor_input)
@@ -377,15 +375,16 @@ if __name__ == "__main__":
         worker_count = cpu_count
 
     logger.info(f"[Server] Starting server on port {_SERVER_PORT}")
-    #logger.info(f"[Server] Trajectory logging enabled: {is_tracing_enabled()}")
-    logger.info(f"[Server] Using {worker_count} workers (CPU cores: {cpu_count})")
+    # logger.info(f"[Server] Trajectory logging enabled: {is_tracing_enabled()}")
+    logger.info(
+        f"[Server] Using {worker_count} workers (CPU cores: {cpu_count})")
 
     # Pass remaining arguments to uvicorn
     sys.argv = [sys.argv[0]] + remaining
 
     # Start uvicorn with calculated worker count
     uvicorn.run(
-        "dashscope.finetune.reinforcement.component.server.server:app", #app,
+        "dashscope.finetune.reinforcement.component.server.server:app",  # app,
         host="0.0.0.0",
         port=_SERVER_PORT,
         workers=worker_count,

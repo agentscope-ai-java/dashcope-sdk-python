@@ -17,20 +17,26 @@ from concurrent.futures import Executor
 from functools import partial
 from typing import Any, Dict, Optional, Type
 
-from dashscope.finetune.reinforcement.common.model_types import FunctionType as FuncType
-from dashscope.finetune.reinforcement.component.data.base_data_model import BaseDataModel
-from dashscope.finetune.reinforcement.component.parser.base_parser import BaseRequestParser
-from dashscope.finetune.reinforcement.component.data.group_reward_input import GroupRewardInput
-from dashscope.finetune.reinforcement.component.parser.reward_parser import RewardRequestParser
-from dashscope.finetune.reinforcement.component.parser.rollout_parser import RolloutRequestParser
-from dashscope.finetune.reinforcement.component.parser.group_reward_parser import GroupRewardRequestParser
-from dashscope.finetune.reinforcement.component.processor import AbstractProcessor as BaseProcessor, AbstractRewardProcessor, AbstractRolloutProcessor, AbstractGroupRewardProcessor
 from dashscope.finetune.reinforcement.common.log import logger
+from dashscope.finetune.reinforcement.common.model_types import \
+    FunctionType as FuncType
+from dashscope.finetune.reinforcement.component.data.base_data_model import \
+    BaseDataModel
 from dashscope.finetune.reinforcement.component.observability.tracing import (
     is_tracing_enabled,
     trace_processor_process,
     async_trace_processor_process,
 )
+from dashscope.finetune.reinforcement.component.parser.base_parser import \
+    BaseRequestParser
+from dashscope.finetune.reinforcement.component.parser.group_reward_parser import \
+    GroupRewardRequestParser
+from dashscope.finetune.reinforcement.component.parser.reward_parser import \
+    RewardRequestParser
+from dashscope.finetune.reinforcement.component.parser.rollout_parser import \
+    RolloutRequestParser
+from dashscope.finetune.reinforcement.component.processor import \
+    AbstractProcessor as BaseProcessor
 
 
 class FuncManager:
@@ -52,12 +58,12 @@ class FuncManager:
     }
 
     def __init__(
-        self,
-        func_type: FuncType,
-        processor: BaseProcessor,
-        *,
-        observe: bool = True,
-        executor: Optional[Executor] = None,
+            self,
+            func_type: FuncType,
+            processor: BaseProcessor,
+            *,
+            observe: bool = True,
+            executor: Optional[Executor] = None,
     ):
         """
         Initialize FuncManager.
@@ -118,7 +124,8 @@ class FuncManager:
         """Create parser instance (internal component, non-customizable)."""
         parser_cls = self._PARSER_MAP.get(func_type)
         if parser_cls is None:
-            raise ValueError(f"No parser registered for func_type={func_type.value}")
+            raise ValueError(
+                f"No parser registered for func_type={func_type.value}")
         return parser_cls()
 
     def register_processor(self, processor: BaseProcessor) -> None:
@@ -136,7 +143,8 @@ class FuncManager:
                 f"Processor must be a BaseProcessor subclass, got {type(processor)}"
             )
         self._processor = processor
-        logger.info(f"[FuncManager] registered custom processor: {type(processor).__name__}")
+        logger.info(
+            f"[FuncManager] registered custom processor: {type(processor).__name__}")
 
     def parses(self, raw_data: Dict[str, Any]) -> BaseDataModel:
         """
@@ -184,12 +192,17 @@ class FuncManager:
         """
         if self._observe and is_tracing_enabled():
             if inspect.iscoroutinefunction(self._processor.process):
-                return await async_trace_processor_process(self._func_type, self._processor, input_data)
-            return await self._run_sync(partial(trace_processor_process, self._func_type, self._processor, input_data))
+                return await async_trace_processor_process(self._func_type,
+                                                           self._processor,
+                                                           input_data)
+            return await self._run_sync(
+                partial(trace_processor_process, self._func_type,
+                        self._processor, input_data))
 
         if inspect.iscoroutinefunction(self._processor.process):
             return await self._processor.process(input_data)
-        return await self._run_sync(partial(self._processor.process, input_data))
+        return await self._run_sync(
+            partial(self._processor.process, input_data))
 
     def execute(self, raw_data: Dict[str, Any]) -> Any:
         """
@@ -206,9 +219,9 @@ class FuncManager:
 
     @classmethod
     def create_from_env(
-        cls,
-        func_type: FuncType,
-        processor_class_path: str,
+            cls,
+            func_type: FuncType,
+            processor_class_path: str,
     ) -> "FuncManager":
         """
         Create FuncManager instance from environment configuration.
@@ -268,7 +281,8 @@ class FuncManager:
         try:
             processor_cls = getattr(module, class_name)
         except AttributeError:
-            raise ImportError(f"Class '{class_name}' not found in '{module_path}'")
+            raise ImportError(
+                f"Class '{class_name}' not found in '{module_path}'")
 
         # Instantiate
         try:

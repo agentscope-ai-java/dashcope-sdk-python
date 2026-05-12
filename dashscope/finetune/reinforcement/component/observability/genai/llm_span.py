@@ -5,18 +5,19 @@ from __future__ import annotations
 import inspect
 from contextlib import contextmanager
 from functools import wraps
+from opentelemetry.trace.status import Status, StatusCode
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterator, Optional, TypeVar
 
-from opentelemetry.trace.status import Status, StatusCode
-
-from dashscope.finetune.reinforcement.component.observability.genai._core import GENAI_AVAILABLE, get_handler
+from dashscope.finetune.reinforcement.component.observability.genai._core import \
+    GENAI_AVAILABLE, get_handler
 from dashscope.finetune.reinforcement.component.observability.genai.messages import (
     dashscope_response_to_output_messages,
     openai_chat_messages_to_input_messages,
     openai_completion_to_output_messages,
 )
-from dashscope.finetune.reinforcement.component.observability.tracing import is_tracing_enabled
+from dashscope.finetune.reinforcement.component.observability.tracing import \
+    is_tracing_enabled
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -33,7 +34,8 @@ def _set_span_error(inv: Any, error: Exception) -> None:
         inv.span.set_status(Status(StatusCode.ERROR, str(error)))
 
 
-def _apply_result_and_status(inv: Any, result: Any, result_mapper: Optional[Callable[[Any, Any], None]]) -> None:
+def _apply_result_and_status(inv: Any, result: Any, result_mapper: Optional[
+    Callable[[Any, Any], None]]) -> None:
     """Apply result to invocation and set OK status."""
     if result_mapper is not None:
         result_mapper(inv, result)
@@ -53,13 +55,13 @@ def genai_llm_span(handler: Any = None) -> Iterator[Any]:
 
 
 def _fill_invocation_from_kwargs(
-    inv: Any,
-    *,
-    provider: Optional[str],
-    kwargs: Dict[str, Any],
-    request_model_arg: str,
-    messages_arg: str,
-    prompt_arg: str,
+        inv: Any,
+        *,
+        provider: Optional[str],
+        kwargs: Dict[str, Any],
+        request_model_arg: str,
+        messages_arg: str,
+        prompt_arg: str,
 ) -> None:
     if provider:
         inv.provider = provider
@@ -83,7 +85,8 @@ def _apply_invocation_from_result_auto(inv: Any, result: Any) -> None:
         inv.input_tokens = getattr(usage, "prompt_tokens", None) or getattr(
             usage, "input_tokens", None
         )
-        inv.output_tokens = getattr(usage, "completion_tokens", None) or getattr(
+        inv.output_tokens = getattr(usage, "completion_tokens",
+                                    None) or getattr(
             usage, "output_tokens", None
         )
 
@@ -96,20 +99,21 @@ def _apply_invocation_from_result_auto(inv: Any, result: Any) -> None:
 
     # DashScope GenerationResponse-like
     if hasattr(result, "output"):
-        inv.response_model_name = getattr(result, "model", None) or inv.request_model
+        inv.response_model_name = getattr(result, "model",
+                                          None) or inv.request_model
         inv.response_id = getattr(result, "request_id", None)
         inv.output_messages = dashscope_response_to_output_messages(result)
 
 
 def observe_llm(
-    _fn: Optional[F] = None,
-    *,
-    provider: Optional[str] = None,
-    request_model_arg: str = "model",
-    messages_arg: str = "messages",
-    prompt_arg: str = "prompt",
-    result_mapper: Optional[Callable[[Any, Any], None]] = None,
-    handler: Any = None,
+        _fn: Optional[F] = None,
+        *,
+        provider: Optional[str] = None,
+        request_model_arg: str = "model",
+        messages_arg: str = "messages",
+        prompt_arg: str = "prompt",
+        result_mapper: Optional[Callable[[Any, Any], None]] = None,
+        handler: Any = None,
 ) -> Any:
     """
     Wrap any LLM call function as an ``llm`` span (decorator style).
@@ -174,15 +178,15 @@ def observe_llm(
 
 
 def run_with_genai_llm_span(
-    fn: Callable[..., Any],
-    /,
-    *fn_args: Any,
-    provider: Optional[str] = None,
-    request_model: Any = None,
-    input_messages: Any = None,
-    result_mapper: Optional[Callable[[Any, Any], None]] = None,
-    handler: Any = None,
-    **fn_kwargs: Any,
+        fn: Callable[..., Any],
+        /,
+        *fn_args: Any,
+        provider: Optional[str] = None,
+        request_model: Any = None,
+        input_messages: Any = None,
+        result_mapper: Optional[Callable[[Any, Any], None]] = None,
+        handler: Any = None,
+        **fn_kwargs: Any,
 ) -> Any:
     """
     Execute an LLM call and wrap it in an ``llm`` span (functional style).
@@ -198,7 +202,8 @@ def run_with_genai_llm_span(
         if request_model is not None:
             inv.request_model = request_model
         if input_messages is not None:
-            inv.input_messages = openai_chat_messages_to_input_messages(input_messages)
+            inv.input_messages = openai_chat_messages_to_input_messages(
+                input_messages)
         try:
             result = fn(*fn_args, **fn_kwargs)
             _apply_result_and_status(inv, result, result_mapper)

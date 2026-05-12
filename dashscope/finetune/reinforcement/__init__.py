@@ -1,12 +1,3 @@
-from dashscope.finetune.reinforcement.common.log import logger
-from dashscope.finetune.reinforcement.common.errors import (
-    AgenticRLError, InputError, OutputError, ConnectionError,
-    OSSConnectionError, OSSUploadError, DeploymentError, RegistrationError,
-    FunctionLoadError, InstanceWarmupError, InstanceQueryError, FunctionLayerError,
-    ValidationError, ConfigurationError,
-    PermissionError, IOErrorWithCode,
-    RuntimeErrorWithCode, ValueErrorWithCode,
-)
 from dashscope.finetune.reinforcement.common.constants import (
     BAILIAN_FILE_API,
     BAILIAN_FILE_TIMEOUT,
@@ -35,54 +26,16 @@ from dashscope.finetune.reinforcement.common.constants import (
     HTTP_REQUEST_TIMEOUT,
     LOGGER_FILTER_FIELDS,
 )
-from dashscope.finetune.reinforcement.common.utils import (
-    check_file,
-    client_fc,
-    create_deployment_files,
-    deep_mask,
-    generate_random_id,
-    get_filepath_classname,
-    upload_zip_to_oss_and_by_signed_url,
-    set_api_key,
-    to_bailian_data,
-    zip_dir,
-    get_func_type_id,
-    deep_remove_none,
-    extract_reward_weights,
-    get_weights_from_file,
-    serialize_for_output,
+from dashscope.finetune.reinforcement.common.errors import (
+    AgenticRLError, InputError, OutputError, BaseConnectionError,
+    OSSConnectionError, OSSUploadError, DeploymentError, RegistrationError,
+    FunctionLoadError, InstanceWarmupError, InstanceQueryError,
+    FunctionLayerError,
+    ValidationError, ConfigurationError,
+    BasePermissionError, IOErrorWithCode,
+    RuntimeErrorWithCode, ValueErrorWithCode,
 )
-from dashscope.finetune.reinforcement.common.model_types import (
-    FileSpec,
-    FunctionType,
-    DatasetsType,
-    DataSourceType,
-    RequestFC,
-    ResponseFC,
-    Status,
-    StatusType,
-    TrainingType,
-)
-
-
-from dashscope.finetune.reinforcement.component.data import (
-    AgentOutput,
-    Reward,
-    RewardInput,
-    RewardOutput,
-    RolloutInput,
-    RolloutOutput,
-    GroupReward,
-    GroupRewardInput,
-    GroupRewardOutput,
-    TaskStatus
-)
-from dashscope.finetune.reinforcement.component import (
-    reward_func,
-    sub_reward_func,
-    aggregate_func,
-)
-from dashscope.finetune.reinforcement.component.func_decorator import RewardProcessorMeta
+from dashscope.finetune.reinforcement.common.log import logger
 from dashscope.finetune.reinforcement.common.model import (
     FunctionComponentModel,
     TuningModel,
@@ -101,6 +54,53 @@ from dashscope.finetune.reinforcement.common.model import (
     AgenticRLTuning,
     Models
 )
+from dashscope.finetune.reinforcement.common.model_types import (
+    FileSpec,
+    FunctionType,
+    DatasetsType,
+    DataSourceType,
+    RequestFC,
+    ResponseFC,
+    Status,
+    StatusType,
+    TrainingType,
+)
+from dashscope.finetune.reinforcement.common.utils import (
+    check_file,
+    client_fc,
+    create_deployment_files,
+    deep_mask,
+    generate_random_id,
+    get_filepath_classname,
+    upload_zip_to_oss_and_by_signed_url,
+    set_api_key,
+    to_bailian_data,
+    zip_dir,
+    get_func_type_id,
+    deep_remove_none,
+    extract_reward_weights,
+    get_weights_from_file,
+    serialize_for_output,
+)
+from dashscope.finetune.reinforcement.component import (
+    reward_func,
+    sub_reward_func,
+    aggregate_func,
+)
+from dashscope.finetune.reinforcement.component.data import (
+    AgentOutput,
+    Reward,
+    RewardInput,
+    RewardOutput,
+    RolloutInput,
+    RolloutOutput,
+    GroupReward,
+    GroupRewardInput,
+    GroupRewardOutput,
+    TaskStatus
+)
+from dashscope.finetune.reinforcement.component.func_decorator import \
+    RewardProcessorMeta
 from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
     AbstractRolloutProcessor
 )
@@ -113,6 +113,7 @@ from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_
 from dashscope.finetune.reinforcement.component.observability import (
     observe_processor
 )
+
 
 def __getattr__(name):
     if name == 'app':
@@ -154,7 +155,7 @@ __all__ = [
     "AgenticRLError",
     "InputError",
     "OutputError",
-    "ConnectionError",
+    "BaseConnectionError",
     "OSSConnectionError",
     "OSSUploadError",
     "DeploymentError",
@@ -165,7 +166,7 @@ __all__ = [
     "InstanceQueryError",
     "ValidationError",
     "ConfigurationError",
-    "PermissionError",
+    "BasePermissionError",
     "IOErrorWithCode",
     "RuntimeErrorWithCode",
     "ValueErrorWithCode",
@@ -218,6 +219,10 @@ __all__ = [
     "sub_reward_func",
     "aggregate_func",
     "RewardProcessorMeta",
+    "AbstractRolloutProcessor",
+    "AbstractRewardProcessor",
+    "AbstractGroupRewardProcessor",
+    "observe_processor",
 
     # Core Models
     "FunctionComponentModel",
@@ -240,4 +245,3 @@ __all__ = [
     # CLI
     "app",
 ]
-

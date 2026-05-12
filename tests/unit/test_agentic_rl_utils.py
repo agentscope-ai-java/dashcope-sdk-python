@@ -1,11 +1,12 @@
-import pytest
 import os
-from pydantic import BaseModel, SecretStr
+import pytest
+from pydantic import BaseModel
 from unittest.mock import patch
 
-from dashscope.finetune.reinforcement import InputError, ConfigurationError
 from dashscope.finetune.reinforcement import FunctionType
-from dashscope.finetune.reinforcement.common.utils import generate_agentic_script, create_deployment_files, \
+from dashscope.finetune.reinforcement import InputError, ConfigurationError
+from dashscope.finetune.reinforcement.common.utils import \
+    generate_agentic_script, create_deployment_files, \
     get_filepath_classname, deep_mask, set_api_key
 
 
@@ -109,7 +110,8 @@ class TestAgenticRLUtils:
         test_dir = tmp_path / "test_project"
         test_dir.mkdir()
         (test_dir / "module").mkdir()
-        (test_dir / "module" / "processor.py").write_text("class MyProcessor: pass")
+        (test_dir / "module" / "processor.py").write_text(
+            "class MyProcessor: pass")
 
         create_deployment_files(
             type=FunctionType.REWARD,
@@ -143,19 +145,22 @@ class TestAgenticRLUtils:
 
     def test_get_filepath_classname_colon_format(self):
         """Test colon-separated format parsing."""
-        filepath, classname = get_filepath_classname("path/to/file.py:ClassName")
+        filepath, classname = get_filepath_classname(
+            "path/to/file.py:ClassName")
         assert filepath == "path/to/file.py"
         assert classname == "ClassName"
 
     def test_get_filepath_classname_dot_format(self):
         """Test dot-separated format parsing."""
-        filepath, classname = get_filepath_classname("module.submodule.ClassName")
+        filepath, classname = get_filepath_classname(
+            "module.submodule.ClassName")
         assert filepath == "module/submodule.py"
         assert classname == "ClassName"
 
     def test_get_filepath_classname_mixed_format(self):
         """Test mixed format parsing."""
-        filepath, classname = get_filepath_classname("path.with.dots/file.py:Class.Name")
+        filepath, classname = get_filepath_classname(
+            "path.with.dots/file.py:Class.Name")
         assert filepath == "path.with.dots/file.py"
         assert classname == "Class.Name"
 

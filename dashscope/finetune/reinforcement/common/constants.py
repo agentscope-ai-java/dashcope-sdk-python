@@ -1,8 +1,6 @@
-from typing import Any
-import os
 import logging
+import os
 
-from dashscope.version import __version__
 
 # --------------------------
 # Environment Configuration
@@ -13,12 +11,14 @@ def get_bool_env(env_var: str, default: bool) -> bool:
     value = os.getenv(env_var, str(default)).strip().lower()
     return value in ('true', '1', 'yes')
 
+
 def get_int_env(env_var: str, default: int) -> int:
     """Safely parse integer environment variable."""
     try:
         return int(os.getenv(env_var, str(default)))
     except ValueError:
         return default
+
 
 # Base URL configuration
 DASHSCOPE_HTTP_BASE_URL = os.environ.get(
@@ -82,15 +82,14 @@ FC_QUERY_API = os.environ.get(
     'FC_QUERY_API',
     f'{FC_BASE_ENDPOINT}/query/faas'
 )
-FC_LAYER_CREATE_API = os.environ.get( # POST
+FC_LAYER_CREATE_API = os.environ.get(  # POST
     'FC_LAYER_CREATE_API',
     f'{FC_BASE_ENDPOINT}/create/faas/layer'
 )
-FC_LAYER_QUERY_API = os.environ.get( # GET
+FC_LAYER_QUERY_API = os.environ.get(  # GET
     'FC_LAYER_QUERY_API',
     f'{FC_BASE_ENDPOINT}/query/faas/layer/status'
 )
-
 
 # --------------------------
 # Function Compute Runtime
@@ -117,7 +116,8 @@ FC_ZIP_EXCLUDE_PATTERNS = os.environ.get(
     '*.swp,*.egg,*.egg-info,*.pyc,*.md,*.log,*.tmp,*.bak,'
     'build,develop-eggs,.eggs,test,tests,tmp,temp,data'
 )
-FC_OSS_FILE_SIZE_WARNING = get_int_env("FC_OSS_FILE_SIZE_WARNING", 200 * 1024 * 1024) # 200M
+FC_OSS_FILE_SIZE_WARNING = get_int_env("FC_OSS_FILE_SIZE_WARNING",
+                                       200 * 1024 * 1024)  # 200M
 
 # --------------------------
 # Tuning Configuration

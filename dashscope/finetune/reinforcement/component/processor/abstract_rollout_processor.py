@@ -7,9 +7,12 @@ Users should inherit this class and implement process() for custom agent inferen
 
 from abc import abstractmethod
 
-from dashscope.finetune.reinforcement.component.processor.abstract_processor import AbstractProcessor
-from dashscope.finetune.reinforcement.component.data.rollout_input import RolloutInput
-from dashscope.finetune.reinforcement.component.data.rollout_output import RolloutOutput
+from dashscope.finetune.reinforcement.component.data.rollout_input import \
+    RolloutInput
+from dashscope.finetune.reinforcement.component.data.rollout_output import \
+    RolloutOutput
+from dashscope.finetune.reinforcement.component.processor.abstract_processor import \
+    AbstractProcessor
 
 
 class AbstractRolloutProcessor(AbstractProcessor):
@@ -35,6 +38,7 @@ class AbstractRolloutProcessor(AbstractProcessor):
         ...             status=TaskStatus.SUCCESS,
         ...         )
     """
+
     def setup(self) -> None:
         """
         Initialize workspace before the server starts processing requests.

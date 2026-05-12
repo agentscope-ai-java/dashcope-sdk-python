@@ -6,32 +6,20 @@ Production-grade command-line interface built with Typer, Rich, and AsyncIO.
 """
 import asyncio
 import json
-import os
-import sys
-from pathlib import Path
-from typing import Optional, List, Dict, Any, Union
-
 import typer
 import yaml
+from pathlib import Path
 from rich.console import Console
+from rich.json import JSON
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from rich.json import JSON
+from typing import Optional, List, Dict, Any
 
 from dashscope.finetune.agentic_rl import AgenticRL
-from dashscope.finetune.reinforcement.common.errors import OutputError
 from dashscope.finetune.reinforcement import (logger,
-                                              set_api_key,
                                               serialize_for_output,
-                                              AgenticRLTuning,
-                                              RolloutFunctionComponent,
-                                              RewardFunctionComponent,
-                                              FunctionType,
-                                              RewardInput,
-                                              RolloutInput,
-                                              RewardOutput,
-                                              RolloutOutput)
-
+                                              FunctionType)
+from dashscope.finetune.reinforcement.common.errors import OutputError
 
 app = typer.Typer(
     name="agentic-rl",
@@ -53,14 +41,19 @@ def format_output(data: Any, fmt: str = "table") -> None:
     if fmt == "json":
         console.print(JSON.from_data(data))
     elif fmt == "yaml":
-        console.print(yaml.dump(data, default_flow_style=False, allow_unicode=True))
+        console.print(
+            yaml.dump(data, default_flow_style=False, allow_unicode=True))
     else:
         if isinstance(data, dict):
-            table = Table(title="Result", show_header=True, header_style="bold cyan")
+            table = Table(title="Result", show_header=True,
+                          header_style="bold cyan")
             table.add_column("Key", style="cyan")
             table.add_column("Value", style="green")
             for k, v in data.items():
-                val = str(v) if not isinstance(v, (dict, list)) else json.dumps(v, ensure_ascii=False, indent=2)
+                val = str(v) if not isinstance(v,
+                                               (dict, list)) else json.dumps(v,
+                                                                             ensure_ascii=False,
+                                                                             indent=2)
                 table.add_row(str(k), val)
             console.print(table)
         else:
@@ -81,7 +74,8 @@ def load_json_input(data_str: str) -> Dict[str, Any]:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    raise ValueError(f"Invalid input: '{data_str}' is neither a valid JSON string nor an existing file path.")
+    raise ValueError(
+        f"Invalid input: '{data_str}' is neither a valid JSON string nor an existing file path.")
 
 
 # ================= CLI Commands =================
@@ -106,15 +100,15 @@ async def _register_fc_async(
         if rollout_classpaths or reward_classpaths or group_reward_classpaths:
             client.tuning.functions = []
             client.tuning.add_function_components(
-                type=FunctionType.ROLLOUT,
+                function_type=FunctionType.ROLLOUT,
                 classpaths=rollout_classpaths,
                 workspace_dir=workspace_dir)
             client.tuning.add_function_components(
-                type=FunctionType.REWARD,
+                function_type=FunctionType.REWARD,
                 classpaths=reward_classpaths,
                 workspace_dir=workspace_dir)
             client.tuning.add_function_components(
-                type=FunctionType.GROUP_REWARD,
+                function_type=FunctionType.GROUP_REWARD,
                 classpaths=group_reward_classpaths,
                 workspace_dir=workspace_dir)
 
@@ -146,13 +140,16 @@ def register_fc(
         group_reward_classpaths: Optional[List[str]] = typer.Option(None,
                                                                     help="List for group-reward class path (file.py:ClassName)"),
 
-        workspace_dir: str = typer.Option("./", help="Local workspace directory"),
-        lazy_load: bool = typer.Option(True, help="Delay instance loading (set False for debugging)"),
+        workspace_dir: str = typer.Option("./",
+                                          help="Local workspace directory"),
+        lazy_load: bool = typer.Option(True,
+                                       help="Delay instance loading (set False for debugging)"),
         api_key: Optional[str] = typer.Option(
             None, "--api-key", envvar="DASHSCOPE_API_KEY",
             help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
         ),
-        output_format: str = typer.Option("json", "--output-format", "-o", help="Output format: table|json|yaml"),
+        output_format: str = typer.Option("json", "--output-format", "-o",
+                                          help="Output format: table|json|yaml"),
 ):
     """🧩 Register Rollout/Reward function components, returns entity_id & instance_id
 
@@ -202,14 +199,18 @@ async def _test_fc_async(
 
 @app.command("test_functions")
 def test_fc(
-        instance_id: str = typer.Argument(..., help="Target function instance ID (e.g., ro-ins-xxx or rw-ins-xxx)"),
-        type: str = typer.Option(..., "--type", "-t", help="Function type: ROLLOUT or REWARD"),
-        input_data: str = typer.Option(..., "--input", "-i", help="JSON string or file path containing test payload"),
+        instance_id: str = typer.Argument(...,
+                                          help="Target function instance ID (e.g., ro-ins-xxx or rw-ins-xxx)"),
+        type: str = typer.Option(..., "--type", "-t",
+                                 help="Function type: ROLLOUT or REWARD"),
+        input_data: str = typer.Option(..., "--input", "-i",
+                                       help="JSON string or file path containing test payload"),
         api_key: Optional[str] = typer.Option(
             None, "--api-key", envvar="DASHSCOPE_API_KEY",
             help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
         ),
-        output_format: str = typer.Option("json", "--output-format", "-o", help="Output format: table|json|yaml"),
+        output_format: str = typer.Option("json", "--output-format", "-o",
+                                          help="Output format: table|json|yaml"),
 ):
     """🧪 Test a registered Rollout/Reward function instance with custom input data."""
     try:
@@ -253,13 +254,16 @@ async def _upload_data_async(
 
 @app.command("upload_data")
 def upload_data(
-        training_files: List[str] = typer.Option(..., help="List of training dataset file paths"),
-        validation_files: Optional[List[str]] = typer.Option(None, help="List of validation dataset file paths"),
+        training_files: List[str] = typer.Option(...,
+                                                 help="List of training dataset file paths"),
+        validation_files: Optional[List[str]] = typer.Option(None,
+                                                             help="List of validation dataset file paths"),
         api_key: Optional[str] = typer.Option(
             None, "--api-key", envvar="DASHSCOPE_API_KEY",
             help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
         ),
-        output_format: str = typer.Option("json", "--output-format", "-o", help="Output format: table|json|yaml"),
+        output_format: str = typer.Option("json", "--output-format", "-o",
+                                          help="Output format: table|json|yaml"),
 ):
     """📦 Upload training/validation datasets to the platform, returns file IDs"""
     try:
@@ -274,114 +278,6 @@ def upload_data(
         console.print(f"[red]❌ Dataset upload failed: {str(e)}[/red]")
         logger.error("Dataset upload error", exc_info=True)
         raise typer.Exit(1)
-
-
-# @app.command("submit")
-# def submit_job(
-#         model: str = typer.Option(..., help="Base model name"),
-#         training_file_ids: List[str] = typer.Option(..., help="Comma-separated list of training file_ids"),
-#
-#         rollout_id: str = typer.Option(..., help="Pre-registered Rollout entity_id"),
-#         reward_ids: Optional[List[str]] = typer.Option(None, help="Comma-separated list of reward entity_ids"),
-#         group_reward_ids: Optional[List[str]] = typer.Option(None,
-#                                                              help="Comma-separated list of group-reward entity_ids"),
-#
-#         rollout_runtime: Optional[str] = typer.Option(None, help="Rollout runtime as JSON string"),
-#         reward_runtimes: Optional[str] = typer.Option(None, help="Reward runtimes as JSON string"),
-#         group_reward_runtimes: Optional[str] = typer.Option(None, help="Group-reward runtimes as JSON string"),
-#
-#         rollout_name: Optional[str] = typer.Option(None, help="Pre-registered Rollout entity_name"),
-#         reward_names: Optional[List[str]] = typer.Option(None, help="Comma-separated list of reward entity_names"),
-#         group_reward_names: Optional[List[str]] = typer.Option(None,
-#                                                              help="Comma-separated list of group-reward entity_names"),
-#
-#         rollout_weight: Optional[float] = typer.Option(None, help="Pre-registered Rollout entity_weight"),
-#         reward_weights: Optional[List[float]] = typer.Option(None, help="Comma-separated list of reward entity_weights"),
-#         group_reward_weights: Optional[List[float]] = typer.Option(None,
-#                                                              help="Comma-separated list of group-reward entity_weights"),
-#
-#         reward_metric_weights: Optional[str] = typer.Option(None,
-#                                                              help="Reward metric weights as JSON string (list of dicts)"),
-#
-#         validation_file_ids: Optional[str] = typer.Option(None, help="Comma-separated list of validation file_ids"),
-#         hyper_parameters: Optional[str] = typer.Option(None, help="Hyperparameters as JSON string"),
-#
-#         job_name: Optional[str] = typer.Option(None, help="Job name"),
-#         api_key: Optional[str] = typer.Option(
-#             None, "--api-key", envvar="DASHSCOPE_API_KEY",
-#             help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
-#         ),
-#         output_format: str = typer.Option("table", "--output-format", "-o", help="Output format: table|json|yaml"),
-# ):
-#     """📤 Submit fine-tuning job (requires pre-registered functions & uploaded datasets)"""
-#     try:
-#         # Parse JSON inputs with error handling
-#         try:
-#             rollout_runtime_dict = json.loads(rollout_runtime) if rollout_runtime else {}
-#             reward_runtimes_list = json.loads(reward_runtimes) if reward_runtimes else []
-#             group_reward_runtimes_list = json.loads(group_reward_runtimes) if group_reward_runtimes else []
-#             reward_metric_weights_list = json.loads(reward_metric_weights) if reward_metric_weights else None
-#             hyper_dict = json.loads(hyper_parameters) if hyper_parameters else {}
-#         except json.JSONDecodeError as e:
-#             console.print(f"[red]❌ JSON parsing error: {str(e)}[/red]")
-#             logger.error("JSON parsing error", exc_info=True)
-#             raise typer.Exit(1)
-#
-#         client = AgenticRL(api_key=api_key)
-#         if rollout_id or reward_ids or group_reward_ids:
-#             client.tuning.functions = []
-#             if rollout_id:
-#                 client.tuning.add_function_components(
-#                     type=FunctionType.ROLLOUT,
-#                     entity_ids=rollout_id,
-#                     runtimes=rollout_runtime_dict,
-#                     names=rollout_name,
-#                     weights=rollout_weight,
-#                 )
-#             if reward_ids:
-#                 client.tuning.add_function_components(
-#                     type=FunctionType.REWARD,
-#                     entity_ids=reward_ids,
-#                     runtimes=reward_runtimes_list,
-#                     names=reward_names,
-#                     weights=reward_weights,
-#                     reward_metric_weights=reward_metric_weights_list,
-#                 )
-#             if group_reward_ids:
-#                 client.tuning.add_function_components(
-#                     type=FunctionType.GROUP_REWARD,
-#                     entity_ids=group_reward_ids,
-#                     runtimes=group_reward_runtimes_list,
-#                     names=group_reward_names,
-#                     weights=group_reward_weights,
-#                 )
-#
-#         result = client.submit_job(
-#             model=model,
-#             training_file_ids=training_file_ids,
-#             validation_file_ids=validation_file_ids,
-#             hyper_parameters=hyper_dict,
-#             job_name=job_name,
-#         )
-#
-#         # Handle API response errors
-#         if result.status_code != 200:
-#             raise OutputError(f"API returned status {result.status_code}: {result.message}")
-#
-#         format_output({
-#             "job_id": result.output.job_id,
-#             "status": result.output.status,
-#             "message": getattr(result, "message", "")
-#         }, fmt=output_format)
-#
-#     except json.JSONDecodeError as e:
-#         console.print(f"[red]❌ JSON parsing error: {str(e)}[/red]")
-#         logger.error("JSON parsing error", exc_info=True)
-#         raise typer.Exit(1)
-#     except Exception as e:
-#         console.print(f"[red]❌ Job submission failed: {str(e)}[/red]")
-#         logger.error("Job submission error", exc_info=True)
-#         raise typer.Exit(1)
 
 
 async def _run_workflow_async(
@@ -408,7 +304,7 @@ async def _run_workflow_async(
     try:
         client = AgenticRL(api_key=api_key)
         client.init(config_path=config_path, **run_kwargs)
-        #result = await client.run(functions=functions)
+        # result = await client.run(functions=functions)
         result = await client.run()
         return result
     except Exception as e:
@@ -418,47 +314,21 @@ async def _run_workflow_async(
 
 @app.command()
 def run(
-        config: Path = typer.Option(..., "-c", "--config", help="Path to YAML configuration file"),
+        config: Path = typer.Option(..., "-c", "--config",
+                                    help="Path to YAML configuration file"),
 
-        # model: Optional[str] = typer.Option(None, help="Base model identifier"),
-        # training_files: Optional[List[str]] = typer.Option(None, help="Paths to training dataset files"),
-        # validation_files: Optional[List[str]] = typer.Option(None, help="Paths to validation dataset files"),
-        #
-        # rollout_classpath: Optional[str] = typer.Option(None,
-        #                                                 help="Python import path to rollout class (module:Class)"),
-        # reward_classpaths: Optional[List[str]] = typer.Option(None,
-        #                                                       help="List for reward class path (file.py:ClassName)"),
-        # group_reward_classpaths: Optional[List[str]] = typer.Option(None,
-        #                                                             help="List for group-reward class path (file.py:ClassName)"),
-        #
-        # rollout_name: Optional[str] = typer.Option(None, help="Pre-registered Rollout entity_name"),
-        # reward_names: Optional[List[str]] = typer.Option(None, help="Comma-separated list of reward entity_names"),
-        # group_reward_names: Optional[List[str]] = typer.Option(None,
-        #                                                      help="Comma-separated list of group-reward entity_names"),
-        #
-        # rollout_weight: Optional[str] = typer.Option(None, help="Pre-registered Rollout entity_weight"),
-        # reward_weights: Optional[List[float]] = typer.Option(None, help="Comma-separated list of reward entity_weights"),
-        # group_reward_weights: Optional[List[float]] = typer.Option(None,
-        #                                                      help="Comma-separated list of group-reward entity_weights"),
-        #
-        # reward_metric_weights: Optional[str] = typer.Option(None,
-        #                                                      help="Reward metric weights as JSON string (list of dicts)"),
-        #
-        # rollout_runtime: Optional[str] = typer.Option(None, help="Rollout runtime as JSON string"),
-        # reward_runtimes: Optional[str] = typer.Option(None, help="Reward runtimes as JSON string"),
-        # group_reward_runtimes: Optional[str] = typer.Option(None, help="Group-reward runtimes as JSON string"),
-        #
-        # hyper_parameters: Optional[str] = typer.Option(None, help="JSON string of hyperparameters"),
-        #
-        job_name: Optional[str] = typer.Option(None, help="Custom name for the tuning job"),
+        job_name: Optional[str] = typer.Option(None,
+                                               help="Custom name for the tuning job"),
         api_key: Optional[str] = typer.Option(
             None, "--api-key", envvar="DASHSCOPE_API_KEY",
             help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
         ),
         # workspace_dir: Optional[str] = typer.Option("./", help="Workspace directory for job artifacts"),
 
-        output_format: str = typer.Option("table", "--output-format", "-o", help="Output format: table|json|yaml"),
-        verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable detailed error traces"),
+        output_format: str = typer.Option("table", "--output-format", "-o",
+                                          help="Output format: table|json|yaml"),
+        verbose: bool = typer.Option(False, "--verbose", "-v",
+                                     help="Enable detailed error traces"),
 ):
     """
     🚀 Launch the complete RL tuning workflow (function registration → dataset upload → job submission)
@@ -472,71 +342,13 @@ def run(
     - reward_classpaths (at least one)
     - training_files (at least one)
     """
-    # # Parse JSON inputs with error handling
-    # try:
-    #     rollout_runtime_dict = json.loads(rollout_runtime) if rollout_runtime else {}
-    #     reward_runtimes_list = json.loads(reward_runtimes) if reward_runtimes else []
-    #     group_reward_runtimes_list = json.loads(group_reward_runtimes) if group_reward_runtimes else []
-    #     reward_metric_weights_list = json.loads(reward_metric_weights) if reward_metric_weights else None
-    #     hyper_dict = json.loads(hyper_parameters) if hyper_parameters else {}
-    # except json.JSONDecodeError as e:
-    #     console.print(f"[red]❌ JSON parsing error: {str(e)}[/red]")
-    #     logger.error("JSON parsing error", exc_info=True)
-    #     raise typer.Exit(1)
-
-    # functions = None
-    # if rollout_classpath or reward_classpaths or group_reward_classpaths:
-    #     client = AgenticRL()
-    #     client.tuning.functions = []
-    #     if rollout_classpath:
-    #         client.tuning.add_function_components(
-    #             type=FunctionType.ROLLOUT,
-    #             classpaths=rollout_classpath,
-    #             runtimes=rollout_runtime_dict,
-    #             names=rollout_name,
-    #             weights=rollout_weight,
-    #             workspace_dir=workspace_dir,
-    #         )
-    #     if reward_classpaths:
-    #         client.tuning.add_function_components(
-    #             type=FunctionType.REWARD,
-    #             classpaths=reward_classpaths,
-    #             runtimes=reward_runtimes_list,
-    #             names=reward_names,
-    #             weights=reward_weights,
-    #             reward_metric_weights=reward_metric_weights_list,
-    #             workspace_dir=workspace_dir,
-    #         )
-    #     if group_reward_classpaths:
-    #         client.tuning.add_function_components(
-    #             type=FunctionType.GROUP_REWARD,
-    #             classpaths=group_reward_classpaths,
-    #             runtimes=group_reward_runtimes_list,
-    #             names=group_reward_names,
-    #             weights=group_reward_weights,
-    #             workspace_dir=workspace_dir,
-    #         )
-    #     functions = client.tuning.functions
-
     # Prepare workflow parameters
     run_kwargs = {
         "job_name": job_name,
-        # "model": model,
-        # "training_files": training_files,
-        # "validation_files": validation_files,
-        # "hyper_parameters": hyper_dict,
     }
 
     # Remove None values to avoid overriding config defaults
     run_kwargs = {k: v for k, v in run_kwargs.items() if v is not None}
-
-    # Validate direct execution parameters
-    # if not config:
-    #     required_params = ["training_files"]
-    #     missing = [p for p in required_params if p not in run_kwargs]
-    #     if missing:
-    #         console.print(f"[red]❌ Missing required parameters: {', '.join(missing)}[/red]")
-    #         raise typer.Exit(1)
 
     try:
         with Progress(
@@ -545,7 +357,8 @@ def run(
                 console=console,
                 transient=True
         ) as progress:
-            task = progress.add_task("🔄 Executing RL tuning workflow...", total=None)
+            task = progress.add_task("🔄 Executing RL tuning workflow...",
+                                     total=None)
 
             # Execute async workflow
             result = asyncio.run(_run_workflow_async(
@@ -557,9 +370,11 @@ def run(
 
             # Handle API response errors
             if result.status_code != 200:
-                raise OutputError(f"API returned status {result.status_code}: {result.message}")
+                raise OutputError(
+                    f"API returned status {result.status_code}: {result.message}")
 
-            progress.update(task, description="[green]✅ Job submitted successfully![/green]")
+            progress.update(task,
+                            description="[green]✅ Job submitted successfully![/green]")
             format_output({
                 "job_id": result.output.job_id,
                 "status": result.output.status,
@@ -581,11 +396,11 @@ def run(
 
 @app.command()
 def get(job_id: str = typer.Argument(..., help="Target job ID"),
-           api_key: Optional[str] = typer.Option(
-               None, "--api-key", envvar="DASHSCOPE_API_KEY",
-               help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
-           ),
-           output_format: str = typer.Option("table", "--output-format", "-o")):
+        api_key: Optional[str] = typer.Option(
+            None, "--api-key", envvar="DASHSCOPE_API_KEY",
+            help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
+        ),
+        output_format: str = typer.Option("table", "--output-format", "-o")):
     """📊 Query the current status and metadata of a specific job"""
     try:
         result = AgenticRL.get(
@@ -594,7 +409,8 @@ def get(job_id: str = typer.Argument(..., help="Target job ID"),
 
         # Handle API response errors
         if result.status_code != 200:
-            raise OutputError(f"API returned status {result.status_code}: {result.message}")
+            raise OutputError(
+                f"API returned status {result.status_code}: {result.message}")
 
         format_output({
             "job_id": result.output.job_id,
@@ -609,12 +425,14 @@ def get(job_id: str = typer.Argument(..., help="Target job ID"),
 
 @app.command("list")
 def list_jobs(page: int = typer.Option(1, "-p", "--page", help="Page number"),
-              size: int = typer.Option(10, "-s", "--size", help="Items per page"),
+              size: int = typer.Option(10, "-s", "--size",
+                                       help="Items per page"),
               api_key: Optional[str] = typer.Option(
                   None, "--api-key", envvar="DASHSCOPE_API_KEY",
                   help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)"
               ),
-              output_format: str = typer.Option("table", "--output-format", "-o")):
+              output_format: str = typer.Option("table", "--output-format",
+                                                "-o")):
     """📋 List historical fine-tuning jobs with pagination"""
     try:
         result = AgenticRL.list(
@@ -624,9 +442,11 @@ def list_jobs(page: int = typer.Option(1, "-p", "--page", help="Page number"),
 
         # Handle API response errors
         if result.status_code != 200:
-            raise OutputError(f"API returned status {result.status_code}: {result.message}")
+            raise OutputError(
+                f"API returned status {result.status_code}: {result.message}")
 
-        output_data = serialize_for_output(result.output if hasattr(result, "output") else result)
+        output_data = serialize_for_output(
+            result.output if hasattr(result, "output") else result)
         format_output(output_data, fmt=output_format)
     except Exception as e:
         console.print(f"[red]❌ List query failed: {str(e)}[/red]")
@@ -649,7 +469,8 @@ def cancel(
 
         # Handle API response errors
         if result.status_code != 200:
-            raise OutputError(f"API returned status {result.status_code}: {result.message}")
+            raise OutputError(
+                f"API returned status {result.status_code}: {result.message}")
 
         console.print(f"[green]✅ Job {job_id} canceled successfully[/green]")
     except Exception as e:
@@ -673,7 +494,8 @@ def delete(
 
         # Handle API response errors
         if result.status_code != 200:
-            raise OutputError(f"API returned status {result.status_code}: {result.message}")
+            raise OutputError(
+                f"API returned status {result.status_code}: {result.message}")
 
         console.print(f"[green]✅ Job {job_id} deleted successfully[/green]")
     except Exception as e:
@@ -702,7 +524,8 @@ def logs(
 
         # Handle API response errors
         if result.status_code != 200:
-            raise OutputError(f"API returned status {result.status_code}: {result.message}")
+            raise OutputError(
+                f"API returned status {result.status_code}: {result.message}")
 
         format_output({
             "job_id": job_id,
