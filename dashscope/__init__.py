@@ -28,8 +28,8 @@ from dashscope.common.env import (
     base_http_api_url,
     base_websocket_api_url,
 )
-from dashscope.customize.deployments import Deployments
-from dashscope.customize.finetunes import FineTunes
+from dashscope.finetune.deployments import Deployments
+from dashscope.finetune.finetunes import FineTunes
 from dashscope.embeddings.batch_text_embedding import BatchTextEmbedding
 from dashscope.embeddings.batch_text_embedding_response import (
     BatchTextEmbeddingResponse,
