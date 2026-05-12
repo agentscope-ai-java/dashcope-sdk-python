@@ -3,7 +3,7 @@ Custom exception hierarchy for the AgenticRL system
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 
 
 class AgenticRLError(Exception):
@@ -67,7 +67,7 @@ class OutputError(AgenticRLError):
     """Raised when service response fails output validation checks"""
 
     def __init__(self, message: str, error_code: int = 1200,
-                 response: Optional[dict] = None):
+                 response: Optional[Dict] = None):
         super().__init__(message, error_code)
         self.response = response
 
@@ -177,8 +177,8 @@ class ValidationError(AgenticRLError):
     """Base class for data validation failures"""
 
     def __init__(self, message: str, error_code: int = 1500,
-                 invalid_data: Optional[dict] = None,
-                 validation_rules: Optional[dict] = None):
+                 invalid_data: Optional[Dict] = None,
+                 validation_rules: Optional[Dict] = None):
         super().__init__(f"Validation failed: {message}", error_code)
         self.invalid_data = invalid_data
         self.validation_rules = validation_rules

@@ -82,7 +82,7 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
 
         async def process(self, input_data: RewardInput) -> RewardOutput:
             """Processes input by executing all sub-reward functions and aggregating results"""
-            sub_rewards: dict[str, RewardOutput] = {}
+            sub_rewards: Dict[str, RewardOutput] = {}
 
             tasks = []
             for name, sub_func in self._reward_meta.sub_functions.items():

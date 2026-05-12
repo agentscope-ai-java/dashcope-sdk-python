@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import Dict
 
 from dashscope.finetune.reinforcement import AbstractRewardProcessor
 from dashscope.finetune.reinforcement import RewardInput, RewardOutput, Reward, \
@@ -65,7 +66,7 @@ class SafetyProcessor(AbstractRewardProcessor):
 
     @aggregate_func
     async def aggregate(self,
-                        sub_rewards: dict[str, RewardOutput]) -> RewardOutput:
+                        sub_rewards: Dict[str, RewardOutput]) -> RewardOutput:
         logger.info("[SafetyProcessor][Async] computing reward for rollout_id")
 
         weights = self.get_weights()

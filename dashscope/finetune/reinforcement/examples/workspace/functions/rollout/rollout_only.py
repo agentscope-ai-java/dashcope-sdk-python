@@ -17,7 +17,7 @@ Observability coverage:
                         1. Single BaseTool
                         2. list[BaseTool]
                         3. tuple[BaseTool]
-                        4. dict[str, BaseTool]
+                        4. Dict[str, BaseTool]
                         5. ToolNode (LangGraph)
                         6. MCP tool (auto-detected provider)
                         7. Custom provider
@@ -174,7 +174,7 @@ class MockBaseTool:
     """Minimal LangChain BaseTool duck-typing implementation.
 
     Used to test trace_tool across all input shapes:
-    - single tool, list, tuple, dict, ToolNode
+    - single tool, list, tuple, Dict, ToolNode
     """
 
     def __init__(self, name: str, result: str = "ok") -> None:
@@ -289,7 +289,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         trace_tool(self._tuple_tools)
         logger.info("[DemoRolloutProcessor] tuple_tools instrumented")
 
-        # 4. dict[str, BaseTool]
+        # 4. Dict[str, BaseTool]
         self._dict_tools = {"dict_tool": MockBaseTool("dict_tool")}
         trace_tool(self._dict_tools)
         logger.info("[DemoRolloutProcessor] dict_tools instrumented")
@@ -341,7 +341,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
     #     │     ├── [TOOL] single_tool     <- trace_tool (single)
     #     │     ├── [TOOL] list_tool_*     <- trace_tool (list)
     #     │     ├── [TOOL] tuple_tool_*    <- trace_tool (tuple)
-    #     │     ├── [TOOL] dict_tool       <- trace_tool (dict)
+    #     │     ├── [TOOL] dict_tool       <- trace_tool (Dict)
     #     │     ├── [TOOL] node_tool_*     <- trace_tool (ToolNode)
     #     │     ├── [TOOL] mcp_auto_tool   <- trace_tool (MCP auto-detected)
     #     │     └── [TOOL] custom_tool     <- trace_tool (custom provider)

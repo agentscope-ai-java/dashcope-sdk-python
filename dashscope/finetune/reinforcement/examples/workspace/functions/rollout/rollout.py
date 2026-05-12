@@ -170,7 +170,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
                     elapsed = time.perf_counter() - start_time
                     logger.info(f"[DEBUG] _async_setup: {elapsed:.4f}s")
 
-    def _get_mcp_servers(self) -> dict:
+    def _get_mcp_servers(self) -> Dict:
         return {
             "calculator": {
                 "transport": "sse",
@@ -287,7 +287,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
         return llm
 
     @staticmethod
-    def _to_langchain_messages(messages: List[Dict]) -> list:
+    def _to_langchain_messages(messages: List[Dict]) -> List:
         lc_messages = []
         for msg in messages:
             role = msg.get("role", "")

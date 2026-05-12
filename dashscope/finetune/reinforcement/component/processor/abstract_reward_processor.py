@@ -6,7 +6,7 @@ Users should inherit this class and implement process() for custom reward calcul
 """
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor, Executor
-from typing import Optional
+from typing import Optional, Dict
 
 from dashscope.finetune.reinforcement.component.data.reward_input import \
     RewardInput
@@ -110,11 +110,11 @@ class AbstractRewardProcessor(AbstractProcessor):
         return {name: self._reward_meta.sub_functions[name].weight
                 for name in self._reward_meta.sub_functions}
 
-    def get_scores(self, sub_rewards: dict[str, RewardOutput]):
+    def get_scores(self, sub_rewards: Dict[str, RewardOutput]):
         return {name: sub_rewards[name].reward.reward_score
                 for name in sub_rewards}
 
-    def get_total(self, sub_rewards: dict[str, RewardOutput]):
+    def get_total(self, sub_rewards: Dict[str, RewardOutput]):
         total = 0.0
         for name, reward_output in sub_rewards.items():
             if name not in self._reward_meta.sub_functions:
@@ -124,7 +124,7 @@ class AbstractRewardProcessor(AbstractProcessor):
                      self._reward_meta.sub_functions[name].weight
         return total
 
-    def get_reward_metrics(self, sub_rewards: dict[str, RewardOutput]):
+    def get_reward_metrics(self, sub_rewards: Dict[str, RewardOutput]):
         reward_metrics = {}
         for name, reward_output in sub_rewards.items():
             # Add namespace prefix to avoid key collisions

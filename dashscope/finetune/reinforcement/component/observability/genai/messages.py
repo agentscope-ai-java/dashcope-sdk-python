@@ -125,7 +125,7 @@ def unwrap_openai_completion(completion: Any) -> Any:
     try:
         if completion is None:
             return None
-        if isinstance(completion, dict):
+        if isinstance(completion, Dict):
             return completion
         if getattr(completion, "choices", None) is not None:
             return completion
@@ -146,7 +146,7 @@ def _shape_args_for_debug(arguments: Any) -> Dict[str, Any]:
         return {"args_type": "None", "args_str_len": 0}
     if isinstance(arguments, str):
         return {"args_type": "str", "args_str_len": len(arguments)}
-    if isinstance(arguments, (dict, list)):
+    if isinstance(arguments, (Dict, list)):
         return {"args_type": type(arguments).__name__,
                 "args_json_len": len(json.dumps(arguments, default=str))}
     return {"args_type": type(arguments).__name__,
@@ -154,7 +154,7 @@ def _shape_args_for_debug(arguments: Any) -> Dict[str, Any]:
 
 
 def _first_tool_call_keys(tc: Any) -> Any:
-    if isinstance(tc, dict):
+    if isinstance(tc, Dict):
         return sorted(tc.keys())
     out = []
     for k in ("function", "name", "args", "id", "type", "arguments"):
@@ -180,7 +180,7 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
     parts: List[Any] = []
     for i, tc in enumerate(tool_calls):
         fn = getattr(tc, "function", None)
-        if fn is None and isinstance(tc, dict):
+        if fn is None and isinstance(tc, Dict):
             fn = tc.get("function")
         name = ""
         args: Any = "{}"
@@ -191,7 +191,7 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
             # ``messages`` history).  Never use ``getattr(fn, "arguments", "{}")`` for dicts:
             # ``getattr`` returns the default literal ``"{}"``, which is truthy and prevents
             # the ``or fn.get("arguments", ...)`` fallback from running — real arguments are lost.
-            if isinstance(fn, dict):
+            if isinstance(fn, Dict):
                 name = fn.get("name") or ""
                 raw_args = fn.get("arguments")
             else:
@@ -201,17 +201,17 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
         else:
             branch = "top_level_lc"
             name = getattr(tc, "name", "") or (
-                tc.get("name") if isinstance(tc, dict) else "")
+                tc.get("name") if isinstance(tc, Dict) else "")
             # LangChain ``ToolCall`` / LC-like dicts: payload lives in top-level ``args``, not
             # OpenAI's nested ``function.arguments`` string.
-            if isinstance(tc, dict):
+            if isinstance(tc, Dict):
                 if tc.get("args") is not None:
                     args = tc["args"]
             else:
                 lc_args = getattr(tc, "args", None)
                 if lc_args is not None:
                     args = lc_args
-        tid = getattr(tc, "id", None) if not isinstance(tc, dict) else tc.get(
+        tid = getattr(tc, "id", None) if not isinstance(tc, Dict) else tc.get(
             "id")
         args_str = _sanitize_tool_call_arguments(args)
         if _debug_llm_tool_calls():
@@ -220,7 +220,7 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
                 if fn is not None:
                     raw_a = (
                         fn.get("arguments", "__sentinel__")
-                        if isinstance(fn, dict)
+                        if isinstance(fn, Dict)
                         else getattr(fn, "arguments", "__sentinel__")
                     )
                     nested_fn_diag = {
@@ -262,7 +262,7 @@ def _extract_tool_calls_from_message_obj(m: Any) -> Any:
     if tc is not None:
         return tc
     ak = getattr(m, "additional_kwargs", None)
-    if isinstance(ak, dict):
+    if isinstance(ak, Dict):
         return ak.get("tool_calls")
     return None
 
@@ -307,7 +307,7 @@ def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
             _debug_llm_tool_calls_log_exc()
     out: List[Any] = []
     for idx, m in enumerate(messages):
-        if isinstance(m, dict):
+        if isinstance(m, Dict):
             raw_role = m.get("role")
             content = m.get("content")
             tool_calls = m.get("tool_calls")
@@ -392,7 +392,7 @@ def openai_completion_to_output_messages(completion: Any) -> List[Any]:
 
     # OpenAI-compatible SDKs sometimes return plain dicts (e.g. http clients or
     # wrappers). Handle both object- and dict-shaped responses.
-    if isinstance(completion, dict):
+    if isinstance(completion, Dict):
         choices = completion.get("choices") or []
     else:
         choices = getattr(completion, "choices", None) or []
@@ -400,21 +400,21 @@ def openai_completion_to_output_messages(completion: Any) -> List[Any]:
         return []
     result: List[Any] = []
     for ch in choices:
-        if isinstance(ch, dict):
+        if isinstance(ch, Dict):
             msg = ch.get("message")
             finish = ch.get("finish_reason") or "stop"
         else:
             msg = getattr(ch, "message", None)
             finish = getattr(ch, "finish_reason", None) or "stop"
 
-        if isinstance(msg, dict):
+        if isinstance(msg, Dict):
             role = msg.get("role") or "assistant"
         else:
             role = getattr(msg, "role",
                            "assistant") if msg is not None else "assistant"
         parts: List[Any] = []
         if msg is not None:
-            if isinstance(msg, dict):
+            if isinstance(msg, Dict):
                 content = msg.get("content")
             else:
                 content = getattr(msg, "content", None)
@@ -423,7 +423,7 @@ def openai_completion_to_output_messages(completion: Any) -> List[Any]:
                     Text(content=content if isinstance(content, str) else str(
                         content))
                 )
-            if isinstance(msg, dict):
+            if isinstance(msg, Dict):
                 tool_calls = msg.get("tool_calls")
             else:
                 tool_calls = getattr(msg, "tool_calls", None)
@@ -452,7 +452,7 @@ def dashscope_response_to_output_messages(response: Any) -> List[Any]:
             role = "assistant"
             parts: List[Any] = []
             if msg is not None:
-                if isinstance(msg, dict):
+                if isinstance(msg, Dict):
                     role = msg.get("role") or "assistant"
                     content = msg.get("content")
                     tool_calls = msg.get("tool_calls")

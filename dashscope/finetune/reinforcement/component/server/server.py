@@ -34,6 +34,7 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from typing import Dict
 
 from dashscope.finetune.reinforcement.common.log import logger
 from dashscope.finetune.reinforcement.common.model_types import \
@@ -228,7 +229,7 @@ async def handle_endpoint(request: Request) -> JSONResponse:
             from opentelemetry import context as otel_context
             from opentelemetry.propagate import extract as otel_extract
 
-            ctx = otel_extract(dict(request.headers))
+            ctx = otel_extract(Dict(request.headers))
             _otel_ctx_token = otel_context.attach(ctx)
             extracted_ok = True
         except Exception:
@@ -281,7 +282,7 @@ async def handle_endpoint(request: Request) -> JSONResponse:
         # 5. Serialize result
         if hasattr(result, "model_dump"):
             response_data = result.model_dump()
-        elif isinstance(result, dict):
+        elif isinstance(result, Dict):
             response_data = result
         else:
             response_data = {"result": result}

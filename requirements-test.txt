@@ -7,3 +7,4 @@ pytest-asyncio
 yapf==0.30.0 # use fix version to ensure consistent auto-styling
 coverage
 pydantic>=2.0,<3.0
+tenacity

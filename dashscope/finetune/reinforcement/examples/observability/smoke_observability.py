@@ -92,7 +92,7 @@ def _log(msg: str) -> None:
 
 
 def _summarize_span(span: Any) -> str:
-    attrs = dict(span.attributes or {})
+    attrs = Dict(span.attributes or {})
     kind = attrs.get("gen_ai.span.kind")
 
     # Keep output customer-friendly: only a few meaningful fields.

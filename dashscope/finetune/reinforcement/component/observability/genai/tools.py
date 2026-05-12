@@ -178,23 +178,23 @@ def _extract_rollout_id_from_config(config: Any) -> str:
     if config is None:
         return "-"
     try:
-        if isinstance(config, dict):
+        if isinstance(config, Dict):
             md = config.get("metadata") or {}
-            if isinstance(md, dict) and md.get("rollout_id") is not None:
+            if isinstance(md, Dict) and md.get("rollout_id") is not None:
                 return str(md["rollout_id"])
             cfg = config.get("configurable")
-            if isinstance(cfg, dict):
+            if isinstance(cfg, Dict):
                 meta = cfg.get("metadata")
-                if isinstance(meta, dict) and meta.get("rollout_id") is not None:
+                if isinstance(meta, Dict) and meta.get("rollout_id") is not None:
                     return str(meta["rollout_id"])
         else:
             md = getattr(config, "metadata", None) or {}
-            if isinstance(md, dict) and md.get("rollout_id") is not None:
+            if isinstance(md, Dict) and md.get("rollout_id") is not None:
                 return str(md["rollout_id"])
             cfg = getattr(config, "configurable", None)
-            if isinstance(cfg, dict):
+            if isinstance(cfg, Dict):
                 meta = cfg.get("metadata")
-                if isinstance(meta, dict) and meta.get("rollout_id") is not None:
+                if isinstance(meta, Dict) and meta.get("rollout_id") is not None:
                     return str(meta["rollout_id"])
     except Exception:
         pass
@@ -458,7 +458,7 @@ class _ToolSpanScope:
             return False
 
 
-def _bind_tool_arguments(fn: Callable[..., Any], args: tuple, kwargs: dict) -> dict:
+def _bind_tool_arguments(fn: Callable[..., Any], args: tuple, kwargs: Dict) -> Dict:
     """Bind positional/keyword arguments to ``fn``'s signature and return a JSON-serialisable dict.
 
     ``self`` / ``cls`` are stripped from the result.  Falls back to an error sentinel on any
@@ -469,7 +469,7 @@ def _bind_tool_arguments(fn: Callable[..., Any], args: tuple, kwargs: dict) -> d
         bound = sig.bind_partial(*args, **kwargs)
         bound.apply_defaults()
         param_names = list(sig.parameters.keys())
-        raw = dict(bound.arguments)
+        raw = Dict(bound.arguments)
         if param_names and param_names[0] in ("self", "cls"):
             raw = {k: v for k, v in raw.items() if k not in ("self", "cls")}
         return _json_serializable(raw)
@@ -590,7 +590,7 @@ def trace_tool(
 
     - ``list[BaseTool]`` / ``tuple[BaseTool]`` — each tool is patched
     - ``ToolNode`` (LangGraph) — internal tools_by_name is expanded and patched
-    - ``dict[str, BaseTool]`` — each value is patched
+    - ``Dict[str, BaseTool]`` — each value is patched
     - Single ``BaseTool`` instance — patched directly
 
     The function is idempotent — patching the same object twice is safe.
@@ -625,7 +625,7 @@ def trace_tool(
         return
 
     # 1. ToolNode (LangGraph) — has .tools_by_name dict
-    if hasattr(tools, "tools_by_name") and isinstance(getattr(tools, "tools_by_name", None), dict):
+    if hasattr(tools, "tools_by_name") and isinstance(getattr(tools, "tools_by_name", None), Dict):
         for tool in tools.tools_by_name.values():
             _patch_single_tool(tool, provider)
         return
@@ -637,7 +637,7 @@ def trace_tool(
         return
 
     # 3. dict (name → tool mapping)
-    if isinstance(tools, dict):
+    if isinstance(tools, Dict):
         for tool in tools.values():
             _patch_single_tool(tool, provider)
         return
@@ -882,7 +882,7 @@ def _extract_tool_arguments(input: Union[str, Dict[str, Any]]) -> Dict[str, Any]
     """
     if isinstance(input, str):
         return {"input": input}
-    if isinstance(input, dict):
+    if isinstance(input, Dict):
         # Ensure the payload is JSON-serializable for the GenAI handler.
         return to_jsonable(input)
     # Fallback: try to serialize

@@ -842,7 +842,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             instance_id: Optional[str] = None,
             instance_url: Optional[str] = None,
             instance_token: Optional[str] = None
-    ) -> dict:
+    ) -> Dict:
         """Validate deployed function functionality."""
         try:
             # Get instance metadata
@@ -884,6 +884,17 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 raise ValidationError("Unsupported input type",
                                       error_code=2402)
 
+        except Exception as e:
+            logger.error(
+                f"Validation failed | Instance: {instance_id}, "
+                f"Error: {str(e)}",
+                exc_info=True
+            )
+            raise ValidationError(
+                f"Function verification failed: {str(e)}", error_code=2403
+            ) from e
+
+        try:
             validated = validator.model_validate(response)
 
             logger.info(
@@ -901,7 +912,8 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 exc_info=True
             )
             raise ValidationError(
-                f"Function verification failed: {str(e)}", error_code=2403
+                f"Function verification failed: "
+                f"{str(e)}, response: {response}", error_code=2404
             ) from e
 
 
@@ -1188,7 +1200,7 @@ class TuningModel(BaseModel):
             if function_runtimes and i <= len(function_runtimes) - 1:
                 runtime_config = function_runtimes[i].copy()
                 if 'env' in runtime_config and isinstance(
-                        runtime_config['env'], dict):
+                        runtime_config['env'], Dict):
                     for key, value in runtime_config['env'].items():
                         if isinstance(value, bool):
                             runtime_config['env'][key] = str(value).lower()

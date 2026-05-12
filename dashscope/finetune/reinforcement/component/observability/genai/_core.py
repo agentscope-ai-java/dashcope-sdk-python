@@ -120,10 +120,10 @@ def to_jsonable(obj: Any, *,
                     pass
         if hasattr(x, "dict") and callable(getattr(x, "dict", None)):
             try:
-                return _inner(x.dict(), depth + 1)  # type: ignore[call-arg]
+                return _inner(x.Dict(), depth + 1)  # type: ignore[call-arg]
             except Exception:
                 pass
-        if isinstance(x, dict):
+        if isinstance(x, Dict):
             out: Dict[str, Any] = {}
             for i, (k, v) in enumerate(x.items()):
                 if i >= limits.max_items:

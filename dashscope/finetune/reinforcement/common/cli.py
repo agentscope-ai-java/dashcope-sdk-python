@@ -44,14 +44,14 @@ def format_output(data: Any, fmt: str = "table") -> None:
         console.print(
             yaml.dump(data, default_flow_style=False, allow_unicode=True))
     else:
-        if isinstance(data, dict):
+        if isinstance(data, Dict):
             table = Table(title="Result", show_header=True,
                           header_style="bold cyan")
             table.add_column("Key", style="cyan")
             table.add_column("Value", style="green")
             for k, v in data.items():
                 val = str(v) if not isinstance(v,
-                                               (dict, list)) else json.dumps(v,
+                                               (Dict, list)) else json.dumps(v,
                                                                              ensure_ascii=False,
                                                                              indent=2)
                 table.add_row(str(k), val)
@@ -180,12 +180,12 @@ async def _test_fc_async(
         func_type: str,
         input_data: Dict[str, Any],
         api_key: Optional[str]
-) -> dict:
+) -> Dict:
     """Core asynchronous testing logic."""
     try:
         result = await AgenticRL.test_functions(
             instance_id=instance_id,
-            type=func_type,
+            function_type=func_type,
             input_data=input_data,
             api_key=api_key,
         )

@@ -304,7 +304,7 @@ def _to_json_friendly(obj: Any) -> Any:
         return _truncate(obj, _SERIALIZE_MAX_STR_LEN)
     if isinstance(obj, (int, float, bool)):
         return obj
-    if isinstance(obj, dict):
+    if isinstance(obj, Dict):
         return {str(k): _to_json_friendly(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [_to_json_friendly(x) for x in obj]
@@ -322,7 +322,7 @@ def _to_json_friendly(obj: Any) -> Any:
             return _to_json_friendly(dumped)
     if hasattr(obj, "dict"):
         try:
-            dumped = obj.dict()  # type: ignore[call-arg]
+            dumped = obj.Dict()  # type: ignore[call-arg]
         except Exception:
             dumped = None
         if dumped is not None:

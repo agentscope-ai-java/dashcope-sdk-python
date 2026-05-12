@@ -100,10 +100,10 @@ async def _handle_response(response) -> Dict[str, Any]:
 async def client_fc(
         api_key: str,
         url: str,
-        input: dict,
+        input: Dict,
         method: str = 'POST',
         content_type: str = 'application/json'
-) -> dict:
+) -> Dict:
     """Client function for Function Compute API requests."""
     return await async_http_request(
         method=method,
@@ -581,9 +581,9 @@ def deep_mask(data: Any) -> Any:
         try:
             data = data.model_dump(mode='json')
         except AttributeError:
-            data = data.dict()
+            data = data.Dict()
 
-    if isinstance(data, dict):
+    if isinstance(data, Dict):
         return {
             key: secret_part_str(
                 val) if key.lower() in LOGGER_FILTER_FIELDS else deep_mask(val)
@@ -686,8 +686,8 @@ def get_func_type_id(func_type: FunctionType):
 
 def deep_remove_none(obj):
     """Recursively remove items with value None from dicts and lists (including nested structures)"""
-    if isinstance(obj, dict):
-        # Process dict: filter keys with non-None values and recursively process values
+    if isinstance(obj, Dict):
+        # Process Dict: filter keys with non-None values and recursively process values
         return {
             k: deep_remove_none(v)
             for k, v in obj.items()
@@ -843,7 +843,7 @@ def serialize_for_output(data: Any) -> Any:
     This function recursively processes data to ensure it can be serialized to formats like JSON.
     It handles:
     - Pydantic V2 models using model_dump()
-    - Pydantic V1 models using dict()
+    - Pydantic V1 models using Dict()
     - Regular objects via their __dict__ attribute
     - Lists, tuples, and dictionaries recursively
     - Other basic types as-is
@@ -852,20 +852,20 @@ def serialize_for_output(data: Any) -> Any:
         data: Input data to serialize (any type)
 
     Returns:
-        Serialized data in a format suitable for output (dict, list, or primitive)
+        Serialized data in a format suitable for output (Dict, list, or primitive)
     """
     # Handle Pydantic models (version detection)
     if hasattr(data, "model_dump"):  # Pydantic V2
         return data.model_dump()
     elif hasattr(data, "dict"):  # Pydantic V1
-        return data.dict()
+        return data.Dict()
 
     # Handle regular objects via their attribute dictionary
     if hasattr(data, "__dict__"):
         data = data.__dict__
 
     # Recursively process container types
-    if isinstance(data, dict):
+    if isinstance(data, Dict):
         return {k: serialize_for_output(v) for k, v in data.items()}
     elif isinstance(data, (list, tuple, set)):
         return [serialize_for_output(item) for item in data]
