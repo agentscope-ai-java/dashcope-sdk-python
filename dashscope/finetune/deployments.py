@@ -9,7 +9,7 @@ from dashscope.client.base_api import (
     PutMixin,
     StreamEventMixin,
 )
-from dashscope.customize.customize_types import (
+from dashscope.finetune.customize_types import (
     Deployment,
     DeploymentDelete,
     DeploymentList,

@@ -8,7 +8,7 @@ from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
 from dashscope.client.base_api import BaseAsyncApi
 from dashscope.common.error import InvalidParameter
 from dashscope.common.logging import logger
-from dashscope.customize.finetunes import FineTunes
+from dashscope.finetune.finetunes import FineTunes
 
 
 class AsrPhraseManager(BaseAsyncApi):

@@ -15,7 +15,7 @@ from dashscope.client.base_api import (
     StreamEventMixin,
 )
 from dashscope.common.constants import TaskStatus
-from dashscope.customize.customize_types import (
+from dashscope.finetune.customize_types import (
     FineTune,
     FineTuneCancel,
     FineTuneDelete,
@@ -229,8 +229,8 @@ class FineTunes(
         cls,
         job_id: str,
         *,
-        offset=1,
-        line=1000,
+        offset: int = 1,
+        line: int = 1000,
         api_key: str = None,
         workspace: str = None,
         **kwargs,
@@ -253,6 +253,7 @@ class FineTunes(
             line=line,
             workspace=workspace,
             api_key=api_key,
+            **kwargs,
         )
 
     @classmethod
