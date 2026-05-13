@@ -1344,7 +1344,7 @@ class TuningModel(Models, BaseModel):
             for i in range(len_entity_ids):
                 self.functions.append(
                     AgenticRLFunctionComponent(
-                        functype=functype,
+                        type=functype,
                         entity_id=entity_ids[i],
                         runtime=(
                             FunctionComponentRuntime(**runtimes[i])
@@ -1372,7 +1372,7 @@ class TuningModel(Models, BaseModel):
             for i in range(len_classpaths):
                 self.functions.append(
                     AgenticRLFunctionComponent(
-                        functype=functype,
+                        type=functype,
                         fcmodel=FunctionComponentModel(
                             zipdir=workspace_dir, classpath=classpaths[i]
                         ),

@@ -68,9 +68,9 @@ async def async_http_request(
 
     async def _make_request() -> Dict[str, Any]:
         """Single attempt: return result on success, raise exception on failure."""
-        async with (aiohttp.ClientSession(
+        async with aiohttp.ClientSession(
             headers=headers, timeout=aiohttp.ClientTimeout(total=timeout)
-        ) as session):
+        ) as session:
             method_upper = method.upper()
 
             if method_upper == "GET":
