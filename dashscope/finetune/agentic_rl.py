@@ -68,7 +68,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         """
         Initialize an AgenticRL instance from a YAML configuration file.
         """
-        self.tuning = TuningModel.load_from_yaml(config_path, **kwargs)
+        self.tuning = TuningModel.load_from_yaml(config_path or "", **kwargs)
 
         return self
 
@@ -103,7 +103,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                 reward_instance_ids,
                 group_reward_instance_ids,
             ) = await self.tuning.register_functions(
-                lazy_load=lazy_load,
+                lazy_load=lazy_load or True,
             )
             logger.info("Function components registered")
         except Exception as e:
@@ -139,8 +139,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                 uploaded_training_ids,
                 uploaded_validation_ids,
             ) = await self.tuning.upload_datasets(
-                training_files=training_files,
-                validation_files=validation_files,
+                training_files=training_files or [],
+                validation_files=validation_files or [],
             )
             logger.info("Datasets uploaded")
         except Exception as e:
@@ -155,8 +155,6 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
     def submit_job(
         self,
         model: Optional[str] = None,
-        # training_file_ids: Optional[Union[List[str], str]] = None,
-        # validation_file_ids: Optional[Union[List[str], str]] = None,
         datasets: Optional[List[Dataset]] = None,
         functions: Optional[
             Union[
@@ -261,7 +259,6 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         try:
             resp = super().call(
                 request,
-                workspace=None,
                 **kwargs,
             )
         except Exception as e:

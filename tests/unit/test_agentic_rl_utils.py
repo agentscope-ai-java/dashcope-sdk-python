@@ -1,7 +1,7 @@
 import os
+from unittest.mock import patch
 import pytest
 from pydantic import BaseModel
-from unittest.mock import patch
 
 from dashscope.finetune.reinforcement import FunctionType
 from dashscope.finetune.reinforcement import InputError, ConfigurationError

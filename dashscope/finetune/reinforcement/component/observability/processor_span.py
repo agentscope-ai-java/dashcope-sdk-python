@@ -273,7 +273,9 @@ def observe_processor(
 
             @wraps(fn)
             # type: ignore[misc]
-            def auto_wrapper(self: Any, input_data: Any, *args: Any, **kwargs: Any) -> Any:
+            def auto_wrapper(
+                self: Any, input_data: Any, *args: Any, **kwargs: Any
+            ) -> Any:
                 has_func_type = (
                     getattr(input_data, "func_type", None) is not None
                 )

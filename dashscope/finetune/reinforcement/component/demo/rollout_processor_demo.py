@@ -49,25 +49,25 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         # - Set up connection pools
         logger.info("[DemoRolloutProcessor] setup() completed")
 
-    def process(self, input: RolloutInput) -> RolloutOutput:
+    def process(self, rl_input: RolloutInput) -> RolloutOutput:
         """
         Demo implementation: Simulates Agent invocation by echoing messages.
 
         Args:
-            input: RolloutInput input parameter
+            rl_input: RolloutInput input parameter
 
         Returns:
             RolloutOutput object containing standardized execution results
         """
         logger.info(
             f"[DemoRolloutProcessor] starting rollout | "
-            f"model={input.model_resource.model_name}"
+            f"model={rl_input.model_resource.model_name}"
         )
 
         start = time.time()
 
         # Demo: Return messages as echo content
-        messages = list(input.messages)
+        messages = list(rl_input.messages)
 
         # Add a simple assistant response
         last_user_msg = ""
@@ -84,7 +84,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         result = RolloutOutput(
             agent_output=AgentOutput(
                 message=messages,
-                rollout_extra=input.rollout_extra,
+                rollout_extra=rl_input.rollout_extra,
                 rollout_metrics={},
             ),
             status=TaskStatus.SUCCESS,

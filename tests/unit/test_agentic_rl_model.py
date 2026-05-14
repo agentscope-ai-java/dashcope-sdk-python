@@ -1,5 +1,5 @@
-import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
+import pytest
 
 from dashscope.finetune.reinforcement import (
     AgenticRLTuning,
@@ -133,6 +133,7 @@ class TestAgenticRLTuning:
         assert tuning.tuning.functions[2].fcmodel.filepath == "path/to/reward2.py"
         assert tuning.tuning.functions[2].runtime.cpu == 2
 
+    # pylint: disable=redefined-outer-name
     @pytest.mark.asyncio
     async def test_register_functions_success(self, agentic_rl_tuning):
         """Test successful function component registration"""
@@ -165,6 +166,7 @@ class TestAgenticRLTuning:
             fc.register.assert_called_once()
             fc.load.assert_called_once()
 
+    # pylint: disable=redefined-outer-name
     @pytest.mark.asyncio
     async def test_register_functions_failure(self, agentic_rl_tuning):
         """Test function component registration failure"""
@@ -184,6 +186,7 @@ class TestAgenticRLTuning:
 
             assert "Function component registration error" in str(exc_info.value)
 
+    # pylint: disable=redefined-outer-name
     @pytest.mark.asyncio
     async def test_register_datasets_success(self, agentic_rl_tuning):
         """Test successful dataset registration"""
@@ -204,6 +207,7 @@ class TestAgenticRLTuning:
             assert agentic_rl_tuning.tuning.datasets[
                        0].file_id == "dummy-file-id"
 
+    # pylint: disable=redefined-outer-name
     @pytest.mark.asyncio
     async def test_upload_datasets_failure(self, agentic_rl_tuning):
         """Test dataset registration failure"""
@@ -222,6 +226,7 @@ class TestAgenticRLTuning:
             assert "Critical failure in dataset registration process" in str(
                 exc_info.value)
 
+    # pylint: disable=redefined-outer-name
     def test_get_entity_ids(self, agentic_rl_tuning):
         """Test getting entity IDs"""
         # Set entity IDs
@@ -240,6 +245,7 @@ class TestAgenticRLTuning:
         group_ids = agentic_rl_tuning.tuning.get_entity_ids(FunctionType.GROUP_REWARD)
         assert group_ids == []
 
+    # pylint: disable=redefined-outer-name
     def test_get_runtimes(self, agentic_rl_tuning):
         """Test getting runtime configurations"""
         # Test getting Rollout runtime
@@ -256,6 +262,7 @@ class TestAgenticRLTuning:
         group_runtimes = agentic_rl_tuning.tuning.get_runtimes(FunctionType.GROUP_REWARD)
         assert group_runtimes == []
 
+    # pylint: disable=redefined-outer-name
     def test_combine_ids_runtimes(self, agentic_rl_tuning):
         """Test combining IDs and runtime configurations"""
         # Set entity IDs
@@ -293,6 +300,7 @@ class TestAgenticRLTuning:
         )
         assert group_functions == []
 
+    # pylint: disable=redefined-outer-name
     def test_combine_ids_runtimes_edge_cases(self):
         """Test edge cases for combining IDs and runtime configurations"""
         # Create empty model
@@ -300,7 +308,7 @@ class TestAgenticRLTuning:
         # Test different types
         for func_type in FunctionType:
             result = tuning_model.combine_ids_runtimes(func_type, [], [])
-            assert result == []
+            assert not result
 
         # Test ID and runtime count mismatch
         tuning_model.add_function_components(

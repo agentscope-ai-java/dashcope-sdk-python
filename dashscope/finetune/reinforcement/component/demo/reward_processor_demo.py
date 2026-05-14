@@ -49,39 +49,39 @@ class DemoRewardProcessor(AbstractRewardProcessor):
         # - Load configuration files
         logger.info("[DemoRewardProcessor] setup() completed")
 
-    def process(self, input: RewardInput) -> RewardOutput:
+    def process(self, rl_input: RewardInput) -> RewardOutput:
         """
         Demo implementation: Calculate simple rewards based on agent_output messages
         and ground_truth matching.
 
         Args:
-            input: RewardInput input parameter
+            rl_input: RewardInput input parameter
 
         Returns:
             RewardOutput object containing standardized reward calculation
         """
         logger.info(
-            f"[DemoRewardProcessor] computing reward for rollout_id={input.rollout_id}"
+            f"[DemoRewardProcessor] computing reward for rollout_id={rl_input.rollout_id}"
         )
 
         score = 0.0
 
-        if input.ground_truth is not None and input.agent_output.message:
-            gt_str = str(input.ground_truth)
-            for msg in input.agent_output.message:
+        if rl_input.ground_truth is not None and rl_input.agent_output.message:
+            gt_str = str(rl_input.ground_truth)
+            for msg in rl_input.agent_output.message:
                 if (
                     isinstance(msg.get("content"), str)
                     and gt_str in msg["content"]
                 ):
                     score = 1.0
                     break
-            if score == 0.0 and len(input.agent_output.message) > 0:
+            if score == 0.0 and len(rl_input.agent_output.message) > 0:
                 score = 0.5
 
         result = RewardOutput(
             reward=Reward(
                 reward_score=score,
-                reward_metrics=input.agent_output.rollout_metrics,
+                reward_metrics=rl_input.agent_output.rollout_metrics,
             ),
             status=TaskStatus.SUCCESS,
             error=None,

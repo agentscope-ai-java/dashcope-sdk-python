@@ -37,12 +37,12 @@ class AbstractProcessor(ABC):
         """
 
     @abstractmethod
-    def process(self, input: BaseDataModel) -> Any:
+    async def process(self, input_data: BaseDataModel) -> Any:
         """
         Execute business logic and return results.
 
         Args:
-            input: Parsed business input object (subclass of BaseDataModel).
+            input_data: Parsed business input object (subclass of BaseDataModel).
 
         Returns:
             Any serializable result object that will be returned to the caller.

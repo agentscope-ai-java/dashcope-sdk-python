@@ -4,6 +4,7 @@ component/processor/abstract_reward_processor.py
 Abstract base class for Reward business processors.
 Users should inherit this class and implement process() for custom reward calculation logic.
 """
+
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
@@ -51,8 +52,8 @@ class AbstractRewardProcessor(AbstractProcessor):
         ...         )
     """
 
-    _reward_meta: RewardProcessorMeta
-    _functions_collected: bool = False
+    reward_meta: RewardProcessorMeta
+    functions_collected: bool = False
 
     def __init__(self, executor: Optional[Executor] = None):
         """
@@ -61,21 +62,21 @@ class AbstractRewardProcessor(AbstractProcessor):
         Args:
             executor: Optional executor for running synchronous functions
         """
-        self._executor = executor or ThreadPoolExecutor()
+        self.executor = executor or ThreadPoolExecutor()
         self._executor_owned = executor is None
         # Collect all sub-functions and aggregate functions during initialization
         # IMPORTANT: Subclasses MUST call super().__init__() to ensure function collection
         self._collect_functions()
 
-    def _collect_functions(self):
+    async def _collect_functions(self):
         """Collect marked sub-functions and aggregate functions in the class"""
         # Prevent duplicate collection
-        if self._functions_collected:
+        if self.functions_collected:
             return
 
         # Ensure metadata exists
-        if not hasattr(self, "_reward_meta"):
-            self._reward_meta = RewardProcessorMeta("default")
+        if not hasattr(self, "reward_meta"):
+            self.reward_meta = RewardProcessorMeta("default")
 
         # Iterate through class methods to collect marked functions
         # Only collect methods defined in this class (not from parent classes)
@@ -94,35 +95,35 @@ class AbstractRewardProcessor(AbstractProcessor):
             if hasattr(attr, "_is_sub_reward_func"):
                 name = getattr(attr, "_sub_reward_name")
                 weight = getattr(attr, "_sub_weight", 1.0)
-                self._reward_meta.sub_functions[name] = SubRewardFunction(
+                self.reward_meta.sub_functions[name] = SubRewardFunction(
                     name, attr, weight
                 )
 
             # Check for aggregate function
-            if hasattr(attr, "_is_aggregate_func"):
-                self._reward_meta.aggregate_function = AggregateFunction(attr)
+            if hasattr(attr, "is_aggregate_func"):
+                self.reward_meta.aggregate_function = AggregateFunction(attr)
 
-        self._functions_collected = True
+        self.functions_collected = True
 
     def shutdown(self):
         """Cleanup resources when the processor is no longer needed."""
-        if self._executor_owned and self._executor is not None:
-            self._executor.shutdown(wait=True)
-            self._executor = None
+        if self._executor_owned and self.executor is not None:
+            self.executor.shutdown(wait=True)
+            self.executor = None
 
     def __del__(self):
         """Ensure executor is cleaned up on garbage collection"""
         if (
             hasattr(self, "_executor_owned")
             and self._executor_owned
-            and self._executor is not None
+            and self.executor is not None
         ):
-            self._executor.shutdown(wait=False)
+            self.executor.shutdown(wait=False)
 
     def get_weights(self):
         return {
-            name: self._reward_meta.sub_functions[name].weight
-            for name in self._reward_meta.sub_functions
+            name: self.reward_meta.sub_functions[name].weight
+            for name in self.reward_meta.sub_functions
         }
 
     def get_scores(self, sub_rewards: Dict[str, RewardOutput]):
@@ -133,13 +134,13 @@ class AbstractRewardProcessor(AbstractProcessor):
     def get_total(self, sub_rewards: Dict[str, RewardOutput]):
         total = 0.0
         for name, reward_output in sub_rewards.items():
-            if name not in self._reward_meta.sub_functions:
+            if name not in self.reward_meta.sub_functions:
                 raise ValueError(
-                    f"Sub-reward function '{name}' is not registered. Available: {list(self._reward_meta.sub_functions.keys())}"
+                    f"Sub-reward function '{name}' is not registered. Available: {list(self.reward_meta.sub_functions.keys())}"
                 )
             total += (
                 reward_output.reward.reward_score
-                * self._reward_meta.sub_functions[name].weight
+                * self.reward_meta.sub_functions[name].weight
             )
         return total
 
@@ -174,12 +175,12 @@ class AbstractRewardProcessor(AbstractProcessor):
         """
 
     @abstractmethod
-    def process(self, input: RewardInput) -> RewardOutput:
+    def process(self, input_data: RewardInput) -> RewardOutput:
         """
         Execute reward calculation logic.
 
         Args:
-            input: Parsed RewardInput input object.
+            input_data: Parsed RewardInput input object.
 
         Returns:
             RewardOutput object containing standardized results (score, rollout_id, status).

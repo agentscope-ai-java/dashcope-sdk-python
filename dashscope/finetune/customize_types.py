@@ -44,11 +44,11 @@ class FineTuneOutput(BaseObjectMixin):
     hyper_parameters: Dict
     training_type: str
     create_time: str
-    end_time: Optional[str] = None
     user_identity: str
     modifier: str
     creator: str
     group: str
+    end_time: Optional[str] = None
     usage: Optional[int] = None
 
     def __init__(self, **kwargs):  # pylint: disable=useless-parent-delegation

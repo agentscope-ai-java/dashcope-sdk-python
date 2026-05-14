@@ -83,14 +83,14 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
     def decorator(cls: Type) -> Type:
         # Create metadata object and attach to class
         meta = RewardProcessorMeta(processor_id)
-        setattr(cls, "_reward_meta", meta)
+        setattr(cls, "reward_meta", meta)
 
         async def process(self, input_data: RewardInput) -> RewardOutput:
             """Processes input by executing all sub-reward functions and aggregating results"""
             sub_rewards: Dict[str, RewardOutput] = {}
 
             tasks = []
-            for name, sub_func in self._reward_meta.sub_functions.items():
+            for name, sub_func in self.reward_meta.sub_functions.items():
                 # Use the decorated function directly
                 func = sub_func.func
 
@@ -101,7 +101,7 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
                     # Run synchronous function in executor
                     loop = asyncio.get_running_loop()
                     task = loop.run_in_executor(
-                        self._executor, func, input_data
+                        self.executor, func, input_data
                     )
                 tasks.append((name, task))
 
@@ -123,9 +123,9 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
                     )
 
             # Call aggregation function if available
-            if self._reward_meta.aggregate_function:
+            if self.reward_meta.aggregate_function:
                 # Get the underlying function (unbound method)
-                func = self._reward_meta.aggregate_function.func
+                func = self.reward_meta.aggregate_function.func
 
                 if asyncio.iscoroutinefunction(func):
                     return await func(sub_rewards)
@@ -133,7 +133,7 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
                     # Run synchronous aggregate function in executor
                     loop = asyncio.get_running_loop()
                     return await loop.run_in_executor(
-                        self._executor,
+                        self.executor,
                         func,
                         sub_rewards,
                     )
@@ -215,5 +215,5 @@ def aggregate_func(func: Callable) -> Callable:
 
         wrapper = sync_wrapper
 
-    wrapper._is_aggregate_func = True
+    wrapper.is_aggregate_func = True
     return wrapper

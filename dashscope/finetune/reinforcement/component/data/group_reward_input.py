@@ -5,8 +5,8 @@ Data model definitions for GroupReward processor input parameters.
 Corresponds to the GroupRewardInput structure in protocol.py.
 """
 
-from pydantic import Field
 from typing import Any, List, Optional
+from pydantic import Field
 
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,

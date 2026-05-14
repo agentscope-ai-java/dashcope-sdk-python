@@ -5,8 +5,8 @@ Data model definitions for Rollout processor output results.
 Corresponds to the RolloutOutput structure in protocol.py.
 """
 
-from pydantic import BaseModel, Field
 from typing import Optional
+from pydantic import BaseModel, Field
 
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     TaskStatus,

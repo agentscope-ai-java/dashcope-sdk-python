@@ -328,7 +328,7 @@ def _to_json_friendly(obj: Any) -> Any:
             return _to_json_friendly(dumped)
     if hasattr(obj, "dict"):
         try:
-            dumped = obj.Dict()  # type: ignore[call-arg]
+            dumped = obj.dict()  # type: ignore[call-arg]
         except Exception:
             dumped = None
         if dumped is not None:

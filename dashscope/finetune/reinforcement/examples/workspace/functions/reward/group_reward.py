@@ -49,28 +49,28 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         # - Load configuration files
         logger.info("[DemoGroupRewardProcessor] setup() completed")
 
-    def process(self, input: GroupRewardInput) -> GroupRewardOutput:
+    def process(self, input_data: GroupRewardInput) -> GroupRewardOutput:
         """
         Demo implementation: Calculate simple rewards for multiple agent outputs
         based on ground_truth matching.
 
         Args:
-            input: GroupRewardInput input parameter
+            input_data: GroupRewardInput input parameter
 
         Returns:
             GroupRewardOutput object containing standardized group reward calculation
         """
         logger.info(
-            f"[DemoGroupRewardProcessor] computing group reward for {len(input.agent_outputs)} outputs"
+            f"[DemoGroupRewardProcessor] computing group reward for {len(input_data.agent_outputs)} outputs"
         )
 
         rewards = []
-        for idx, agent_output in enumerate(input.agent_outputs):
+        for idx, agent_output in enumerate(input_data.agent_outputs):
             score = 0.0
 
             # Check if ground_truth is in messages
-            if input.ground_truth is not None and agent_output.messages:
-                gt_str = str(input.ground_truth)
+            if input_data.ground_truth is not None and agent_output.messages:
+                gt_str = str(input_data.ground_truth)
                 for msg in agent_output.messages:
                     if (
                         isinstance(msg.get("content"), str)

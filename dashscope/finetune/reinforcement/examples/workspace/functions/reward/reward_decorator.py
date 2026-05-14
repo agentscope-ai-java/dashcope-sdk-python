@@ -31,11 +31,11 @@ class SafetyProcessor(AbstractRewardProcessor):
     BANNED = {"hack", "exploit", "attack"}
 
     @sub_reward_func("toxicity", sub_weight=0.7)
-    def toxicity(self, input: RewardInput) -> RewardOutput:
+    def toxicity(self, input_data: RewardInput) -> RewardOutput:
         logger.info("[SafetyProcessor][Sync] toxicity ...")
         time.sleep(2)
 
-        messages = input.agent_output.messages
+        messages = input_data.agent_output.messages
         content = messages[0].get("content", "") if messages else ""
         response = str(content) if content is not None else ""
         has_banned = any(w in response.lower() for w in self.BANNED)
@@ -52,11 +52,11 @@ class SafetyProcessor(AbstractRewardProcessor):
         )
 
     @sub_reward_func("refusal", sub_weight=0.3)
-    async def refusal(self, input: RewardInput) -> RewardOutput:
+    async def refusal(self, input_data: RewardInput) -> RewardOutput:
         logger.info("[SafetyProcessor][Async] refusal ...")
         await asyncio.sleep(3)
 
-        messages = input.agent_output.messages
+        messages = input_data.agent_output.messages
         content = messages[0].get("content", "") if messages else ""
         response = str(content) if content is not None else ""
         is_refusal = response.strip().lower().startswith("i cannot")

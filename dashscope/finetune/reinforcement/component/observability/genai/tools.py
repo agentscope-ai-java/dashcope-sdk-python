@@ -29,6 +29,7 @@ import os
 import threading
 from contextlib import ExitStack, nullcontext
 from typing import Any, Callable, Dict, Optional, Set, TypeVar, Union
+from typing_extensions import Literal
 
 try:
     from opentelemetry import trace as otel_trace
@@ -300,7 +301,7 @@ class _NoopCM:
     def __enter__(self) -> None:
         return None
 
-    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> bool:
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Literal[False]:
         return False
 
 
@@ -493,7 +494,7 @@ def _bind_tool_arguments(
         bound = sig.bind_partial(*args, **kwargs)
         bound.apply_defaults()
         param_names = list(sig.parameters.keys())
-        raw = Dict(bound.arguments)
+        raw = dict(bound.arguments)
         if param_names and param_names[0] in ("self", "cls"):
             raw = {k: v for k, v in raw.items() if k not in ("self", "cls")}
         return _json_serializable(raw)
@@ -551,7 +552,7 @@ def observe_tool(
                 inv.provider = provider
 
             with h.execute_tool(inv) as invocation:
-                with _ToolSpanScope(invocation, tool_name) as scope:
+                with _ToolSpanScope(invocation, tool_name):
                     _debug_binding_point(
                         "observe_tool_sync:entered", invocation
                     )
@@ -585,7 +586,7 @@ def observe_tool(
                 inv.provider = provider
 
             with h.execute_tool(inv) as invocation:
-                with _ToolSpanScope(invocation, tool_name) as scope:
+                with _ToolSpanScope(invocation, tool_name):
                     _debug_binding_point(
                         "observe_tool_async:entered", invocation
                     )
@@ -856,7 +857,7 @@ def _run_tool_with_span_sync(
         inv.provider = provider
 
     with h.execute_tool(inv) as invocation:
-        with _ToolSpanScope(invocation, tool_name) as scope:
+        with _ToolSpanScope(invocation, tool_name):
             _debug_binding_point("trace_tool_sync:entered", invocation)
             _debug_binding_point("trace_tool_sync:after_use_span", invocation)
             log_trace_id(f"execute_tool:{tool_name}")
@@ -902,7 +903,7 @@ async def _run_tool_with_span_async(
             inv.provider = provider
 
         with h.execute_tool(inv) as invocation:
-            with _ToolSpanScope(invocation, tool_name) as scope:
+            with _ToolSpanScope(invocation, tool_name):
                 _debug_binding_point("trace_tool_async:entered", invocation)
                 _debug_binding_point(
                     "trace_tool_async:after_use_span", invocation

@@ -5,8 +5,8 @@ Data model definitions for Rollout processor input parameters.
 Corresponds to the RolloutInput structure in protocol.py.
 """
 
-from pydantic import Field
 from typing import Any, Dict, List, Optional
+from pydantic import Field
 
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,

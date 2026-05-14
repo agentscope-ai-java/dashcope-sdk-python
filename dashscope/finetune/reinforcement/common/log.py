@@ -9,7 +9,7 @@ from dashscope.finetune.reinforcement.common.constants import (
 
 def setup_logger():
     """Initialize and configure the logger with value masking."""
-    logger = logging.getLogger(LOGGER_NAME)
+    _logger = logging.getLogger(LOGGER_NAME)
     level_map = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
@@ -17,7 +17,7 @@ def setup_logger():
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL,
     }
-    logger.setLevel(level_map.get(LOG_LEVEL, logging.INFO))
+    _logger.setLevel(level_map.get(LOG_LEVEL, logging.INFO))
 
     handler = logging.StreamHandler(sys.stdout)
     formatter = logging.Formatter(
@@ -25,9 +25,9 @@ def setup_logger():
     )
     handler.setFormatter(formatter)
 
-    logger.addHandler(handler)
-    logger.propagate = False
-    return logger
+    _logger.addHandler(handler)
+    _logger.propagate = False
+    return _logger
 
 
 logger = setup_logger()

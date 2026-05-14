@@ -79,6 +79,7 @@ def _make_mock_response(
 class _MockSyncCompletions:
     """Sync completions resource attached to .chat.completions."""
 
+    # pylint: disable=unused-argument
     def create(
         self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
     ) -> SimpleNamespace:
@@ -88,6 +89,7 @@ class _MockSyncCompletions:
 class _MockAsyncCompletions:
     """Async completions resource attached to .chat.completions."""
 
+    # pylint: disable=unused-argument
     async def create(
         self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
     ) -> SimpleNamespace:
@@ -122,6 +124,7 @@ class MockOpenAIAsyncClient:
 class MockDirectCompletions:
     """Already a completions object (e.g. ChatOpenAI.client). Has .create, no .chat."""
 
+    # pylint: disable=unused-argument
     async def create(
         self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
     ) -> SimpleNamespace:
@@ -135,6 +138,7 @@ class MockDirectCompletions:
 class _MockLangChainSyncCompletions:
     """Sync completions for LangChain .client attribute."""
 
+    # pylint: disable=unused-argument
     def create(
         self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
     ) -> SimpleNamespace:
@@ -144,6 +148,7 @@ class _MockLangChainSyncCompletions:
 class _MockLangChainAsyncCompletions:
     """Async completions for LangChain .async_client attribute."""
 
+    # pylint: disable=unused-argument
     async def create(
         self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
     ) -> SimpleNamespace:
@@ -202,17 +207,17 @@ class MockBaseTool:
         self.ainvoke_count = 0
 
     def invoke(
-        self, input: Any, config: Any = None, **kwargs: Any
+        self, input_data: Any, config: Any = None, **kwargs: Any
     ) -> Dict[str, Any]:
         self.invoke_count += 1
-        return {"tool": self.name, "result": self._result, "input": input}
+        return {"tool": self.name, "result": self._result, "input": input_data}
 
     async def ainvoke(
-        self, input: Any, config: Any = None, **kwargs: Any
+        self, input_data: Any, config: Any = None, **kwargs: Any
     ) -> Dict[str, Any]:
         self.ainvoke_count += 1
         await asyncio.sleep(0)
-        return {"tool": self.name, "result": self._result, "input": input}
+        return {"tool": self.name, "result": self._result, "input": input_data}
 
 
 class MockMCPTool(MockBaseTool):
@@ -238,7 +243,6 @@ class MockToolNode:
 
 class NotATool:
     """Unsupported object for trace_tool warning test."""
-
 
 
 class DemoRolloutProcessor(AbstractRolloutProcessor):
@@ -471,6 +475,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 
         return results
 
+    # pylint: disable=unused-argument
     @observe_tool(name="response_scorer")
     def _score_response(self, *, messages: List[Dict[str, str]]) -> float:
         """
@@ -484,7 +489,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         return 0.95
 
     @observe_processor
-    async def process(self, input: RolloutInput) -> RolloutOutput:
+    async def process(self, input_data: RolloutInput) -> RolloutOutput:
         """
         Main rollout entrypoint.
 
@@ -494,20 +499,25 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
           3. ``_score_response`` – score the response        (Tool Span)
 
         Args:
-            input: RolloutInput input parameter.
+            input_data: RolloutInput input parameter.
 
         Returns:
             RolloutOutput object containing execution results.
         """
         rollout_id = "unknown"
-        if input.request_metadata and input.request_metadata.rollout_id:
-            rollout_id = input.request_metadata.rollout_id
-        elif input.sample_extra and "rollout_id" in input.sample_extra:
-            rollout_id = input.sample_extra["rollout_id"]
+        if (
+            input_data.request_metadata
+            and input_data.request_metadata.rollout_id
+        ):
+            rollout_id = input_data.request_metadata.rollout_id
+        elif (
+            input_data.sample_extra and "rollout_id" in input_data.sample_extra
+        ):
+            rollout_id = input_data.sample_extra["rollout_id"]
 
         logger.info(
             f"[DemoRolloutProcessor] starting rollout | "
-            f"model={input.model_resource.model_name}, "
+            f"model={input_data.model_resource.model_name}, "
             f"rollout_id={rollout_id}"
         )
 
@@ -515,8 +525,8 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 
         # Step 1: LLM call (produces an LLM Span via @observe_llm)
         llm_response = await self._call_llm(
-            messages=input.messages or [],
-            model=input.model_resource.model_name,
+            messages=input_data.messages or [],
+            model=input_data.model_resource.model_name,
         )
         llm_content = (
             llm_response.choices[0].message.content
@@ -531,13 +541,13 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         )
 
         # Step 3: Score the response (produces a Tool Span via @observe_tool)
-        score = self._score_response(messages=input.messages or [])
+        score = self._score_response(messages=input_data.messages or [])
 
         latency = round(time.time() - start, 4)
 
         agent_output = AgentOutput(
-            messages=input.messages,
-            sample_extra=input.rollout_extra,
+            messages=input_data.messages,
+            sample_extra=input_data.rollout_extra,
             custom_metrics={"latency": latency, "llm_content": llm_content},
             reward_score=score,
         )
@@ -549,6 +559,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         )
 
         logger.info(
-            f"[DemoRolloutProcessor][Async] result: rollout_id={rollout_id}, latency={latency}s, score={score}"
+            f"[DemoRolloutProcessor][Async] result: rollout_id={rollout_id}, "
+            f"latency={latency}s, score={score}"
         )
         return result

@@ -103,21 +103,24 @@ class DemoRewardProcessor(AbstractRewardProcessor):
         logger.info("[DemoRewardProcessor] setup() completed")
 
     @observe_processor
-    async def process(self, input: RewardInput) -> RewardOutput:
+    async def process(self, input_data: RewardInput) -> RewardOutput:
         """
         Demo implementation: Calculate simple rewards based on content length
         and ground_truth matching.
 
         Args:
-            input: RewardInput input parameter.
+            input_data: RewardInput input parameter.
 
         Returns:
             RewardOutput object containing scoring results.
         """
         logger.info("[DemoRewardProcessor] computing reward for rollout_id")
-        messages = input.agent_output.messages
+        messages = input_data.agent_output.messages
         content = messages[-1].get("content", "") if messages else ""
-        score = await evaluate(content, input.ground_truth)
+        score = await evaluate(
+            str(content or ""),
+            str(input_data.ground_truth or ""),
+        )
 
         result = RewardOutput(
             reward=Reward(

@@ -65,7 +65,8 @@ async def main_workflow():
         logger.info("Starting main tests：workflow")
 
         # Defines infrastructure specs for rollout components
-        # env: inject global variables or environment-specific configurations into function components. example: "env":{"ENABLE_TRAJECTORY": True}
+        # env: inject global variables or environment-specific
+        # configurations into function components. example: "env":{"ENABLE_TRAJECTORY": True}
         rollout_runtime = {
             "cpu": 2,
             "memory_size": 4096,
@@ -97,7 +98,8 @@ async def main_workflow():
             job_name="agentic-rl",
             model="qwen3.5-9b",
             # Datasets Configuration
-            # Specifies training data (calc_train_min.jsonl) and validation data (calc_validation_min.jsonl) paths
+            # Specifies training data (calc_train_min.jsonl) and validation
+            # data (calc_validation_min.jsonl) paths
             training_datasets=[
                 TrainingDataset(
                     data_source_type=DataSourceType.FILE_ID,

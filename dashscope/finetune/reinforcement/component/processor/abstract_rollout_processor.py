@@ -61,12 +61,12 @@ class AbstractRolloutProcessor(AbstractProcessor):
         """
 
     @abstractmethod
-    def process(self, input: RolloutInput) -> RolloutOutput:
+    async def process(self, input_data: RolloutInput) -> RolloutOutput:
         """
         Execute rollout logic.
 
         Args:
-            input: Parsed RolloutInput input object.
+            input_data: Parsed RolloutInput input object.
 
         Returns:
             RolloutOutput object containing standardized results (rollout_id, content, status).

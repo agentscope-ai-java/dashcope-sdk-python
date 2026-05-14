@@ -6,9 +6,10 @@ Production-grade command-line interface built with Typer, Rich, and AsyncIO.
 """
 import asyncio
 import json
+from pathlib import Path
+
 import typer
 import yaml
-from pathlib import Path
 from rich.console import Console
 from rich.json import JSON
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -101,12 +102,13 @@ async def _register_fc_async(
         and not group_reward_classpaths
     ):
         console.print(
-            "[red]❌ At least one of rollout_classpaths or reward_classpaths or group_reward_classpaths must be provided[/red]"
+            "[red]❌ At least one of rollout_classpaths or reward_classpaths "
+            "or group_reward_classpaths must be provided[/red]"
         )
         raise typer.Exit(1)
 
     try:
-        client = AgenticRL(api_key=api_key)
+        client = AgenticRL(api_key=api_key or "")
 
         if rollout_classpaths or reward_classpaths or group_reward_classpaths:
             client.tuning.functions = []
@@ -213,9 +215,9 @@ async def _test_fc_async(
     try:
         result = await AgenticRL.test_functions(
             instance_id=instance_id,
-            functype=func_type,
+            functype=FunctionType[func_type.upper()],
             input_data=input_data,
-            api_key=api_key,
+            api_key=api_key or "",
         )
         return result
 
@@ -231,7 +233,7 @@ def test_fc(
         ...,
         help="Target function instance ID (e.g., ro-ins-xxx or rw-ins-xxx)",
     ),
-    type: str = typer.Option(
+    func_type: str = typer.Option(
         ..., "--type", "-t", help="Function type: ROLLOUT or REWARD"
     ),
     input_data: str = typer.Option(
@@ -256,7 +258,7 @@ def test_fc(
         result = asyncio.run(
             _test_fc_async(
                 instance_id=instance_id,
-                func_type=type,
+                func_type=func_type,
                 input_data=input_dict,
                 api_key=api_key,
             )
@@ -276,7 +278,7 @@ async def _upload_data_async(
 ):
     """📦 Upload training/validation datasets to the platform, returns file IDs"""
     try:
-        client = AgenticRL(api_key=api_key)
+        client = AgenticRL(api_key=api_key or "")
         train_ids, val_ids = await client.upload_datasets(
             training_files=training_files, validation_files=validation_files
         )
@@ -329,9 +331,8 @@ def upload_data(
 async def _run_workflow_async(
     config_path: Optional[str],
     api_key: Optional[str],
-    # functions: Optional[Union[List[Union[RolloutFunctionComponent, RewardFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent]],
     run_kwargs: Dict[str, Any],
-) -> Dict[str, Any]:
+) -> FineTune:
     """
     Execute the RL tuning workflow asynchronously.
 
@@ -348,7 +349,7 @@ async def _run_workflow_async(
         RuntimeError: If workflow execution fails
     """
     try:
-        client = AgenticRL(api_key=api_key)
+        client = AgenticRL(api_key=api_key or "")
         client.init(config_path=config_path, **run_kwargs)
         result = await client.run()
         return result
@@ -464,7 +465,7 @@ def get(
 ):
     """📊 Query the current status and metadata of a specific job"""
     try:
-        result = AgenticRL.get(job_id=job_id, api_key=api_key)
+        result = AgenticRL.get(job_id=job_id, api_key=api_key or "")
 
         # Handle API response errors
         if result.status_code != 200:
@@ -498,7 +499,7 @@ def cancel(
 ):
     """🛑 Cancel a running job"""
     try:
-        result = AgenticRL.cancel(job_id=job_id, api_key=api_key)
+        result = AgenticRL.cancel(job_id=job_id, api_key=api_key or "")
 
         # Handle API response errors
         if result.status_code != 200:
@@ -529,7 +530,7 @@ def logs(
     """📜 Fetch job execution logs (supports pagination)"""
     try:
         result = AgenticRL.logs(
-            job_id=job_id, offset=offset, lines=lines, api_key=api_key
+            job_id=job_id, offset=offset, lines=lines, api_key=api_key or ""
         )
 
         # Handle API response errors
@@ -562,7 +563,9 @@ def list_jobs(
 ):
     """📋 List historical fine-tuning jobs with pagination"""
     try:
-        result = AgenticRL.list(page_no=page, page_size=size, api_key=api_key)
+        result = AgenticRL.list(
+            page_no=page, page_size=size, api_key=api_key or ""
+        )
 
         # Handle API response errors
         if result.status_code != 200:

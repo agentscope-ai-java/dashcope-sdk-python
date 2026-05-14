@@ -243,4 +243,5 @@ __all__ = [
     "Observability",
     "AgenticRLTuning",
     "Models",
+    "app",
 ]

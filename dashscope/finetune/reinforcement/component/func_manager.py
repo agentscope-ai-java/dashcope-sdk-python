@@ -42,7 +42,7 @@ from dashscope.finetune.reinforcement.component.parser.rollout_parser import (
     RolloutRequestParser,
 )
 from dashscope.finetune.reinforcement.component.processor import (
-    AbstractProcessor as BaseProcessor,
+    AbstractProcessor,
 )
 
 
@@ -67,7 +67,7 @@ class FuncManager:
     def __init__(
         self,
         func_type: FuncType,
-        processor: BaseProcessor,
+        processor: AbstractProcessor,
         *,
         observe: bool = True,
         executor: Optional[Executor] = None,
@@ -79,27 +79,28 @@ class FuncManager:
             func_type: Function type determining parser
             processor: Processor instance (required)
             observe: Whether to enable OpenTelemetry tracing on process() calls (default: True).
-                     Effective only when ENABLE_TRAJECTORY env var is set. Set to False to disable tracing for this manager.
+                     Effective only when ENABLE_TRAJECTORY env var is set.
+                     Set to False to disable tracing for this manager.
 
         Raises:
             ValueError: If processor is None
-            TypeError: If processor is not a BaseProcessor subclass
+            TypeError: If processor is not a AbstractProcessor subclass
         """
         if processor is None:
             raise ValueError(
                 f"Processor is required for FuncManager. "
                 f"Please provide a processor instance for func_type={func_type.value}"
             )
-        if not isinstance(processor, BaseProcessor):
+        if not isinstance(processor, AbstractProcessor):
             raise TypeError(
-                f"Processor must be a BaseProcessor subclass, got {type(processor)}"
+                f"Processor must be a AbstractProcessor subclass, got {type(processor)}"
             )
 
         self._func_type = func_type
         self._parser = self._create_parser(func_type)
         self._processor = processor
         self._observe = observe
-        self._executor = executor
+        self.executor = executor
 
         logger.info(
             f"[FuncManager] initialized | func_type={func_type.value} | "
@@ -110,7 +111,7 @@ class FuncManager:
 
     def set_executor(self, executor: Optional[Executor]) -> None:
         """Set the executor used to offload sync processors (optional)."""
-        self._executor = executor
+        self.executor = executor
 
     @property
     def func_type(self) -> FuncType:
@@ -123,7 +124,7 @@ class FuncManager:
         return self._parser
 
     @property
-    def processor(self) -> BaseProcessor:
+    def processor(self) -> AbstractProcessor:
         """Get current business processor."""
         return self._processor
 
@@ -136,19 +137,19 @@ class FuncManager:
             )
         return parser_cls()
 
-    def register_processor(self, processor: BaseProcessor) -> None:
+    def register_processor(self, processor: AbstractProcessor) -> None:
         """
         Register custom business processor.
 
         Args:
-            processor: Custom processor instance (must subclass BaseProcessor)
+            processor: Custom processor instance (must subclass AbstractProcessor)
 
         Raises:
-            TypeError: If processor is not a BaseProcessor subclass
+            TypeError: If processor is not a AbstractProcessor subclass
         """
-        if not isinstance(processor, BaseProcessor):
+        if not isinstance(processor, AbstractProcessor):
             raise TypeError(
-                f"Processor must be a BaseProcessor subclass, got {type(processor)}"
+                f"Processor must be a AbstractProcessor subclass, got {type(processor)}"
             )
         self._processor = processor
         logger.info(
@@ -171,7 +172,7 @@ class FuncManager:
         # Avoid blocking the uvicorn event loop when processor.process is sync.
         loop = asyncio.get_running_loop()
         ctx = contextvars.copy_context()
-        return await loop.run_in_executor(self._executor, ctx.run, fn)
+        return await loop.run_in_executor(self.executor, ctx.run, fn)
 
     async def setups(self):
         try:
@@ -251,7 +252,7 @@ class FuncManager:
         Raises:
             ValueError: If processor_class_path is None or empty
             ImportError: If class cannot be imported
-            TypeError: If class is not a BaseProcessor subclass
+            TypeError: If class is not a AbstractProcessor subclass
         """
         if not processor_class_path:
             raise ValueError(
@@ -266,7 +267,7 @@ class FuncManager:
         return cls(func_type, processor=processor)
 
     @staticmethod
-    def _load_processor_class(class_path: str) -> BaseProcessor:
+    def _load_processor_class(class_path: str) -> AbstractProcessor:
         """
         Dynamically load and instantiate processor class.
 
@@ -291,25 +292,29 @@ class FuncManager:
         try:
             module = importlib.import_module(module_path)
         except ImportError as e:
-            raise ImportError(f"Module import failed: '{module_path}' - {e}")
+            raise ImportError(
+                f"Module import failed: '{module_path}' - " f"{e}"
+            ) from e
 
         try:
             processor_cls = getattr(module, class_name)
-        except AttributeError:
+        except AttributeError as exc:
             raise ImportError(
                 f"Class '{class_name}' not found in '{module_path}'"
-            )
+            ) from exc
 
         # Instantiate
         try:
             processor = processor_cls()
         except Exception as e:
-            raise TypeError(f"Instantiation failed for '{class_path}': {e}")
+            raise TypeError(
+                f"Instantiation failed for '{class_path}': {e}"
+            ) from e
 
         # Type validation
-        if not isinstance(processor, BaseProcessor):
+        if not isinstance(processor, AbstractProcessor):
             raise TypeError(
-                f"Class '{class_path}' must inherit BaseProcessor, got: {processor_cls.__bases__}"
+                f"Class '{class_path}' must inherit AbstractProcessor, got: {processor_cls.__bases__}"
             )
 
         return processor

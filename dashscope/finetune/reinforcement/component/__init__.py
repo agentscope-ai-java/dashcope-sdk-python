@@ -82,7 +82,6 @@ from dashscope.finetune.reinforcement.component.processor.abstract_rollout_proce
 __all__ = [
     # Base
     "BaseRequestParser",
-    "BaseProcessor",
     "BaseDataModel",
     "TaskStatus",
     "ModelProtocol",
@@ -104,6 +103,7 @@ __all__ = [
     "RewardRequestParser",
     "RolloutRequestParser",
     # Processors
+    "AbstractProcessor",
     "AbstractRewardProcessor",
     "AbstractRolloutProcessor",
     # Demos

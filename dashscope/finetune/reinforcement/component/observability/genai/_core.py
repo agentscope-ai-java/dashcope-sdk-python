@@ -39,6 +39,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Optional, Set
+from typing_extensions import Literal
 
 try:
     from opentelemetry.util.genai.extended_handler import (
@@ -127,7 +128,7 @@ def to_jsonable(
                     pass
         if hasattr(x, "dict") and callable(getattr(x, "dict", None)):
             try:
-                return _inner(x.Dict(), depth + 1)  # type: ignore[call-arg]
+                return _inner(x.dict(), depth + 1)  # type: ignore[call-arg]
             except Exception:
                 pass
         if isinstance(x, Dict):
@@ -357,7 +358,7 @@ class _NoopCM:
     def __enter__(self) -> Any:
         return SafeInvocationProxy(type("NoopInv", (), {})())
 
-    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> bool:
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Literal[False]:
         return False
 
 

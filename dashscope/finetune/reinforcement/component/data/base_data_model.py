@@ -7,8 +7,8 @@ Base classes and common components for processor input parameters.
 import hashlib
 import uuid
 from enum import Enum
-from pydantic import BaseModel, Field, SecretStr
 from typing import Any, Dict, List, Optional, Union
+from pydantic import BaseModel, Field, SecretStr
 
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,
@@ -73,7 +73,8 @@ class ModelResource(BaseModel):
 
     model_name: str = Field(
         ...,
-        description="The specific identifier for the model (e.g., 'gpt-4o', 'llama-3-70b').",
+        description="The specific identifier for the model (e.g., 'gpt-4o', "
+        "'llama-3-70b').",
     )
     base_url: str = Field(
         ..., description="The endpoint URL for the model provider."
@@ -98,7 +99,8 @@ class RequestMetadata(BaseModel):
     )
     rollout_id: str = Field(
         ...,
-        description="A unique identifier for tracking this specific task execution.",
+        description="A unique identifier for tracking this specific task "
+        "execution.",
     )
     attempt_id: str = Field(
         ...,
@@ -123,12 +125,14 @@ class Task(BaseModel):
 
     prompt: Union[str, List[Dict], Dict] = Field(
         ...,
-        description="Input instructions/questions/message list provided to the agent.",
+        description="Input instructions/questions/message list provided to "
+        "the agent.",
     )
 
     ground_truth: Optional[Any] = Field(
         default=None,
-        description="Reference answer for reward calculation or automated evaluation.",
+        description="Reference answer for reward calculation or automated "
+        "evaluation.",
     )
 
     training_state: Optional[Dict[str, Any]] = Field(
@@ -191,7 +195,8 @@ class AgentOutput(BaseModel):
 
     messages: Optional[List[Dict]] = Field(
         None,
-        description="The complete conversation history or sequence of internal thoughts and actions.",
+        description="The complete conversation history or sequence of "
+        "internal thoughts and actions.",
     )
 
     rollout_extra: Optional[Dict[str, Any]] = Field(
@@ -201,10 +206,12 @@ class AgentOutput(BaseModel):
 
     rollout_metrics: Optional[Dict[str, float]] = Field(
         default_factory=dict,
-        description="Additional evaluation metrics or metadata associated with this output.",
+        description="Additional evaluation metrics or metadata associated "
+        "with this output.",
     )
 
     reward_score: Optional[float] = Field(
         None,
-        description="Scalar feedback score assigned to this output (typically for RL/evaluation).",
+        description="Scalar feedback score assigned to this output ("
+        "typically for RL/evaluation).",
     )

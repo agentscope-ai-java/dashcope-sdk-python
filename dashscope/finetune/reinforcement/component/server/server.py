@@ -32,10 +32,10 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Dict
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from typing import Dict
 
 from dashscope.finetune.reinforcement.common.log import logger
 from dashscope.finetune.reinforcement.common.model_types import (
@@ -78,11 +78,11 @@ def _resolve_func_type(raw: str) -> FuncType:
     """Parse string to FuncType, raises ValueError for invalid types."""
     try:
         return FuncType(raw)
-    except ValueError:
+    except ValueError as exc:
         valid = [t.value for t in FuncType]
         raise ValueError(
             f"Unsupported FUNC_TYPE='{raw}'. Valid values: {valid}"
-        )
+        ) from exc
 
 
 # ============================================================================ #
@@ -109,7 +109,7 @@ if not _PROCESSOR_CLASS_ENV:
 logger.info(f"[Server] PROCESSOR_CLASS={_PROCESSOR_CLASS_ENV}")
 
 # Thread pool configuration (used for sync processors to avoid blocking event loop)
-_executor = ThreadPoolExecutor(max_workers=_THREAD_POOL_WORKERS)
+executor = ThreadPoolExecutor(max_workers=_THREAD_POOL_WORKERS)
 
 # Initialize FuncManager for unified parsing and processing
 func_manager: FuncManager = FuncManager.create_from_env(
@@ -118,7 +118,7 @@ func_manager: FuncManager = FuncManager.create_from_env(
 )
 # Use the server's executor for sync processor offload so queue control and capacity
 # checks remain accurate.
-func_manager.set_executor(_executor)
+func_manager.set_executor(executor)
 logger.info(
     f"[Server] FuncManager initialized | "
     f"parser={type(func_manager.parser).__name__} | "
@@ -186,7 +186,7 @@ async def startup_event():
         logger.info("[Server] Processor setup completed successfully")
     except Exception as ex:
         logger.error(f"[Server] Processor setup failed: {ex}", exc_info=True)
-        raise RuntimeError(f"Processor setup failed: {ex}")
+        raise RuntimeError(f"Processor setup failed: {ex}") from ex
 
     if is_tracing_enabled():
         ensure_agentic_rl_baggage_span_processor()
@@ -205,134 +205,224 @@ async def shutdown_event():
     await maybe_force_flush_async(reason="shutdown")
 
 
+async def _extract_trace_context(request: Request):
+    """
+    Extract and set OpenTelemetry trace context.
+
+    Args:
+        request: FastAPI Request object
+
+    Returns:
+        Tuple of (otel_context_token, upstream_tokens)
+    """
+    if not is_tracing_enabled():
+        return None, None
+
+    _otel_ctx_token = None
+    _upstream_tokens = None
+
+    has_traceparent = "traceparent" in request.headers
+    upstream_trace_id = request.headers.get("x-request-id")
+    extracted_ok = False
+
+    try:
+        from opentelemetry import context as otel_context
+        from opentelemetry.propagate import extract as otel_extract
+
+        # Convert Starlette Headers to plain dict for OTel extraction
+        headers_dict = dict(request.headers.items())
+        ctx = otel_extract(headers_dict)
+        _otel_ctx_token = otel_context.attach(ctx)
+        extracted_ok = True
+    except ImportError:
+        logger.warning("OpenTelemetry not installed, tracing disabled")
+        _otel_ctx_token = None
+    except Exception as e:
+        logger.debug(f"Failed to extract trace context: {e}")
+        _otel_ctx_token = None
+
+    linked = bool(has_traceparent and extracted_ok)
+    _upstream_tokens = set_upstream_trace_linkage(
+        traceparent_present=linked,
+        upstream_trace_id=upstream_trace_id,
+    )
+    return _otel_ctx_token, _upstream_tokens
+
+
+async def _cleanup_trace_context(_otel_ctx_token, _upstream_tokens):
+    """
+    Clean up trace context after request processing.
+
+    Args:
+        _otel_ctx_token: OpenTelemetry context token to detach
+        _upstream_tokens: Upstream trace linkage tokens to reset
+    """
+    if _otel_ctx_token is not None:
+        try:
+            from opentelemetry import context as otel_context
+
+            otel_context.detach(_otel_ctx_token)
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
+    if _upstream_tokens is not None:
+        try:
+            reset_upstream_trace_linkage(_upstream_tokens)
+        except Exception:
+            pass
+
+
+async def _parse_request_body(request: Request) -> Dict:
+    """
+    Parse and validate request JSON body.
+
+    Args:
+        request: FastAPI Request object
+
+    Returns:
+        Parsed JSON body as dictionary
+
+    Raises:
+        HTTPException: If JSON parsing fails
+    """
+    try:
+        raw_body = await request.json()
+        return raw_body
+    except Exception as ex:
+        logger.error(f"[Server] Failed to parse JSON body: {ex}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid JSON body: {str(ex)}"
+        ) from ex
+
+
+async def _parse_processor_input(raw_body: Dict) -> BaseDataModel:
+    """
+    Parse raw request body using FuncManager.
+
+    Args:
+        raw_body: Raw request body dictionary
+
+    Returns:
+        Parsed ProcessorInput object
+
+    Raises:
+        HTTPException: If parsing fails
+    """
+    try:
+        processor_input = func_manager.parses(raw_body)
+        return processor_input
+    except Exception as ex:
+        logger.error(f"[Server] Request parsing failed: {ex}")
+        raise HTTPException(
+            status_code=422, detail=f"Request parsing error: {str(ex)}"
+        ) from ex
+
+
+async def _check_queue_capacity():
+    """
+    Check if thread pool queue has capacity for new requests.
+
+    Raises:
+        HTTPException: If queue is full (503 Service Unavailable)
+    """
+    queue_size = executor._work_queue.qsize()
+    if queue_size >= _THREAD_POOL_QUEUE:
+        error_msg = (
+            f"Too many concurrent requests. "
+            f"Thread pool queue is full (queue_size={queue_size}, max={_THREAD_POOL_QUEUE})"
+        )
+        logger.error(f"[Server] {error_msg}")
+        raise HTTPException(
+            status_code=503,
+            detail="Server is busy, please try again later.",
+        )
+
+
+def _serialize_result(result: Any) -> Dict:
+    """
+    Serialize processor result to dictionary.
+
+    Args:
+        result: Processor output object
+
+    Returns:
+        Dictionary representation of the result
+    """
+    if hasattr(result, "model_dump"):
+        return result.model_dump()
+    elif isinstance(result, Dict):
+        return result
+    else:
+        return {"result": result}
+
+
 @app.post("/api/v1")
 async def handle_endpoint(request: Request) -> JSONResponse:
     """
     Unified business processing endpoint.
 
-    Automatically selects corresponding parser based on FUNC_TYPE to process request body,
+    Automatically selects appropriate parser based on FUNC_TYPE to process request body,
     executes business logic using configured processor, and returns serialized result.
 
     Request body format: JSON, fields determined by FuncType:
     - reward: See RewardInput
     - rollout: See RolloutInput
+
+    Args:
+        request: FastAPI Request object
+
+    Returns:
+        JSONResponse with processing result
     """
     start_time = time.time()
     success = False
-    result = None
     processor_input = None
-    _otel_ctx_token = None
-    _upstream_tokens = None
 
-    # If upstream (e.g. RFT) passes W3C Trace Context headers (traceparent/baggage),
-    # extract and attach them so all spans created in this request inherit the parent.
-    # Never fail the request if extraction is unavailable or malformed.
-    if is_tracing_enabled():
-        has_traceparent = "traceparent" in request.headers
-        upstream_trace_id = request.headers.get("x-request-id")
-        extracted_ok = False
-        try:
-            from opentelemetry import context as otel_context
-            from opentelemetry.propagate import extract as otel_extract
-
-            ctx = otel_extract(Dict(request.headers))
-            _otel_ctx_token = otel_context.attach(ctx)
-            extracted_ok = True
-        except Exception:
-            _otel_ctx_token = None
-
-        linked = bool(has_traceparent and extracted_ok)
-        _upstream_tokens = set_upstream_trace_linkage(
-            traceparent_present=linked,
-            upstream_trace_id=upstream_trace_id,
-        )
-        logger.debug(
-            "[Server] Upstream trace linkage: linked=%s x-request-id=%s",
-            linked,
-            upstream_trace_id or "(missing)",
-        )
+    # Extract trace context from request headers
+    _otel_ctx_token, _upstream_tokens = await _extract_trace_context(request)
 
     try:
-        # 1. Parse request body
-        try:
-            raw_body = await request.json()
-        except Exception as ex:
-            logger.error(f"[Server] Failed to parse JSON body: {ex}")
-            raise HTTPException(
-                status_code=400, detail=f"Invalid JSON body: {str(ex)}"
-            )
+        # Parse request JSON body
+        raw_body = await _parse_request_body(request)
 
-        # 2. Parse request using FuncManager
-        try:
-            processor_input = func_manager.parses(raw_body)
-        except Exception as ex:
-            logger.error(f"[Server] Request parsing failed: {ex}")
-            raise HTTPException(
-                status_code=422, detail=f"Request parsing error: {str(ex)}"
-            )
+        # Parse request using FuncManager
+        processor_input = await _parse_processor_input(raw_body)
 
-        # 3. Check thread pool queue capacity
-        queue_size = _executor._work_queue.qsize()
-        if queue_size >= _THREAD_POOL_QUEUE:
-            error_msg = (
-                f"Too many concurrent requests. "
-                f"Thread pool queue is full (queue_size={queue_size}, max={_THREAD_POOL_QUEUE})"
-            )
-            logger.error(f"[Server] {error_msg}")
-            raise HTTPException(
-                status_code=503,
-                detail="Server is busy, please try again later.",
-            )
+        # Check thread pool queue capacity
+        await _check_queue_capacity()
 
-        # 4. Execute processor
+        # Execute processor
         result = await func_manager.processes(processor_input)
-
         success = True
 
-        # 5. Serialize result
-        if hasattr(result, "model_dump"):
-            response_data = result.model_dump()
-        elif isinstance(result, Dict):
-            response_data = result
-        else:
-            response_data = {"result": result}
+        # Serialize result
+        response_data = _serialize_result(result)
 
-        return JSONResponse(
-            status_code=200,
-            content=response_data,
-        )
+        return JSONResponse(status_code=200, content=response_data)
 
     except HTTPException:
+        # Re-raise HTTP exceptions as-is
         raise
-
     except Exception as ex:
         logger.error(f"[Server] Unexpected error: {ex}", exc_info=True)
         return JSONResponse(
             status_code=500,
-            content={
-                "message": str(ex),
-            },
+            content={"message": str(ex)},
         )
-
     finally:
-        if _otel_ctx_token is not None:
-            try:
-                from opentelemetry import context as otel_context
+        # Clean up trace context
+        await _cleanup_trace_context(_otel_ctx_token, _upstream_tokens)
 
-                otel_context.detach(_otel_ctx_token)
-            except Exception:
-                pass
-        if _upstream_tokens is not None:
-            try:
-                reset_upstream_trace_linkage(_upstream_tokens)
-            except Exception:
-                pass
+        # Log request metrics
         elapsed = round(time.time() - start_time, 4)
         logger.info(
             f"[Server] /api/v1 | func_type={func_type.value} | "
             f"success={success} | elapsed={elapsed}s"
         )
-        # Best-effort flush based on platform/internal env config.
+
+        # Best-effort force flush based on platform/internal env config
         await maybe_force_flush_async(reason="request")
 
 
@@ -368,7 +458,6 @@ if __name__ == "__main__":
     import uvicorn
     import sys
     import argparse
-    import os
     import multiprocessing
 
     # Parse command-line arguments
@@ -381,7 +470,7 @@ if __name__ == "__main__":
     # Calculate worker count (half of CPU cores, max 8)
     cpu_count = multiprocessing.cpu_count() or 1  # Fallback to 1 if None
     if "WORKERS_COUNT" in os.environ:
-        worker_count = max(int(os.environ["WORKERS_COUNT"]), 1)
+        worker_count = max(int(os.environ.get("WORKERS_COUNT", "1")), 1)
     else:
         worker_count = cpu_count
 

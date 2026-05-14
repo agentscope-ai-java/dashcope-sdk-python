@@ -95,22 +95,33 @@ async def main_functions():
         )  # register & load functions
 
         logger.info(
-            f"agentic rl register functions: {rollout_entity_ids=}, {reward_entity_ids=}, {group_reward_entity_ids=}, {rollout_instance_ids=}, {reward_instance_ids=}, {group_reward_instance_ids=}"
+            f"agentic rl register functions: {rollout_entity_ids=},"
+            f" {reward_entity_ids=}, {group_reward_entity_ids=},"
+            f" {rollout_instance_ids=}, {reward_instance_ids=},"
+            f" {group_reward_instance_ids=}"
         )
 
-        with open("./resources/rollout_input.json", "r", encoding='utf-8') as file:
+        with open(
+            "./resources/rollout_input.json", "r", encoding="utf-8"
+        ) as file:
             json_data = json.load(file)
             rollout_input = json_data
 
-        with open("./resources/reward_input.json", "r", encoding='utf-8') as file:
+        with open(
+            "./resources/reward_input.json", "r", encoding="utf-8"
+        ) as file:
             json_data = json.load(file)
             reward_input = json_data
 
-        with open("./resources/reward_decorator_input.json", "r", encoding='utf-8') as file:
+        with open(
+            "./resources/reward_decorator_input.json", "r", encoding="utf-8"
+        ) as file:
             json_data = json.load(file)
             reward_decorator_input = json_data
 
-        with open("./resources/group_reward_input.json", "r", encoding='utf-8') as file:
+        with open(
+            "./resources/group_reward_input.json", "r", encoding="utf-8"
+        ) as file:
             json_data = json.load(file)
             group_reward_input = json_data
 

@@ -18,10 +18,17 @@ from __future__ import annotations
 
 from typing import Any
 
+from .processor_span import observe_processor
+from .genai import trace_client
+from .genai import trace_tool
+from .genai import observe_llm
+from .genai import observe_tool
+
+
 __all__ = [
     # public API
-    "observe_llm",
     "observe_processor",
+    "observe_llm",
     "observe_tool",
     "rollout_context",
     "trace_client",

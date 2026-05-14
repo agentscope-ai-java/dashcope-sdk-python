@@ -8,11 +8,11 @@ import tempfile
 import asyncio
 
 # Third-party Libraries
-import yaml
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Any, Dict, List, Optional, Union
 from typing_extensions import Self
+import yaml
 
 # Local Application
 from dashscope.finetune.reinforcement.common.constants import (
@@ -95,7 +95,7 @@ class Dataset(BaseModel):
     download_url: Optional[str] = None
     mount_storage: Optional[MountStorage] = None
 
-    async def upload_dataset(self) -> str:
+    async def upload_dataset(self) -> Optional[str]:
         if (
             self.data_source_type == DataSourceType.FILE_ID
             and self.file_name is not None
@@ -118,11 +118,6 @@ class Dataset(BaseModel):
 
 class Datasets(BaseModel):
     name: str = None
-    # training_files: Optional[List[FileSpec]] = []
-    # validation_files: Optional[List[FileSpec]] = []
-    #
-    # uploaded_training_ids: Optional[List[str]] = []
-    # uploaded_validation_ids: Optional[List[str]] = []
     datasets: List[Dataset] = None
 
     @classmethod
@@ -130,7 +125,7 @@ class Datasets(BaseModel):
         cls,
         training_files: Union[List[str], str] = None,
         validation_files: Union[List[str], str] = None,
-    ) -> List:
+    ) -> Tuple[Optional[List[str]], Optional[List[str]]]:
         training_files = (
             training_files
             if isinstance(training_files, List)
@@ -189,12 +184,10 @@ class Training(BaseModel):
         """Convert all values in the dict to strings."""
         if v is None:
             return None
-        return {k: val for k, val in v.items()}
+        return dict(v.items())
 
 
-class Observability(BaseModel):
-    def __init__(self, **data):
-        super().__init__(**data)
+class Observability(BaseModel): ...
 
 
 class Models(BaseModel):
@@ -217,7 +210,7 @@ class Models(BaseModel):
         """Load a YAML file and create an instance."""
         try:
             check_file(file_path)
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 d = yaml.load(f.read(), Loader=yaml.SafeLoader)
                 d.update(kwargs)
             logger.info(f"Loaded from YAML: {file_path}")
@@ -247,7 +240,7 @@ class Models(BaseModel):
                 f"The struct of Models class: {model_dict if LOG_LEVEL=='DEBUG' else deep_mask(model_dict)}"
             )
 
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 yaml.safe_dump(
                     model_dict,
                     f,
@@ -411,10 +404,11 @@ class FunctionComponentModel(BaseModel):
                 await upload_zip_to_oss_and_by_signed_url(url, tmp.name)
                 logger.debug(
                     f"Package uploaded | Size: {os.path.getsize(tmp.name)} bytes, "
-                    f"Files: {len(self.extra_files) + 1}"
+                    f"Files: "
+                    f"{len(self.extra_files) + 1 if self.extra_files else 1}"
                 )
 
-                self._clean_temp_files(tmp.name)
+                self.clean_temp_files(tmp.name)
 
         except Exception as e:
             logger.error(
@@ -424,8 +418,10 @@ class FunctionComponentModel(BaseModel):
             raise OSSUploadError(
                 f"Package upload failed: {str(e)}",
                 error_code=2003,
-                endpoint=url,
+                endpoint=url or "",
             ) from e
+
+        return
 
     async def get_layer(self, layer_code: str) -> str:
         """Get FC layer status."""
@@ -466,21 +462,24 @@ class FunctionComponentModel(BaseModel):
                 exc_info=True,
             )
 
-    def _clean_temp_files(self, tmp_path: str) -> None:
+    def clean_temp_files(self, tmp_path: str) -> None:
         """Cleanup temporary deployment files."""
         try:
             for f in [tmp_path]:
                 if os.path.exists(f):
-                    os.remove(f) if os.path.isfile(f) else shutil.rmtree(f)
+                    if os.path.isfile(f):
+                        os.remove(f)
+                    else:
+                        shutil.rmtree(f)
         except Exception as e:
             logger.warning(f"Temp file cleanup failed: {str(e)}")
 
-    def _split_classpath(self):
+    def split_classpath(self):
         self.filepath, self.classname = get_filepath_classname(self.classpath)
 
-    def _get_sub_function_weights(self):
+    def get_sub_function_weights(self):
         if not self.filepath and self.classpath:
-            self._split_classpath()
+            self.split_classpath()
         return get_weights_from_file(self.filepath, self.classname)
 
 
@@ -612,7 +611,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
 
             # Split: classpath to filepath & classname
             if self.fcmodel.classpath:
-                self.fcmodel._split_classpath()
+                self.fcmodel.split_classpath()
 
             # Upload
             await self.fcmodel.to_oss(
@@ -735,19 +734,26 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 )
 
             if FC_LAYER_USED:
+                if self.runtime.layer_code is None:
+                    raise ValueErrorWithCode(
+                        "layer_code is required when FC_LAYER_USED is enabled",
+                        error_code=2205,
+                    )
                 await self.fcmodel.get_layer(
                     layer_code=self.runtime.layer_code
                 )
 
             # Load function instance
-            runtime = runtime or self.runtime
-            runtime = (
-                deep_remove_none({**runtime.model_dump()}) if runtime else {}
+            runtime_obj = runtime or self.runtime
+            runtime_dict = (
+                deep_remove_none({**runtime_obj.model_dump()})
+                if runtime_obj
+                else {}
             )
             job_id = generate_random_id()
             url = f"{FC_LOAD_API}/jobId-{job_id}/{target_entity_id}"
 
-            result = await client_fc(FC_API_KEY, url, runtime)
+            result = await client_fc(FC_API_KEY, url, runtime_dict)
             self.instance_id = result.get("output", {}).get("instanceId", "")
             if not self.instance_id:
                 raise FunctionLoadError(
@@ -896,6 +902,10 @@ class AgenticRLFunctionComponent(Models, BaseModel):
         """Validate deployed function functionality."""
         try:
             # Get instance metadata
+            if instance_id is None:
+                raise ValueErrorWithCode(
+                    "instance_id is required for verification", error_code=2404
+                )
             result = await cls.query(instance_id)
             if result.status.task != StatusType.SUCCEEDED:
                 raise InstanceQueryError(
@@ -1011,9 +1021,7 @@ class RewardFunctionComponent(AgenticRLFunctionComponent):
         oss_url: Optional[str] = None,
     ) -> ResponseFC:
         if not self.reward_metric_weight:
-            self.reward_metric_weight = (
-                self.fcmodel._get_sub_function_weights()
-            )
+            self.reward_metric_weight = self.fcmodel.get_sub_function_weights()
         result = await super().register(oss_id=oss_id, oss_url=oss_url)
         return result
 
@@ -1237,7 +1245,7 @@ class TuningModel(Models, BaseModel):
         if runtimes:
             runtimes = [runtimes] if isinstance(runtimes, Dict) else runtimes
         function_ids = ids or self.get_entity_ids(functype)
-        function_runtimes = runtimes or self.get_runtimes(functype)
+        function_runtimes = runtimes or self.get_runtimes(functype) or []
 
         self.set_names(functype)
         function_names = self.get_names(functype)
@@ -1337,6 +1345,7 @@ class TuningModel(Models, BaseModel):
         if (
             len_entity_ids > 0
         ):  # Prefer entity_ids over classpaths when available
+            assert entity_ids is not None
             for i in range(len_entity_ids):
                 self.functions.append(
                     AgenticRLFunctionComponent(
@@ -1365,6 +1374,7 @@ class TuningModel(Models, BaseModel):
                     )
                 )
         else:
+            assert classpaths is not None
             for i in range(len_classpaths):
                 self.functions.append(
                     AgenticRLFunctionComponent(

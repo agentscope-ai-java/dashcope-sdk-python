@@ -9,6 +9,8 @@ import multiprocessing
 import operator
 import socket
 import time
+from mcp.server.fastmcp import FastMCP
+from typing import Dict, List
 from langchain_core.messages import (
     AIMessage,
     ChatMessage,
@@ -22,8 +24,6 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
-from mcp.server.fastmcp import FastMCP
-from typing import Dict, List
 
 from dashscope.finetune.reinforcement import RolloutInput, RolloutOutput
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
@@ -89,8 +89,8 @@ def _evaluate_exp(expression: str) -> str:
         expression.replace("^", "**").replace("ร�", "*").replace("รท", "/")
     )
     parsed_expr = ast.parse(expression, mode="eval")
-    result = eval_expr(parsed_expr.body)
-    return str(result)
+    evaluation_result = eval_expr(parsed_expr.body)
+    return str(evaluation_result)
 
 
 mcp = FastMCP("calculator", port=MCP_PORT)
@@ -114,12 +114,12 @@ def _wait_for_port(
         try:
             with socket.create_connection((host, port), timeout=1):
                 return True
-        except OSError:
+        except OSError as exc:
             time.sleep(0.5)
             if time.perf_counter() - start_time >= timeout:
                 raise TimeoutError(
                     f"[DashSystem] Cannot connect to {port} in {timeout} s!"
-                )
+                ) from exc
 
 
 # ============================================================================ #
@@ -267,9 +267,9 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
     #  Helpers                                                            #
     # ------------------------------------------------------------------ #
 
-    def _build_llm(self, input: RolloutInput) -> ChatOpenAI:
-        resource = input.model_resource
-        params = input.sampling_params or {}
+    def _build_llm(self, input_data: RolloutInput) -> ChatOpenAI:
+        resource = input_data.model_resource
+        params = input_data.sampling_params or {}
         api_key = (
             resource.api_key.get_secret_value()
             if hasattr(resource.api_key, "get_secret_value")
@@ -316,16 +316,22 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
     #  Core rollout logic                                                 #
     # ------------------------------------------------------------------ #
 
-    async def _async_process(self, input: RolloutInput) -> RolloutOutput:
+    async def _async_process(self, input_data: RolloutInput) -> RolloutOutput:
         rollout_id = "unknown"
-        if input.request_metadata and input.request_metadata.rollout_id:
-            rollout_id = input.request_metadata.rollout_id
-        elif input.rollout_extra and "rollout_id" in input.rollout_extra:
-            rollout_id = input.rollout_extra["rollout_id"]
+        if (
+            input_data.request_metadata
+            and input_data.request_metadata.rollout_id
+        ):
+            rollout_id = input_data.request_metadata.rollout_id
+        elif (
+            input_data.rollout_extra
+            and "rollout_id" in input_data.rollout_extra
+        ):
+            rollout_id = input_data.rollout_extra["rollout_id"]
 
         logger.info(
             f"[CalcXRolloutProcessor] Starting rollout {rollout_id} "
-            f"with model {input.model_resource.model_name} at {input.model_resource.base_url}"
+            f"with model {input_data.model_resource.model_name} at {input_data.model_resource.base_url}"
         )
 
         start_time = time.time()
@@ -334,19 +340,19 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
             tools = self._shared_tools
             graph = self._shared_graph
 
-            llm = self._build_llm(input)
+            llm = self._build_llm(input_data)
             model_with_tools = llm.bind_tools(tools)
 
-            messages = self._to_langchain_messages(input.messages)
+            messages = self._to_langchain_messages(input_data.messages)
 
-            max_turns = (input.sampling_params or {}).get("max_turns", 10)
+            max_turns = (input_data.sampling_params or {}).get("max_turns", 10)
             config = RunnableConfig(
                 recursion_limit=max_turns * 2 + 5,
                 configurable={"model": model_with_tools},
                 metadata={
                     "rollout_id": rollout_id,
-                    "model_name": input.model_resource.model_name,
-                    "base_url": input.model_resource.base_url,
+                    "model_name": input_data.model_resource.model_name,
+                    "base_url": input_data.model_resource.base_url,
                 },
             )
 
@@ -361,7 +367,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
             latency = round(time.time() - start_time, 4)
             agent_output = AgentOutput(
                 messages=convert_to_openai_messages(final_messages),
-                rollout_extra=input.rollout_extra,
+                rollout_extra=input_data.rollout_extra,
                 rollout_metrics={"latency": latency},
                 reward_score=reward,
             )
@@ -383,7 +389,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
             return RolloutOutput(
                 agent_output=AgentOutput(
                     messages=[{"role": "system", "content": f"Error: {e}"}],
-                    rollout_extra=input.rollout_extra,
+                    rollout_extra=input_data.rollout_extra,
                     rollout_metrics={"latency": latency},
                     reward_score=0.0,
                 ),
@@ -392,9 +398,9 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
             )
 
     @observe_processor
-    async def process(self, input: RolloutInput) -> RolloutOutput:
+    async def process(self, input_data: RolloutInput) -> RolloutOutput:
         await self._async_setup()
-        return await self._async_process(input)
+        return await self._async_process(input_data)
 
     def __del__(self):
         if (

@@ -62,12 +62,12 @@ class AbstractGroupRewardProcessor(AbstractProcessor):
         """
 
     @abstractmethod
-    def process(self, input: GroupRewardInput) -> GroupRewardOutput:
+    async def process(self, input_data: GroupRewardInput) -> GroupRewardOutput:
         """
         Execute group reward calculation logic.
 
         Args:
-            input: Parsed GroupRewardInput input object.
+            input_data: Parsed GroupRewardInput input object.
 
         Returns:
             GroupRewardOutput object containing standardized results (rewards, status).

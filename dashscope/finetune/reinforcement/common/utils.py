@@ -1,13 +1,15 @@
-import aiohttp
 import ast
 import asyncio
 import copy
 import fnmatch
 import json
 import os
-import requests
 import uuid
 import zipfile
+from typing import Optional, List, Any, Dict, Union, Tuple
+
+import aiohttp
+import requests
 from aiohttp import FormData
 from tenacity import (
     retry,
@@ -17,43 +19,12 @@ from tenacity import (
     retry_if_exception_type,
     RetryError,
 )
-from typing import Optional, List, Any, Dict, Union, Tuple
-
-from dashscope.finetune.reinforcement import (
-    LOG_LEVEL,
-    DASHSCOPE_API_KEY,
-    BAILIAN_FILE_API,
-    BAILIAN_FILE_TIMEOUT,
-    HTTP_REQUEST_TIMEOUT,
-    FC_FILES_START,
-    FC_PYPI_LIB,
-    FC_PYPI_REPO,
-    FC_LAYER_USED,
-    FC_SERVER_CLASSPATH,
-    FC_ZIP_EXCLUDE_PATTERNS,
-    FC_OSS_FILE_SIZE_WARNING,
-    LOGGER_FILTER_FIELDS,
-    FC_WORKERS_COUNT,
-)
-from dashscope.finetune.reinforcement import logger
-from dashscope.finetune.reinforcement.common.errors import (
-    InputError,
-    OutputError,
-    ConfigurationError,
-    BasePermissionError,
-    RuntimeErrorWithCode,
-    OSSUploadError,
-)
-from dashscope.finetune.reinforcement.common.model_types import (
-    FileSpec,
-    FunctionType,
-)
 
 
-def generate_random_id(type: str = "") -> str:
+def generate_random_id(prefix: str = "") -> str:
     """Generate a unique identifier with optional prefix."""
     uuid4 = uuid.uuid4()
-    return f"{type}-{uuid4}" if type else str(uuid4)
+    return f"{prefix}-{uuid4}" if prefix else str(uuid4)
 
 
 async def async_http_request(
@@ -89,8 +60,10 @@ async def async_http_request(
                 )
 
             # Treat server 5xx responses as transient failures and trigger a retry
-            if isinstance(result.get("status"), Dict) and result.get(
-                    "status").get("code") >= 500:
+            if (
+                isinstance(result.get("status"), Dict)
+                and result.get("status").get("code") >= 500
+            ):
                 raise aiohttp.ClientError(
                     f"Server error {result['status']['code']}: {result['status']['message']}"
                 )
@@ -150,6 +123,11 @@ async def async_http_request(
             "output": {},
         }
 
+    return {
+        "status": {"code": 500, "message": "Unexpected control flow"},
+        "output": {},
+    }
+
 
 async def _handle_response(response) -> Dict[str, Any]:
     """Handle HTTP response and extract JSON data."""
@@ -169,7 +147,7 @@ async def _handle_response(response) -> Dict[str, Any]:
 async def client_fc(
     api_key: str,
     url: str,
-    input: Dict,
+    request_data: Dict,
     method: str = "POST",
     content_type: str = "application/json",
 ) -> Dict:
@@ -181,7 +159,7 @@ async def client_fc(
             "Content-Type": content_type,
             "Authorization": "Bearer " + api_key,
         },
-        data=input,
+        data=request_data,
         timeout=HTTP_REQUEST_TIMEOUT,
     )
 
@@ -351,7 +329,7 @@ def create_deployment_files(
     dirpath: str,
     filepath: str,
     classname: str,
-    requirements_path: str = "",
+    requirements_path: Optional[str] = None,
 ) -> None:
     """Create startup script and requirements file for deployment."""
     try:
@@ -409,7 +387,7 @@ def zip_dir(
     dirpath: str,
     output_zip: str,
     extra_files: Optional[List[str]] = None,
-    rw_type: str = "w",
+    rw_type: Literal["r", "w", "x", "a"] = "w",
     exclude_patterns: Optional[List[str]] = None,
 ) -> None:
     """
@@ -422,6 +400,16 @@ def zip_dir(
         rw_type: Zip file write mode ('w', 'a', etc.)
         exclude_patterns: List of patterns to exclude (e.g. ["*.log", "__pycache__"])
     """
+
+    def _should_exclude(path: str, patterns: List[str]) -> Optional[str]:
+        """Return matched pattern if path should be excluded, None otherwise."""
+        for pattern in patterns:
+            if fnmatch.fnmatch(
+                os.path.basename(path), pattern
+            ) or fnmatch.fnmatch(path, pattern):
+                return pattern
+        return None
+
     if exclude_patterns is None:
         env_exclude = FC_ZIP_EXCLUDE_PATTERNS
         exclude_patterns = [
@@ -445,20 +433,15 @@ def zip_dir(
                         )
                         normalized_path = full_rel_path.replace("\\", "/")
 
-                        matched_pattern = None
-                        for pattern in all_excludes:
-                            if fnmatch.fnmatch(d, pattern) or fnmatch.fnmatch(
-                                normalized_path, pattern
-                            ):
-                                matched_pattern = pattern
-                                break
-
-                        if not matched_pattern:
-                            the_dirs.append(d)
-                        else:
+                        matched = _should_exclude(
+                            normalized_path, all_excludes
+                        )
+                        if matched:
                             logger.debug(
-                                f"Excluding directory: {normalized_path} (matched pattern: '{matched_pattern}')"
+                                f"Excluding directory: {normalized_path} (matched pattern: '{matched}')"
                             )
+                            continue
+
                     dirs[:] = the_dirs
 
                     for file in files:
@@ -499,22 +482,24 @@ def zip_dir(
         ) from e
 
 
-def _sync_upload_to_oss(signed_url: str, zipfile: str) -> int:
+def _sync_upload_to_oss(signed_url: str, zip_path: str) -> int:
     """Synchronously upload a file to OSS with progress tracking."""
     try:
-        file_size = os.path.getsize(zipfile)
+        file_size = os.path.getsize(zip_path)
         size_mb = file_size / (1024 * 1024)
         if file_size > FC_OSS_FILE_SIZE_WARNING:
             logger.warning(
-                f"Uploading large file: {zipfile} ({size_mb:.2f}MB) to OSS"
+                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS"
             )
             raise OSSUploadError(
-                f"Uploading large file: {zipfile} ({size_mb:.2f}MB) to OSS"
+                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS"
             )
         else:
-            logger.debug(f"Uploading file: {zipfile} ({size_mb:.2f}MB) to OSS")
+            logger.debug(
+                f"Uploading file: {zip_path} ({size_mb:.2f}MB) to OSS"
+            )
 
-        with open(zipfile, "rb") as file:
+        with open(zip_path, "rb", encoding="utf-8") as file:
             response = requests.put(
                 signed_url, data=file, headers={}, timeout=BAILIAN_FILE_TIMEOUT
             )
@@ -544,12 +529,12 @@ def _sync_upload_to_oss(signed_url: str, zipfile: str) -> int:
     reraise=True,
 )
 async def upload_zip_to_oss_and_by_signed_url(
-    signed_url: str, zipfile: str
+    signed_url: str, zip_path: str
 ) -> int:
     """Asynchronously upload ZIP file to OSS with retry mechanism."""
     try:
         return await asyncio.to_thread(
-            _sync_upload_to_oss, signed_url, zipfile
+            _sync_upload_to_oss, signed_url, zip_path
         )
     except BasePermissionError:
         raise  # Re-raise permission errors directly
@@ -593,7 +578,7 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
                 continue
 
             # Add file to form data
-            with open(file_path, "rb") as f:
+            with open(file_path, "rb", encoding="utf-8") as f:
                 form_data.add_field(
                     name="files",
                     value=f.read(),
@@ -667,7 +652,7 @@ def deep_mask(data: Any) -> Any:
         try:
             data = data.model_dump(mode="json")
         except AttributeError:
-            data = data.Dict()
+            data = data.dict()
 
     if isinstance(data, Dict):
         return {
@@ -704,7 +689,8 @@ def set_api_key(api_key: Optional[str] = None) -> None:
     if api_key:
         os.environ["DASHSCOPE_API_KEY"] = api_key
         logger.debug(
-            f"Set environ DASHSCOPE_API_KEY: {api_key if LOG_LEVEL=='DEBUG' else deep_mask(api_key)}"
+            f"Set environ DASHSCOPE_API_KEY: "
+            f"{api_key if LOG_LEVEL=='DEBUG' else deep_mask(api_key)}"
         )
         return
 
@@ -712,7 +698,8 @@ def set_api_key(api_key: Optional[str] = None) -> None:
     if not os.environ.get("DASHSCOPE_API_KEY"):
         raise ConfigurationError(
             "DashScope API key is missing. "
-            "Please provide 'api_key' argument or set the 'DASHSCOPE_API_KEY' environment variable.",
+            "Please provide 'api_key' argument or set the "
+            "'DASHSCOPE_API_KEY' environment variable.",
             error_code=4600,
         )
 
@@ -742,12 +729,14 @@ def get_filepath_classname(full_path: str) -> Tuple[str, str]:
         parts = full_path.split(":", 1)
         if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
             raise InputError(
-                f"Invalid format '{full_path}'. Expected 'path/to/file.py:ClassName'",
+                f"Invalid format '{full_path}'. Expected "
+                f"'path/to/file.py:ClassName'",
                 error_code=4700,
             )
         if ":" in parts[1]:
             raise InputError(
-                f"Invalid class name format '{parts[1]}'. Class name cannot contain colon.",
+                f"Invalid class name format '{parts[1]}'. Class name cannot "
+                f"contain colon.",
                 error_code=4701,
             )
 
@@ -759,7 +748,8 @@ def get_filepath_classname(full_path: str) -> Tuple[str, str]:
         parts = full_path.split(".")
         if len(parts) < 2:
             raise InputError(
-                f"Invalid format '{full_path}'. Expected 'module.path.ClassName' or 'path/to/file.py:ClassName'",
+                f"Invalid format '{full_path}'. Expected "
+                f"'module.path.ClassName' or 'path/to/file.py:ClassName'",
                 error_code=4702,
             )
         classname = parts[-1]
@@ -785,7 +775,8 @@ def _is_empty(v):
 
 
 def deep_remove_none(obj):
-    """Recursively remove keys/items with empty values (None, '', [], {}, ())."""
+    """Recursively remove keys/items with empty values (None, '', [], {},
+    ())."""
     if isinstance(obj, dict):
         cleaned = {}
         for k, v in obj.items():
@@ -843,6 +834,44 @@ def extract_reward_weights(
     Returns:
         Dictionary of {function_name: weight} pairs
     """
+
+    def _parse_decorator_args(decorator) -> Dict[str, Any]:
+        """Extract name and sub_weight from a decorator AST node."""
+        args_dict = {}
+        if isinstance(decorator, ast.Call):
+            # 处理 args 和 keywords
+            for i, arg in enumerate(decorator.args):
+                if i == 0:
+                    args_dict["name"] = _resolve_str_literal(arg)
+                elif i == 1:
+                    args_dict["sub_weight"] = _resolve_numeric_literal(arg)
+            for kw in decorator.keywords:
+                if kw.arg == "name":
+                    args_dict["name"] = _resolve_str_literal(kw.value)
+                elif kw.arg == "sub_weight":
+                    args_dict["sub_weight"] = _resolve_numeric_literal(
+                        kw.value
+                    )
+        return args_dict
+
+    def _resolve_str_literal(node) -> Optional[str]:
+        if isinstance(node, ast.Str):
+            return node.s
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        elif isinstance(node, ast.Num):
+            return str(node.n)
+        return None
+
+    def _resolve_numeric_literal(node) -> Optional[float]:
+        if isinstance(node, ast.Num):
+            return node.n
+        elif isinstance(node, ast.Constant) and isinstance(
+            node.value, (int, float)
+        ):
+            return node.value
+        return None
+
     weights = {}
 
     # Parse the AST
@@ -862,73 +891,11 @@ def extract_reward_weights(
                 continue
 
             for decorator in item.decorator_list:
-                decorator_name = ""
-                decorator_args = {}
-
-                # Get decorator name
-                if isinstance(decorator, ast.Call):
-                    if isinstance(decorator.func, ast.Name):
-                        decorator_name = decorator.func.id
-                    elif isinstance(decorator.func, ast.Attribute):
-                        decorator_name = decorator.func.attr
-                elif isinstance(decorator, ast.Name):
-                    decorator_name = decorator.id
-
-                if decorator_name != "sub_reward_func":
-                    continue
-
-                # Process decorator arguments
-                if isinstance(decorator, ast.Call):
-                    # Positional arguments
-                    for i, arg in enumerate(decorator.args):
-                        if i == 0:
-                            # Handle string values
-                            if isinstance(arg, ast.Str):
-                                decorator_args["name"] = arg.s
-                            elif isinstance(arg, ast.Constant) and isinstance(
-                                arg.value, str
-                            ):
-                                decorator_args["name"] = arg.value
-                            elif isinstance(
-                                arg, ast.Num
-                            ):  # Deprecated but still in some versions
-                                decorator_args["name"] = str(arg.n)
-
-                        if i == 1:
-                            # Handle numeric values
-                            if isinstance(arg, ast.Num):
-                                decorator_args["sub_weight"] = arg.n
-                            elif isinstance(arg, ast.Constant) and isinstance(
-                                arg.value, (int, float)
-                            ):
-                                decorator_args["sub_weight"] = arg.value
-
-                    # Keyword arguments
-                    for kw in decorator.keywords:
-                        key = kw.arg
-                        value = kw.value
-
-                        if key == "name":
-                            if isinstance(value, ast.Str):
-                                decorator_args["name"] = value.s
-                            elif isinstance(
-                                value, ast.Constant
-                            ) and isinstance(value.value, str):
-                                decorator_args["name"] = value.value
-                            elif isinstance(value, ast.Num):
-                                decorator_args["name"] = str(value.n)
-
-                        elif key == "sub_weight":
-                            if isinstance(value, ast.Num):
-                                decorator_args["sub_weight"] = value.n
-                            elif isinstance(
-                                value, ast.Constant
-                            ) and isinstance(value.value, (int, float)):
-                                decorator_args["sub_weight"] = value.value
+                decorator_args = _parse_decorator_args(decorator)
 
                 # Extract values with fallbacks
                 name = decorator_args.get("name", item.name)
-                weight = decorator_args.get("sub_weight", 1.0)
+                weight = float(decorator_args.get("sub_weight", 1.0))
 
                 if name:
                     weights[name] = weight
@@ -943,7 +910,7 @@ def serialize_for_output(data: Any) -> Any:
     This function recursively processes data to ensure it can be serialized to formats like JSON.
     It handles:
     - Pydantic V2 models using model_dump()
-    - Pydantic V1 models using Dict()
+    - Pydantic V1 models using dict()
     - Regular objects via their __dict__ attribute
     - Lists, tuples, and dictionaries recursively
     - Other basic types as-is
