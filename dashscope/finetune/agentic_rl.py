@@ -103,7 +103,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                 reward_instance_ids,
                 group_reward_instance_ids,
             ) = await self.tuning.register_functions(
-                lazy_load=lazy_load or True,
+                lazy_load=lazy_load,
             )
             logger.info("Function components registered")
         except Exception as e:

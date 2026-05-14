@@ -156,7 +156,8 @@ async def main_functions():
             ), f"Expected status, got {status}"
 
         # Testing reward-decorator functions
-        if reward_instance_ids and reward_instance_ids[1]:
+        if reward_instance_ids and len(
+                reward_instance_ids) >1 and reward_instance_ids[1]:
             result = await AgenticRL.test_functions(
                 instance_id=reward_instance_ids[1],
                 functype=FunctionType.REWARD,

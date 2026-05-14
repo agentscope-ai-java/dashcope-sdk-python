@@ -1038,7 +1038,7 @@ class TuningModel(Models, BaseModel):
 
     async def register_functions(
         self,
-        lazy_load: bool = True,
+        lazy_load: Optional[bool] = True,
     ) -> tuple[
         List[str], List[str], List[str], List[str], List[str], List[str]
     ]:

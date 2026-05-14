@@ -6,7 +6,7 @@ import json
 import os
 import uuid
 import zipfile
-from typing import Optional, List, Any, Dict, Union, Tuple
+from typing import Optional, List, Any, Dict, Union, Tuple, Literal
 
 import aiohttp
 import requests
@@ -19,6 +19,18 @@ from tenacity import (
     retry_if_exception_type,
     RetryError,
 )
+
+from dashscope.finetune.reinforcement import logger
+from dashscope.finetune.reinforcement.common.errors import (
+    InputError, OutputError, BaseConnectionError, ConfigurationError, BasePermissionError, RuntimeErrorWithCode, OSSUploadError
+)
+from dashscope.finetune.reinforcement import (LOG_LEVEL, DASHSCOPE_HTTP_BASE_URL,
+                                                   DASHSCOPE_API_KEY, BAILIAN_FILE_API,
+                                                   BAILIAN_FILE_TIMEOUT, HTTP_REQUEST_TIMEOUT,
+                                                   FC_API_KEY, FC_FILES_START, FC_PYPI_LIB, FC_PYPI_REPO, FC_LAYER_USED,
+                                                   FC_SERVER_CLASSPATH, FC_ZIP_EXCLUDE_PATTERNS, FC_OSS_FILE_SIZE_WARNING,
+                                                   LOGGER_FILTER_FIELDS, FC_WORKERS_COUNT)
+from dashscope.finetune.reinforcement.common.model_types import FileSpec, FunctionType
 
 
 def generate_random_id(prefix: str = "") -> str:
@@ -436,7 +448,10 @@ def zip_dir(
                         matched = _should_exclude(
                             normalized_path, all_excludes
                         )
-                        if matched:
+
+                        if not matched:
+                            the_dirs.append(d)
+                        else:
                             logger.debug(
                                 f"Excluding directory: {normalized_path} (matched pattern: '{matched}')"
                             )
@@ -499,7 +514,7 @@ def _sync_upload_to_oss(signed_url: str, zip_path: str) -> int:
                 f"Uploading file: {zip_path} ({size_mb:.2f}MB) to OSS"
             )
 
-        with open(zip_path, "rb", encoding="utf-8") as file:
+        with open(zip_path, "rb") as file:
             response = requests.put(
                 signed_url, data=file, headers={}, timeout=BAILIAN_FILE_TIMEOUT
             )
@@ -578,7 +593,7 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
                 continue
 
             # Add file to form data
-            with open(file_path, "rb", encoding="utf-8") as f:
+            with open(file_path, "rb") as f:
                 form_data.add_field(
                     name="files",
                     value=f.read(),

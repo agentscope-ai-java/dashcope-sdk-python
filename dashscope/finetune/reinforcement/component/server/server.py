@@ -32,7 +32,7 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict
+from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -41,6 +41,7 @@ from dashscope.finetune.reinforcement.common.log import logger
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,
 )
+from dashscope.finetune.reinforcement.component import BaseDataModel
 from dashscope.finetune.reinforcement.component.func_manager import FuncManager
 from dashscope.finetune.reinforcement.component.observability.tracing import (
     ensure_agentic_rl_baggage_span_processor,

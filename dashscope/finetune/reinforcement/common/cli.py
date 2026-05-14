@@ -23,6 +23,8 @@ from dashscope.finetune.reinforcement import (
     FunctionType,
 )
 from dashscope.finetune.reinforcement.common.errors import OutputError
+from dashscope.finetune.customize_types import FineTune
+
 
 app = typer.Typer(
     name="agentic-rl",

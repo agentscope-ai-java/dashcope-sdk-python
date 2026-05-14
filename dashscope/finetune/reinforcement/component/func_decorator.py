@@ -139,7 +139,7 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
                     )
 
             # If no aggregate function, use default weighted sum
-            total = self.get_total()
+            total = self.get_total(sub_rewards)
 
             # Return RewardOutput with calculated total
             return RewardOutput(

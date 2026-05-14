@@ -68,7 +68,7 @@ class AbstractRewardProcessor(AbstractProcessor):
         # IMPORTANT: Subclasses MUST call super().__init__() to ensure function collection
         self._collect_functions()
 
-    async def _collect_functions(self):
+    def _collect_functions(self):
         """Collect marked sub-functions and aggregate functions in the class"""
         # Prevent duplicate collection
         if self.functions_collected:

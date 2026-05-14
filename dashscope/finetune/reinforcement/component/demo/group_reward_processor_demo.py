@@ -9,8 +9,10 @@ from dashscope.finetune.reinforcement.common.log import logger
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     TaskStatus,
 )
-from dashscope.finetune.reinforcement.component.data.group_reward_output import (
+from dashscope.finetune.reinforcement.component.data.group_reward_input import (
     GroupRewardInput,
+)
+from dashscope.finetune.reinforcement.component.data.group_reward_output import (
     GroupRewardOutput,
     GroupReward,
 )

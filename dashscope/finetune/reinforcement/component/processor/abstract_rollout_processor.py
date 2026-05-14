@@ -6,6 +6,7 @@ Users should inherit this class and implement process() for custom agent inferen
 """
 
 from abc import abstractmethod
+import asyncio
 
 from dashscope.finetune.reinforcement.component.data.rollout_input import (
     RolloutInput,
