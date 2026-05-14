@@ -100,7 +100,7 @@ class TestAgenticRLUtils:
         assert os.path.exists("start.sh")
 
         # Validate script content
-        with open("start.sh", "r") as f:
+        with open("start.sh", "r", encoding='utf-8') as f:
             content = f.read()
             assert "PROCESSOR_CLASS=\"processor.DemoProcessor\"" in content
             assert "REQUIREMENTS_FILE=\"requirements.txt\"" in content
@@ -125,7 +125,7 @@ class TestAgenticRLUtils:
         assert os.path.exists("start.sh")
 
         # Validate script content
-        with open("start.sh", "r") as f:
+        with open("start.sh", "r", encoding='utf-8') as f:
             content = f.read()
             assert "PROCESSOR_CLASS=\"module.processor.MyProcessor\"" in content
             assert "local_packages=($SDK_PACKAGE)" in content

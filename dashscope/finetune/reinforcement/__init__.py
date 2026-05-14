@@ -122,9 +122,6 @@ from dashscope.finetune.reinforcement.component.processor.abstract_reward_proces
 from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import (
     AbstractGroupRewardProcessor,
 )
-from dashscope.finetune.reinforcement.component.observability import (
-    observe_processor,
-)
 
 
 def __getattr__(name):
@@ -229,7 +226,6 @@ __all__ = [
     "AbstractRolloutProcessor",
     "AbstractRewardProcessor",
     "AbstractGroupRewardProcessor",
-    "observe_processor",
     # Core Models
     "FunctionComponentModel",
     "TuningModel",
@@ -247,6 +243,4 @@ __all__ = [
     "Observability",
     "AgenticRLTuning",
     "Models",
-    # CLI
-    "app",
 ]

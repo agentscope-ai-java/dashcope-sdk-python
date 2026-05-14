@@ -6,7 +6,7 @@ Corresponds to the GroupRewardInput structure in protocol.py.
 """
 
 from pydantic import Field
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,

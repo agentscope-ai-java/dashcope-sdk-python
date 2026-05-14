@@ -59,7 +59,6 @@ class AbstractRolloutProcessor(AbstractProcessor):
         Raises:
             Exception: If initialization fails, the server will fail to start.
         """
-        pass
 
     @abstractmethod
     def process(self, input: RolloutInput) -> RolloutOutput:

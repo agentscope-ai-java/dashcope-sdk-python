@@ -172,7 +172,6 @@ class AbstractRewardProcessor(AbstractProcessor):
         Raises:
             Exception: If initialization fails, the server will fail to start.
         """
-        pass
 
     @abstractmethod
     def process(self, input: RewardInput) -> RewardOutput:

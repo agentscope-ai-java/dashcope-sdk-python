@@ -11,7 +11,6 @@ import math
 import re
 import string
 import sympy
-from typing import List
 
 from dashscope.finetune.reinforcement import RewardInput, RewardOutput
 from dashscope.finetune.reinforcement import logger

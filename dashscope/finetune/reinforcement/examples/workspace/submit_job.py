@@ -138,11 +138,14 @@ async def main_workflow():
             ],
             # Training Configuration
             hyper_parameters={
-                "algorithm": "gspo",  # Policy optimization algorithm (Generalized Supervised Policy Optimization)
+                # Policy optimization algorithm (Generalized Supervised Policy Optimization)
+                "algorithm": "gspo",
                 "batch_size": 64,  # Training samples per optimization step
                 "eval_steps": 1,  # Run evaluation every N training steps
-                "kl_loss_coef": 0.002,  # Weight for KL divergence loss (prevents policy divergence)
-                "learning_rate": 2e-6,  # Initial step size for gradient updates (fine-tuning)
+                # Weight for KL divergence loss (prevents policy divergence)
+                "kl_loss_coef": 0.002,
+                # Initial step size for gradient updates (fine-tuning)
+                "learning_rate": 2e-6,
                 "lr_scheduler_type": "linear",  # Learning rate decay strategy
                 "max_length": 8192,  # Max sequence length for model input
                 "n_epochs": 1,  # Full passes through training data

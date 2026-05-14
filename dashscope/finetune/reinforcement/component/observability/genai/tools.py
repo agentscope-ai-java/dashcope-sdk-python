@@ -881,7 +881,8 @@ async def _run_tool_with_span_async(
         _emit_trace_tool_debug_line("wrap_ainvoke", tool_name, config)
 
     if not is_tracing_enabled() or not GENAI_AVAILABLE:
-        return await orig_fn(input, config=config, **kwargs)  # type: ignore[misc]
+        # type: ignore[misc]
+        return await orig_fn(input, config=config, **kwargs)
 
     trace_key = _trace_hex_or_none()
     ctx_token: Optional[contextvars.Token[int]] = None
@@ -907,7 +908,8 @@ async def _run_tool_with_span_async(
                     "trace_tool_async:after_use_span", invocation
                 )
                 log_trace_id(f"execute_tool:{tool_name}")
-                result = await orig_fn(input, config=config, **kwargs)  # type: ignore[misc]
+                # type: ignore[misc]
+                result = await orig_fn(input, config=config, **kwargs)
                 invocation.tool_call_result = _json_serializable(result)
                 if hasattr(invocation, "span") and invocation.span is not None:
                     invocation.span.set_status(Status(StatusCode.OK))

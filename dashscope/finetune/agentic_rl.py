@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import yaml
-from pathlib import Path
 from typing import Union, List, Optional, ClassVar, Dict, Any
 from typing_extensions import Self
 
@@ -29,8 +27,6 @@ from dashscope.finetune.reinforcement import DASHSCOPE_HTTP_BASE_URL
 from dashscope.finetune.reinforcement import (
     FunctionType,
     DatasetsType,
-    TrainingType,
-    DataSourceType,
 )
 from dashscope.finetune.reinforcement import (
     RewardInput,
@@ -47,7 +43,6 @@ from dashscope.finetune.reinforcement import (
 from dashscope.finetune.reinforcement.common.errors import (
     RegistrationError,
     ValidationError,
-    IOErrorWithCode,
     RuntimeErrorWithCode,
     ValueErrorWithCode,
     DatasetsError,
@@ -65,7 +60,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         except Exception as e:
             logger.error("API key initialization failed", exc_info=True)
             raise ValueErrorWithCode(
-                "Invalid API key configuration", error_code=3000
+                "Invalid API key configuration",
+                error_code=3000,
             ) from e
 
     def init(self, config_path: Optional[str] = None, **kwargs) -> Self:
@@ -86,7 +82,14 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             ]
         ] = None,
         lazy_load: Optional[bool] = True,
-    ) -> tuple[List[str], List[str], List[str], List[str], List[str], List[str]]:
+    ) -> tuple[
+        List[str],
+        List[str],
+        List[str],
+        List[str],
+        List[str],
+        List[str],
+    ]:
         """Register function components and return entity/instance IDs."""
         if functions:
             self.tuning.functions = functions
@@ -105,10 +108,12 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             logger.info("Function components registered")
         except Exception as e:
             logger.error(
-                "Function component registration failed", exc_info=True
+                "Function component registration failed",
+                exc_info=True,
             )
             raise RegistrationError(
-                "Function registration error", error_code=3200
+                "Function registration error",
+                error_code=3200,
             ) from e
 
         return (
@@ -130,17 +135,19 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             self.tuning.datasets = datasets
 
         try:
-            uploaded_training_ids, uploaded_validation_ids = (
-                await self.tuning.upload_datasets(
-                    training_files=training_files,
-                    validation_files=validation_files,
-                )
+            (
+                uploaded_training_ids,
+                uploaded_validation_ids,
+            ) = await self.tuning.upload_datasets(
+                training_files=training_files,
+                validation_files=validation_files,
             )
             logger.info("Datasets uploaded")
         except Exception as e:
             logger.error("Datasets upload failed", exc_info=True)
             raise DatasetsError(
-                "Datasets upload error", error_code=3300
+                "Datasets upload error",
+                error_code=3300,
             ) from e
 
         return uploaded_training_ids, uploaded_validation_ids
@@ -187,16 +194,16 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             self.tuning.functions = functions
         try:
             rollouts = self.tuning.combine_ids_runtimes(
-                functype=FunctionType.ROLLOUT
+                functype=FunctionType.ROLLOUT,
             )
             rewards = self.tuning.combine_ids_runtimes(
-                functype=FunctionType.REWARD
+                functype=FunctionType.REWARD,
             )
             rewards.extend(
                 self.tuning.combine_ids_runtimes(
                     functype=FunctionType.GROUP_REWARD,
                     id_str=get_func_type_id(FunctionType.REWARD),
-                )
+                ),
             )
         except Exception as e:
             logger.error(
@@ -207,7 +214,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         # names of functions
         if not self.tuning.check_function_names():
             raise ValueErrorWithCode(
-                "Duplicate function names detected. All function names must be unique.",
+                "Duplicate function names detected. All function names must "
+                "be unique.",
                 error_code=3401,
             )
 
@@ -259,7 +267,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         except Exception as e:
             logger.error("Job submission failed", exc_info=True)
             raise RuntimeErrorWithCode(
-                "Job submission error", error_code=3400
+                "Job submission error",
+                error_code=3400,
             ) from e
 
         return FineTune(**resp)
@@ -296,7 +305,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         """
         try:
             logger.info(
-                "🟦 Path-Driven mode: Registering functions & uploading datasets..."
+                "🟦 Path-Driven mode: Registering functions & uploading "
+                "datasets...",
             )
             await self.register_functions(
                 functions=functions,
@@ -304,7 +314,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             )
 
             datasets = list(training_datasets or []) + list(
-                validation_datasets or []
+                validation_datasets or [],
             )
             await self.upload_datasets(
                 datasets=datasets,
@@ -321,7 +331,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
         except Exception as e:
             logger.error("RL tuning workflow failed", exc_info=True)
             raise RuntimeErrorWithCode(
-                f"RL tuning workflow failed: {str(e)}", error_code=3500
+                f"RL tuning workflow failed: {str(e)}",
+                error_code=3500,
             ) from e
 
     @classmethod
@@ -439,7 +450,8 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                 value = GroupRewardInput.model_validate(input_data)
             else:
                 raise ValueErrorWithCode(
-                    f"Unsupported function type: {functype}", error_code=3600
+                    f"Unsupported function type: {functype}",
+                    error_code=3600,
                 )
 
             logger.info(
@@ -451,13 +463,16 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             )
 
             return await AgenticRLFunctionComponent.verify_function(
-                value, instance_id
+                value,
+                instance_id,
             )
 
         except Exception as e:
             logger.error(
-                f"Failure during {str(functype)} test: {str(e)}", exc_info=True
+                f"Failure during {str(functype)} test: {str(e)}",
+                exc_info=True,
             )
             raise ValidationError(
-                f"Function test failed: {str(e)}", error_code=3601
+                f"Function test failed: {str(e)}",
+                error_code=3601,
             ) from e

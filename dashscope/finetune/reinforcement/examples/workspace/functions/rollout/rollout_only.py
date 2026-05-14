@@ -239,7 +239,6 @@ class MockToolNode:
 class NotATool:
     """Unsupported object for trace_tool warning test."""
 
-    pass
 
 
 class DemoRolloutProcessor(AbstractRolloutProcessor):

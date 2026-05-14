@@ -34,28 +34,15 @@ test_functions():
 """
 
 import json
-from typing import List
 
 from dashscope.finetune.reinforcement import (
     logger,
     TaskStatus,
     FunctionType,
-    Datasets,
-    DatasetsType,
-    DataSourceType,
-    Dataset,
-    MountStorage,
-    AgenticRLTuning,
     AgenticRLFunctionComponent,
     FunctionComponentModel,
-    FunctionComponentRuntime,
-    RolloutInput,
-    RewardInput,
-    RewardOutput,
-    RolloutOutput,
 )
 from dashscope.finetune.agentic_rl import AgenticRL
-from dashscope.finetune.finetunes import FineTunes
 
 
 async def main_functions():
@@ -111,19 +98,19 @@ async def main_functions():
             f"agentic rl register functions: {rollout_entity_ids=}, {reward_entity_ids=}, {group_reward_entity_ids=}, {rollout_instance_ids=}, {reward_instance_ids=}, {group_reward_instance_ids=}"
         )
 
-        with open("./resources/rollout_input.json", "r") as file:
+        with open("./resources/rollout_input.json", "r", encoding='utf-8') as file:
             json_data = json.load(file)
             rollout_input = json_data
 
-        with open("./resources/reward_input.json", "r") as file:
+        with open("./resources/reward_input.json", "r", encoding='utf-8') as file:
             json_data = json.load(file)
             reward_input = json_data
 
-        with open("./resources/reward_decorator_input.json", "r") as file:
+        with open("./resources/reward_decorator_input.json", "r", encoding='utf-8') as file:
             json_data = json.load(file)
             reward_decorator_input = json_data
 
-        with open("./resources/group_reward_input.json", "r") as file:
+        with open("./resources/group_reward_input.json", "r", encoding='utf-8') as file:
             json_data = json.load(file)
             group_reward_input = json_data
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import shutil
 import tempfile
-import time
 import asyncio
 
 # Third-party Libraries
@@ -91,12 +90,9 @@ class Dataset(BaseModel):
     type: DatasetsType = DatasetsType.TRAINING
 
     data_source_type: Optional[DataSourceType] = DataSourceType.FILE_ID
-    # type: file_id
     file_name: Optional[str] = None
     file_id: Optional[str] = None
-    # type: download_url
     download_url: Optional[str] = None
-    # type: oss_mount
     mount_storage: Optional[MountStorage] = None
 
     async def upload_dataset(self) -> str:

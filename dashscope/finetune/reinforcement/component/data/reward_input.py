@@ -6,7 +6,7 @@ Corresponds to the RewardInput structure in protocol.py.
 """
 
 from pydantic import Field
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,

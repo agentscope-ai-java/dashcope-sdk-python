@@ -5,7 +5,7 @@ Data model definitions for Reward processor output results.
 """
 
 from pydantic import BaseModel, Field
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     TaskStatus,
