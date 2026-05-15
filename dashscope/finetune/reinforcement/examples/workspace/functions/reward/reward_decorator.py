@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 examples/workspace/reward.py
 
@@ -74,7 +75,8 @@ class SafetyProcessor(AbstractRewardProcessor):
 
     @aggregate_func
     async def aggregate(
-        self, sub_rewards: Dict[str, RewardOutput]
+        self,
+        sub_rewards: Dict[str, RewardOutput],
     ) -> RewardOutput:
         logger.info("[SafetyProcessor][Async] computing reward for rollout_id")
 

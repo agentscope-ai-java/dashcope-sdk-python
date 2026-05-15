@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/data/reward_output.py
 
@@ -12,9 +13,9 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 )
 
 
-# ============================================================================ #
-#                              REWARD COMPONENTS                               #
-# ============================================================================ #
+# ========================================================================== #
+#                              REWARD COMPONENTS                             #
+# ========================================================================== #
 
 
 class Reward(BaseModel):
@@ -27,13 +28,14 @@ class Reward(BaseModel):
 
     reward_metrics: Optional[Dict[str, float]] = Field(
         None,
-        description="Additional reward-specific metrics as string key-value pairs.",
+        description="Additional reward-specific metrics as string key-value "
+        "pairs.",
     )
 
 
-# ============================================================================ #
-#                              OUTPUT: REWARD RESPONSE                         #
-# ============================================================================ #
+# ========================================================================== #
+#                              OUTPUT: REWARD RESPONSE                       #
+# ========================================================================== #
 
 
 class RewardOutput(BaseModel):

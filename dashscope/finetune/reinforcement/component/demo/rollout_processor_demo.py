@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/demo/rollout_processor_demo.py
 
@@ -18,7 +19,7 @@ from dashscope.finetune.reinforcement.component.data.rollout_input import (
 from dashscope.finetune.reinforcement.component.data.rollout_output import (
     RolloutOutput,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
+from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (  # noqa: E501  # pylint: disable=line-too-long
     AbstractRolloutProcessor,
 )
 
@@ -40,7 +41,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         In production, this could load ML models, establish connections, etc.
         """
         logger.info(
-            "[DemoRolloutProcessor] setup() called - initializing workspace"
+            "[DemoRolloutProcessor] setup() called - initializing workspace",
         )
         # Demo: No actual initialization needed
         # In production, you might:
@@ -49,25 +50,26 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         # - Set up connection pools
         logger.info("[DemoRolloutProcessor] setup() completed")
 
-    def process(self, rl_input: RolloutInput) -> RolloutOutput:
+    # pylint: disable=invalid-overridden-method
+    def process(self, input_data: RolloutInput) -> RolloutOutput:
         """
         Demo implementation: Simulates Agent invocation by echoing messages.
 
         Args:
-            rl_input: RolloutInput input parameter
+            input_data: RolloutInput input parameter
 
         Returns:
             RolloutOutput object containing standardized execution results
         """
         logger.info(
             f"[DemoRolloutProcessor] starting rollout | "
-            f"model={rl_input.model_resource.model_name}"
+            f"model={input_data.model_resource.model_name}",
         )
 
         start = time.time()
 
         # Demo: Return messages as echo content
-        messages = list(rl_input.messages)
+        messages = list(input_data.messages)
 
         # Add a simple assistant response
         last_user_msg = ""
@@ -84,7 +86,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         result = RolloutOutput(
             agent_output=AgentOutput(
                 message=messages,
-                rollout_extra=rl_input.rollout_extra,
+                rollout_extra=input_data.rollout_extra,
                 rollout_metrics={},
             ),
             status=TaskStatus.SUCCESS,

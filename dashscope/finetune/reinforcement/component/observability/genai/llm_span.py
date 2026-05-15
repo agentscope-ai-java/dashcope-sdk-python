@@ -1,19 +1,22 @@
-"""Manual / decorator-based ``llm`` span (for use without client monkey-patching)."""
-
+# -*- coding: utf-8 -*-
+"""Manual / decorator-based ``llm`` span (for use without client
+monkey-patching)."""
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import inspect
 from contextlib import contextmanager
 from functools import wraps
-from opentelemetry.trace.status import Status, StatusCode
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterator, Optional, TypeVar
 
-from dashscope.finetune.reinforcement.component.observability.genai._core import (
+from opentelemetry.trace.status import Status, StatusCode
+
+from dashscope.finetune.reinforcement.component.observability.genai._core import (  # noqa: E501
     GENAI_AVAILABLE,
     get_handler,
 )
-from dashscope.finetune.reinforcement.component.observability.genai.messages import (
+from dashscope.finetune.reinforcement.component.observability.genai.messages import (  # noqa: E501
     dashscope_response_to_output_messages,
     openai_chat_messages_to_input_messages,
     openai_completion_to_output_messages,
@@ -38,7 +41,9 @@ def _set_span_error(inv: Any, error: Exception) -> None:
 
 
 def _apply_result_and_status(
-    inv: Any, result: Any, result_mapper: Optional[Callable[[Any, Any], None]]
+    inv: Any,
+    result: Any,
+    result_mapper: Optional[Callable[[Any, Any], None]],
 ) -> None:
     """Apply result to invocation and set OK status."""
     if result_mapper is not None:
@@ -77,7 +82,7 @@ def _fill_invocation_from_kwargs(
         prompt = kwargs.get(prompt_arg)
         if prompt is not None and prompt != "":
             inv.input_messages = openai_chat_messages_to_input_messages(
-                [{"role": "user", "content": prompt}]
+                [{"role": "user", "content": prompt}],
             )
 
 
@@ -87,10 +92,14 @@ def _apply_invocation_from_result_auto(inv: Any, result: Any) -> None:
     usage = getattr(result, "usage", None)
     if usage is not None:
         inv.input_tokens = getattr(usage, "prompt_tokens", None) or getattr(
-            usage, "input_tokens", None
+            usage,
+            "input_tokens",
+            None,
         )
         inv.output_tokens = getattr(
-            usage, "completion_tokens", None
+            usage,
+            "completion_tokens",
+            None,
         ) or getattr(usage, "output_tokens", None)
 
     # OpenAI completion-like
@@ -122,9 +131,11 @@ def observe_llm(
     """
     Wrap any LLM call function as an ``llm`` span (decorator style).
 
-    By default, extracts input/output using common OpenAI/DashScope parameter names:
+    By default, extracts input/output using common OpenAI/DashScope
+    parameter names:
     - Input:  ``model`` / ``messages`` / ``prompt``
-    - Output: auto-detected as OpenAI completion or DashScope GenerationResponse
+    - Output: auto-detected as OpenAI completion or DashScope
+    GenerationResponse
     """
 
     def decorator(fn: F) -> F:
@@ -195,7 +206,8 @@ def run_with_genai_llm_span(
     """
     Execute an LLM call and wrap it in an ``llm`` span (functional style).
 
-    Suitable when you do not want to modify function signatures or permanently patch the client.
+    Suitable when you do not want to modify function signatures or
+    permanently patch the client.
     """
     if not is_tracing_enabled() or not GENAI_AVAILABLE:
         return fn(*fn_args, **fn_kwargs)
@@ -207,7 +219,7 @@ def run_with_genai_llm_span(
             inv.request_model = request_model
         if input_messages is not None:
             inv.input_messages = openai_chat_messages_to_input_messages(
-                input_messages
+                input_messages,
             )
         try:
             result = fn(*fn_args, **fn_kwargs)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Custom exception hierarchy for the AgenticRL system
 """
@@ -35,7 +36,8 @@ class IOErrorWithCode(AgenticRLError):
 
 
 class RuntimeErrorWithCode(RuntimeError):
-    """Enhanced RuntimeError that supports error codes for better error categorization."""
+    """Enhanced RuntimeError that supports error codes for better error
+    categorization."""
 
     def __init__(self, message: str, error_code: int = 0):
         super().__init__(message)
@@ -47,7 +49,8 @@ class RuntimeErrorWithCode(RuntimeError):
 
 
 class ValueErrorWithCode(ValueError):
-    """Enhanced ValueError that supports error codes for better error categorization."""
+    """Enhanced ValueError that supports error codes for better error
+    categorization."""
 
     def __init__(self, message: str, error_code: int = 0):
         super().__init__(message)
@@ -62,7 +65,10 @@ class InputError(AgenticRLError):
     """Raised when invalid input data is detected during validation"""
 
     def __init__(
-        self, message: str, error_code: int = 1100, field: Optional[str] = None
+        self,
+        message: str,
+        error_code: int = 1100,
+        field: Optional[str] = None,
     ):
         super().__init__(message, error_code)
         self.field = field
@@ -98,10 +104,15 @@ class OSSConnectionError(BaseConnectionError):
     """Raised when connecting to OSS storage service fails"""
 
     def __init__(
-        self, message: str, error_code: int = 1310, endpoint: str = None
+        self,
+        message: str,
+        error_code: int = 1310,
+        endpoint: str = None,
     ):
         super().__init__(
-            f"OSS connection failed: {message}", error_code, endpoint
+            f"OSS connection failed: {message}",
+            error_code,
+            endpoint,
         )
 
 
@@ -146,7 +157,9 @@ class RegistrationError(DeploymentError):
         resource_id: Optional[str] = None,
     ):
         super().__init__(
-            f"Registration failed: {message}", error_code, resource_id
+            f"Registration failed: {message}",
+            error_code,
+            resource_id,
         )
 
 
@@ -168,7 +181,9 @@ class FunctionLoadError(DeploymentError):
         error_log: Optional[str] = None,
     ):
         super().__init__(
-            f"Function load failed: {message}", error_code, entity_id
+            f"Function load failed: {message}",
+            error_code,
+            entity_id,
         )
         self.entity_id = entity_id
         self.error_log = error_log
@@ -185,7 +200,9 @@ class FunctionLayerError(DeploymentError):
         error_log: Optional[str] = None,
     ):
         super().__init__(
-            f"Function layer create failed: {message}", error_code, layer_name
+            f"Function layer create failed: {message}",
+            error_code,
+            layer_name,
         )
         self.layer_name = layer_name
         self.error_log = error_log
@@ -219,7 +236,9 @@ class InstanceQueryError(DeploymentError):
         query_attempts: int = 1,
     ):
         super().__init__(
-            f"Instance query failed: {message}", error_code, instance_id
+            f"Instance query failed: {message}",
+            error_code,
+            instance_id,
         )
         self.instance_id = instance_id
         self.query_attempts = query_attempts

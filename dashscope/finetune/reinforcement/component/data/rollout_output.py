@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/data/rollout_output.py
 
@@ -14,9 +15,9 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 )
 
 
-# ============================================================================ #
-#                              OUTPUT: ROLLOUT RESULT                          #
-# ============================================================================ #
+# ========================================================================== #
+#                              OUTPUT: ROLLOUT RESULT                        #
+# ========================================================================== #
 
 
 class RolloutOutput(BaseModel):

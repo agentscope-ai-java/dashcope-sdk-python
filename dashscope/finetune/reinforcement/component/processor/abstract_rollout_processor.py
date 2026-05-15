@@ -1,12 +1,13 @@
+# -*- coding: utf-8 -*-
 """
 component/processor/abstract_rollout_processor.py
 
 Abstract base class for Rollout business processors.
-Users should inherit this class and implement process() for custom agent inference/rollout logic.
+Users should inherit this class and implement process() for custom agent
+inference/rollout logic.
 """
 
 from abc import abstractmethod
-import asyncio
 
 from dashscope.finetune.reinforcement.component.data.rollout_input import (
     RolloutInput,
@@ -14,7 +15,7 @@ from dashscope.finetune.reinforcement.component.data.rollout_input import (
 from dashscope.finetune.reinforcement.component.data.rollout_output import (
     RolloutOutput,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_processor import (
+from dashscope.finetune.reinforcement.component.processor.abstract_processor import (  # noqa: E501  # pylint: disable=line-too-long
     AbstractProcessor,
 )
 
@@ -23,8 +24,9 @@ class AbstractRolloutProcessor(AbstractProcessor):
     """
     Abstract base class for Rollout business processors.
 
-    Users must implement process() to define custom agent inference/rollout logic.
-    Optionally override setup() to initialize workspace before the server starts.
+    Users must implement process() to define custom agent inference/rollout
+    logic. Optionally override setup() to initialize workspace before the
+    server starts.
 
     Example:
         >>> class MyRolloutProcessor(AbstractRolloutProcessor):
@@ -54,8 +56,8 @@ class AbstractRolloutProcessor(AbstractProcessor):
         - Loading configuration files
         - Pre-computing static data
 
-        This method is called once during server startup, before any requests are processed.
-        The default implementation does nothing.
+        This method is called once during server startup, before any
+        requests are processed. The default implementation does nothing.
 
         Raises:
             Exception: If initialization fails, the server will fail to start.
@@ -70,6 +72,7 @@ class AbstractRolloutProcessor(AbstractProcessor):
             input_data: Parsed RolloutInput input object.
 
         Returns:
-            RolloutOutput object containing standardized results (rollout_id, content, status).
+            RolloutOutput object containing standardized results (
+            rollout_id, content, status).
         """
         raise NotImplementedError

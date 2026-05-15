@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Environment Variables Configuration:
 --------------------------------------------------------------
@@ -20,7 +21,8 @@ Method Documentation:
 1. init(config_path: str, **kwargs)
    - Initializes the RL workflow using a YAML configuration file
    - Key Parameters:
-     * config_path (required): Path to YAML configuration file (e.g., "job.yaml")
+     * config_path (required): Path to YAML configuration file (e.g.,
+     "job.yaml")
      * job_name: Custom identifier for the training job
    - Configuration File Example (job.yaml)
    - Benefits:
@@ -66,7 +68,8 @@ async def main_workflow():
 
         # Defines infrastructure specs for rollout components
         # env: inject global variables or environment-specific
-        # configurations into function components. example: "env":{"ENABLE_TRAJECTORY": True}
+        # configurations into function components. example: "env":{
+        # "ENABLE_TRAJECTORY": True}
         rollout_runtime = {
             "cpu": 2,
             "memory_size": 4096,
@@ -104,22 +107,23 @@ async def main_workflow():
                 TrainingDataset(
                     data_source_type=DataSourceType.FILE_ID,
                     file_name="./data/calc_train_min.jsonl",
-                )
+                ),
             ],
             validation_datasets=[
                 ValidationDataset(
                     data_source_type=DataSourceType.FILE_ID,
                     file_name="./data/calc_validation_min.jsonl",
-                )
+                ),
             ],
             # Function Component Configuration
             functions=[
-                # RolloutFunctionComponent：Environment simulation/rollout generation
+                # RolloutFunctionComponent：Environment simulation/rollout
+                # generation
                 RolloutFunctionComponent(
                     name="rollout-1",
                     timeout=600,
                     fcmodel=FunctionComponentModel(
-                        classpath="functions.rollout.rollout.CalcXRolloutProcessor"
+                        classpath="functions.rollout.rollout.CalcXRolloutProcessor",  # noqa: E501
                     ),
                     runtime=FunctionComponentRuntime(**rollout_runtime),
                 ),
@@ -133,14 +137,15 @@ async def main_workflow():
                         "reward_metric_weightB": 0.7,
                     },
                     fcmodel=FunctionComponentModel(
-                        classpath="functions.reward.reward.DemoRewardProcessor"
+                        classpath="functions.reward.reward.DemoRewardProcessor",  # noqa: E501
                     ),
                     runtime=reward_runtime,
                 ),
             ],
             # Training Configuration
             hyper_parameters={
-                # Policy optimization algorithm (Generalized Supervised Policy Optimization)
+                # Policy optimization algorithm (Generalized Supervised
+                # Policy Optimization)
                 "algorithm": "gspo",
                 "batch_size": 64,  # Training samples per optimization step
                 "eval_steps": 1,  # Run evaluation every N training steps
@@ -152,8 +157,8 @@ async def main_workflow():
                 "max_length": 8192,  # Max sequence length for model input
                 "n_epochs": 1,  # Full passes through training data
                 "n_rollouts": 8,  # Parallel environment rollouts per batch
-                "ppo_mini_batch_size": 8,  # Samples per PPO optimization sub-step
-                "save_strategy": "epoch",  # Model checkpoint frequency: 'steps' or 'epoch'
+                "ppo_mini_batch_size": 8,  # Samples per PPO optimization sub-step  # noqa: E501  # pylint: disable=line-too-long
+                "save_strategy": "steps",  # Model checkpoint frequency: 'steps'  # noqa: E501  # pylint: disable=line-too-long
             },
             # Cloud resource specifications
             resources={
@@ -189,7 +194,7 @@ async def main_workflow():
 
 
 async def main_workflow_yaml():
-    #### Configuration-Driven (Recommended)
+    # Configuration-Driven (Recommended)
     try:
         logger.info("Starting main tests：workflow from yaml")
 
@@ -207,7 +212,7 @@ async def main_workflow_yaml():
         if result.status_code == 200:
             job_id = result.output.job_id
             logger.info(
-                f"agentic rl(from job.yaml) submit: {job_id=}, {result=}"
+                f"agentic rl(from job.yaml) submit: {job_id=}, {result=}",
             )
         else:
             raise ValueError(f"agentic rl submit: {result}")

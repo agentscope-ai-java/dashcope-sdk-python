@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 examples/workspace/reward.py
 
@@ -12,6 +13,9 @@ import re
 import string
 import sympy
 
+# Public names are provided lazily via __getattr__; __all__ entries are not
+# bindings.
+# pylint: disable=undefined-all-variable
 from dashscope.finetune.reinforcement import RewardInput, RewardOutput
 from dashscope.finetune.reinforcement import logger
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
@@ -20,10 +24,12 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 from dashscope.finetune.reinforcement.component.data.reward_output import (
     Reward,
 )
+
+# pylint: disable=no-name-in-module
 from dashscope.finetune.reinforcement.component.observability import (
     observe_processor,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractRewardProcessor,
 )
 
@@ -54,7 +60,9 @@ def float_eval(input_str: str) -> float:
 
 
 def scalar_are_results_same(
-    pred_result: str, true_result: str, rel_tol: float
+    pred_result: str,
+    true_result: str,
+    rel_tol: float,
 ) -> bool:
     pred_result = (
         str(pred_result) if pred_result is not None else ""
@@ -85,23 +93,32 @@ def scalar_are_results_same(
 
 async def evaluate(prediction: str, ground_truth: str) -> float:
     match = re.search(
-        r"###\s*ANSWER:\s*(.+?)(\s*###|$)", prediction, re.DOTALL
+        r"###\s*ANSWER:\s*(.+?)(\s*###|$)",
+        prediction,
+        re.DOTALL,
     )
     answer_to_eval = match.group(1) if match else prediction
-    return float(scalar_are_results_same(answer_to_eval, ground_truth, 1e-2))
+    return float(
+        scalar_are_results_same(
+            answer_to_eval,
+            ground_truth,
+            1e-2,
+        ),
+    )
 
 
 class DemoRewardProcessor(AbstractRewardProcessor):
-
     def setup(self) -> None:
         """
         Initialize workspace before processing requests.
 
         Demo implementation: Logs startup message.
-        In production, this could load embedding models, initialize databases, etc.
+        In production, this could load embedding models, initialize
+        databases, etc.
         """
         logger.info("[DemoRewardProcessor] setup() completed")
 
+    # pylint: disable=invalid-overridden-method
     @observe_processor
     async def process(self, input_data: RewardInput) -> RewardOutput:
         """
@@ -124,7 +141,8 @@ class DemoRewardProcessor(AbstractRewardProcessor):
 
         result = RewardOutput(
             reward=Reward(
-                reward_score=score, reward_metrics={"test1": 0.5, "test2": 0.3}
+                reward_score=score,
+                reward_metrics={"test1": 0.5, "test2": 0.3},
             ),
             status=TaskStatus.SUCCESS,
             error=None,

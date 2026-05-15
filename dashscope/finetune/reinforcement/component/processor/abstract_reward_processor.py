@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 """
 component/processor/abstract_reward_processor.py
 
 Abstract base class for Reward business processors.
-Users should inherit this class and implement process() for custom reward calculation logic.
+Users should inherit this class and implement process() for custom reward
+calculation logic.
 """
 
 # -*- coding: utf-8 -*-
@@ -23,7 +25,7 @@ from dashscope.finetune.reinforcement.component.func_decorator import (
     SubRewardFunction,
     AggregateFunction,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractProcessor,
 )
 
@@ -33,7 +35,8 @@ class AbstractRewardProcessor(AbstractProcessor):
     Abstract base class for Reward business processors.
 
     Users must implement process() to define custom reward calculation logic.
-    Optionally override setup() to initialize workspace before the server starts.
+    Optionally override setup() to initialize workspace before the server
+    starts.
 
     Example:
         >>> class MyRewardProcessor(AbstractRewardProcessor):
@@ -43,7 +46,8 @@ class AbstractRewardProcessor(AbstractProcessor):
         ...
         ...     def process(self, input: RewardInput) -> RewardOutput:
         ...         # Custom reward calculation
-        ...         score = self._compute_score(input.agent_output, input.ground_truth)
+        ...         score = self._compute_score(input.agent_output,
+        input.ground_truth)
         ...         return RewardOutput(
         ...             reward=Reward(
         ...                 reward_score=score,
@@ -64,8 +68,10 @@ class AbstractRewardProcessor(AbstractProcessor):
         """
         self.executor = executor or ThreadPoolExecutor()
         self._executor_owned = executor is None
-        # Collect all sub-functions and aggregate functions during initialization
-        # IMPORTANT: Subclasses MUST call super().__init__() to ensure function collection
+        # Collect all sub-functions and aggregate functions during
+        # initialization
+        # IMPORTANT: Subclasses MUST call super().__init__() to ensure
+        # function collection
         self._collect_functions()
 
     def _collect_functions(self):
@@ -96,7 +102,9 @@ class AbstractRewardProcessor(AbstractProcessor):
                 name = getattr(attr, "_sub_reward_name")
                 weight = getattr(attr, "_sub_weight", 1.0)
                 self.reward_meta.sub_functions[name] = SubRewardFunction(
-                    name, attr, weight
+                    name,
+                    attr,
+                    weight,
                 )
 
             # Check for aggregate function
@@ -136,7 +144,9 @@ class AbstractRewardProcessor(AbstractProcessor):
         for name, reward_output in sub_rewards.items():
             if name not in self.reward_meta.sub_functions:
                 raise ValueError(
-                    f"Sub-reward function '{name}' is not registered. Available: {list(self.reward_meta.sub_functions.keys())}"
+                    f"Sub-reward function '{name}' is not registered. "
+                    f"Available:"
+                    f" {list(self.reward_meta.sub_functions.keys())}",
                 )
             total += (
                 reward_output.reward.reward_score
@@ -167,13 +177,15 @@ class AbstractRewardProcessor(AbstractProcessor):
         - Loading configuration files
         - Pre-computing static data
 
-        This method is called once during server startup, before any requests are processed.
+        This method is called once during server startup, before any
+        requests are processed.
         The default implementation does nothing.
 
         Raises:
             Exception: If initialization fails, the server will fail to start.
         """
 
+    # pylint: disable=invalid-overridden-method
     @abstractmethod
     def process(self, input_data: RewardInput) -> RewardOutput:
         """
@@ -183,6 +195,7 @@ class AbstractRewardProcessor(AbstractProcessor):
             input_data: Parsed RewardInput input object.
 
         Returns:
-            RewardOutput object containing standardized results (score, rollout_id, status).
+            RewardOutput object containing standardized results (score,
+            rollout_id, status).
         """
         raise NotImplementedError

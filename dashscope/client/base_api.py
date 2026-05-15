@@ -1015,7 +1015,11 @@ class LogMixin:
             DashScopeAPIResponse: The response
         """
         custom_base_url = kwargs.pop("base_address", None)
-        url = _get_url(custom_base_url, join_url(cls.SUB_PATH.lower(), job_id, "logs"), path)
+        url = _get_url(
+            custom_base_url,
+            join_url(cls.SUB_PATH.lower(), job_id, "logs"),
+            path,
+        )
         params = {"offset": offset, "line": line}
         return _get(
             url,

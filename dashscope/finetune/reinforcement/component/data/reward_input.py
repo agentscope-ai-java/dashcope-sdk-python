@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/data/reward_input.py
 
@@ -18,9 +19,9 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 )
 
 
-# ============================================================================ #
-#                              INPUT: REWARD REQUEST                           #
-# ============================================================================ #
+# ========================================================================== #
+#                              INPUT: REWARD REQUEST                         #
+# ========================================================================== #
 
 
 class RewardInput(BaseDataModel):
@@ -34,7 +35,8 @@ class RewardInput(BaseDataModel):
 
     ground_truth: Optional[Any] = Field(
         default=None,
-        description="The expected gold-standard answer used for reward calculation or automated evaluation.",
+        description="The expected gold-standard answer used for reward "
+        "calculation or automated evaluation.",
     )
 
     request_metadata: Optional[RequestMetadata] = Field(

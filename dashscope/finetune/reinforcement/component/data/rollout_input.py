@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/data/rollout_input.py
 
@@ -18,9 +19,9 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 )
 
 
-# ============================================================================ #
-#                              INPUT: ROLLOUT JOB                              #
-# ============================================================================ #
+# ========================================================================== #
+#                              INPUT: ROLLOUT JOB                            #
+# ========================================================================== #
 
 
 class RolloutInput(BaseDataModel):
@@ -46,10 +47,12 @@ class RolloutInput(BaseDataModel):
 
     ground_truth: Optional[Any] = Field(
         default=None,
-        description="The expected gold-standard answer used for reward calculation or automated evaluation.",
+        description="The expected gold-standard answer used for reward "
+        "calculation or automated evaluation.",
     )
 
-    # extra: Extra information from dataset, passed through to rollout and reward
+    # extra: Extra information from dataset, passed through to rollout and
+    # reward
     rollout_extra: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Extra information from the dataset.",

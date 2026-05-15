@@ -1,6 +1,7 @@
-# ============================================================================ #
-#                              Base Components                                 #
-# ============================================================================ #
+# -*- coding: utf-8 -*-
+# ========================================================================== #
+#                              Base Components                               #
+# ========================================================================== #
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     BaseDataModel,
     TaskStatus,
@@ -11,24 +12,24 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
     RequestMetadata,
     AgentOutput,
 )
-from dashscope.finetune.reinforcement.component.data.group_reward_input import (
+from dashscope.finetune.reinforcement.component.data.group_reward_input import (  # noqa: E501
     GroupRewardInput,
 )
-from dashscope.finetune.reinforcement.component.data.group_reward_output import (
+from dashscope.finetune.reinforcement.component.data.group_reward_output import (  # noqa: E501
     GroupRewardOutput,
     GroupReward,
 )
 
-# ============================================================================ #
-#                              Input Models                                    #
-# ============================================================================ #
+# ========================================================================== #
+#                              Input Models                                  #
+# ========================================================================== #
 from dashscope.finetune.reinforcement.component.data.reward_input import (
     RewardInput,
 )
 
-# ============================================================================ #
-#                              Output Models                                   #
-# ============================================================================ #
+# ========================================================================== #
+#                              Output Models                                 #
+# ========================================================================== #
 from dashscope.finetune.reinforcement.component.data.reward_output import (
     RewardOutput,
     Reward,

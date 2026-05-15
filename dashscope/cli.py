@@ -464,17 +464,19 @@ class ParseKVAction(argparse.Action):
                 raise argparse.ArgumentError(self, str(message))
 
 
-def main():
+def main():  # pylint: disable=too-many-statements
     # 1. Route check: If the second argument matches the new CLI prefix,
     # forward to Typer
     if len(sys.argv) > 1 and sys.argv[1] in AGENTIC_RL_PREFIXES:
         # Remove the prefix argument so Typer can correctly parse subsequent
         # subcommands (e.g., run, init, get)
         sys.argv.pop(1)
-        # from dashscope.cli_agentic_rl import app
+
+        # pylint: disable=no-name-in-module
         from dashscope.finetune.reinforcement import app
 
         app()
+
         return
 
     # 2. Original argparse logic (remains completely unchanged)

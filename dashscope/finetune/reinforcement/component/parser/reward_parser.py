@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/parser/reward_parser.py
 

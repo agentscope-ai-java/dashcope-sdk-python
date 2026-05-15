@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import ast
 import asyncio
 import copy
@@ -22,15 +23,33 @@ from tenacity import (
 
 from dashscope.finetune.reinforcement import logger
 from dashscope.finetune.reinforcement.common.errors import (
-    InputError, OutputError, BaseConnectionError, ConfigurationError, BasePermissionError, RuntimeErrorWithCode, OSSUploadError
+    InputError,
+    OutputError,
+    ConfigurationError,
+    BasePermissionError,
+    RuntimeErrorWithCode,
+    OSSUploadError,
 )
-from dashscope.finetune.reinforcement import (LOG_LEVEL, DASHSCOPE_HTTP_BASE_URL,
-                                                   DASHSCOPE_API_KEY, BAILIAN_FILE_API,
-                                                   BAILIAN_FILE_TIMEOUT, HTTP_REQUEST_TIMEOUT,
-                                                   FC_API_KEY, FC_FILES_START, FC_PYPI_LIB, FC_PYPI_REPO, FC_LAYER_USED,
-                                                   FC_SERVER_CLASSPATH, FC_ZIP_EXCLUDE_PATTERNS, FC_OSS_FILE_SIZE_WARNING,
-                                                   LOGGER_FILTER_FIELDS, FC_WORKERS_COUNT)
-from dashscope.finetune.reinforcement.common.model_types import FileSpec, FunctionType
+from dashscope.finetune.reinforcement import (
+    LOG_LEVEL,
+    DASHSCOPE_API_KEY,
+    BAILIAN_FILE_API,
+    BAILIAN_FILE_TIMEOUT,
+    HTTP_REQUEST_TIMEOUT,
+    FC_FILES_START,
+    FC_PYPI_LIB,
+    FC_PYPI_REPO,
+    FC_LAYER_USED,
+    FC_SERVER_CLASSPATH,
+    FC_ZIP_EXCLUDE_PATTERNS,
+    FC_OSS_FILE_SIZE_WARNING,
+    LOGGER_FILTER_FIELDS,
+    FC_WORKERS_COUNT,
+)
+from dashscope.finetune.reinforcement.common.model_types import (
+    FileSpec,
+    FunctionType,
+)
 
 
 def generate_random_id(prefix: str = "") -> str:
@@ -50,9 +69,11 @@ async def async_http_request(
     """Perform an asynchronous HTTP request with tenacity retries."""
 
     async def _make_request() -> Dict[str, Any]:
-        """Single attempt: return result on success, raise exception on failure."""
+        """Single attempt: return result on success, raise exception on
+        failure."""
         async with aiohttp.ClientSession(
-            headers=headers, timeout=aiohttp.ClientTimeout(total=timeout)
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=timeout),
         ) as session:
             method_upper = method.upper()
 
@@ -68,16 +89,19 @@ async def async_http_request(
             else:
                 # Logical error – do not retry
                 raise InputError(
-                    f"Unsupported method: {method}", error_code=4000
+                    f"Unsupported method: {method}",
+                    error_code=4000,
                 )
 
-            # Treat server 5xx responses as transient failures and trigger a retry
+            # Treat server 5xx responses as transient failures and trigger a
+            # retry
             if (
                 isinstance(result.get("status"), Dict)
                 and result.get("status").get("code") >= 500
             ):
                 raise aiohttp.ClientError(
-                    f"Server error {result['status']['code']}: {result['status']['message']}"
+                    f"Server error {result['status']['code']}:"
+                    f" {result['status']['message']}",
                 )
             return result
 
@@ -85,10 +109,12 @@ async def async_http_request(
     retryer = AsyncRetrying(
         stop=stop_after_attempt(retry_times),
         wait=wait_exponential(
-            multiplier=1, min=1, max=10
+            multiplier=1,
+            min=1,
+            max=10,
         ),  # exponential backoff
         retry=retry_if_exception_type(
-            (aiohttp.ClientError, asyncio.TimeoutError)
+            (aiohttp.ClientError, asyncio.TimeoutError),
         ),
         reraise=True,  # raise RetryError when exhausted
     )
@@ -146,7 +172,8 @@ async def _handle_response(response) -> Dict[str, Any]:
     try:
         content = await response.json()
         content.setdefault(
-            "status", {"code": response.status, "message": response.reason}
+            "status",
+            {"code": response.status, "message": response.reason},
         )
         return content
     except json.JSONDecodeError:
@@ -183,15 +210,18 @@ def check_file(file: str) -> None:
     if not os.path.isfile(file):
         raise InputError(f"{file} is not a file", error_code=4101)
     if not os.access(file, os.R_OK):
-        raise InputError(f"No read access to file: {file}", error_code=4102)
+        raise InputError(
+            f"No read access to file: {file}",
+            error_code=4102,
+        )
 
 
 def generate_agentic_script(
     fc_pypi_lib: str,
     fc_pypi_repo: str,
-    requirements_path: str,
     func_type: str,
     classpath: str,
+    requirements_path: Optional[str] = None,
     function_layer_used: bool = True,
 ) -> str:
     """
@@ -260,7 +290,7 @@ install_with_retry() {
     local retry_count=0
 
     while [ $retry_count -lt $MAX_RETRIES ]; do
-        log "Installing ${packages[*]} (attempt $((retry_count+1))/${MAX_RETRIES})"
+        log "Installing ${packages[*]} ($((retry_count+1))/${MAX_RETRIES})"
         if python3 -m pip install -U "${packages[@]}" \
             --index-url "${PYPI_REPO}" \
             --no-cache-dir \
@@ -281,9 +311,9 @@ main() {
     init_logging
     trap cleanup EXIT
     validate_environment
-    
+
     if [ "${FUNCTION_LAYER}" = "False" ]; then
-        # Phase 2: 
+        # Phase 2:
         if ! install_with_retry "virtualenv"; then
             log "Failed to install default package: $pkg"
             exit 202
@@ -301,11 +331,11 @@ main() {
             exit 203
         fi
     done
-    
+
     if [ "${FUNCTION_LAYER}" = "False" ]; then
         # Phase 4: User dependency Setup
         log "Starting user dependency installation"
-        if [ -f "${REQUIREMENTS_FILE}" ]; then # Check if requirements file exists
+        if [ -f "${REQUIREMENTS_FILE}" ]; then # Check if file exists
             log "Installing additional requirements from ${REQUIREMENTS_FILE}"
             if ! install_with_retry -r "${REQUIREMENTS_FILE}"; then
                 log "Failed to install requirements from ${REQUIREMENTS_FILE}"
@@ -329,7 +359,7 @@ main() {
 }
 """
 
-    shell_script_main = """# ==================== Entry ========================
+    shell_script_main = """# ==================== Entry ======================
 main "$@"
 """
 
@@ -365,9 +395,9 @@ def create_deployment_files(
         content = generate_agentic_script(
             fc_pypi_lib=FC_PYPI_LIB,
             fc_pypi_repo=FC_PYPI_REPO,
-            requirements_path=requirements_path,
             func_type=str(functype),
             classpath=classpath,
+            requirements_path=requirements_path,
             function_layer_used=FC_LAYER_USED,
         )
 
@@ -381,10 +411,12 @@ def create_deployment_files(
         logger.debug(f"Generated startup script: {FC_FILES_START}")
     except Exception as e:
         logger.error(
-            f"Deployment file creation failed: {str(e)}", exc_info=True
+            f"Deployment file creation failed: {str(e)}",
+            exc_info=True,
         )
         raise RuntimeErrorWithCode(
-            "Deployment file creation error", error_code=4200
+            "Deployment file creation error",
+            error_code=4200,
         ) from e
 
 
@@ -395,6 +427,7 @@ def zip_files(files: List[str], output_zip: str) -> None:
             zipf.write(file)
 
 
+# pylint: disable=too-many-branches
 def zip_dir(
     dirpath: str,
     output_zip: str,
@@ -410,14 +443,17 @@ def zip_dir(
         output_zip: Output zip file path
         extra_files: List of additional files to add
         rw_type: Zip file write mode ('w', 'a', etc.)
-        exclude_patterns: List of patterns to exclude (e.g. ["*.log", "__pycache__"])
+        exclude_patterns: List of patterns to exclude (e.g. ["*.log",
+        "__pycache__"])
     """
 
     def _should_exclude(path: str, patterns: List[str]) -> Optional[str]:
-        """Return matched pattern if path should be excluded, None otherwise."""
+        """Return matched pattern if path should be excluded,
+        None otherwise."""
         for pattern in patterns:
             if fnmatch.fnmatch(
-                os.path.basename(path), pattern
+                os.path.basename(path),
+                pattern,
             ) or fnmatch.fnmatch(path, pattern):
                 return pattern
         return None
@@ -433,7 +469,9 @@ def zip_dir(
 
     try:
         with zipfile.ZipFile(
-            output_zip, rw_type, zipfile.ZIP_DEFLATED
+            output_zip,
+            rw_type,
+            zipfile.ZIP_DEFLATED,
         ) as zipf:
             # Compress main directory
             if os.path.exists(dirpath):
@@ -441,19 +479,22 @@ def zip_dir(
                     the_dirs = []
                     for d in dirs:
                         full_rel_path = os.path.join(
-                            os.path.relpath(root, start=dirpath), d
+                            os.path.relpath(root, start=dirpath),
+                            d,
                         )
                         normalized_path = full_rel_path.replace("\\", "/")
 
                         matched = _should_exclude(
-                            normalized_path, all_excludes
+                            normalized_path,
+                            all_excludes,
                         )
 
                         if not matched:
                             the_dirs.append(d)
                         else:
                             logger.debug(
-                                f"Excluding directory: {normalized_path} (matched pattern: '{matched}')"
+                                f"Excluding directory: {normalized_path} ("
+                                f"matched pattern: '{matched}')",
                             )
                             continue
 
@@ -493,7 +534,8 @@ def zip_dir(
     except Exception as e:
         logger.error(f"Directory compression failed: {str(e)}", exc_info=True)
         raise RuntimeErrorWithCode(
-            "Directory compression error", error_code=4300
+            "Directory compression error",
+            error_code=4300,
         ) from e
 
 
@@ -504,31 +546,37 @@ def _sync_upload_to_oss(signed_url: str, zip_path: str) -> int:
         size_mb = file_size / (1024 * 1024)
         if file_size > FC_OSS_FILE_SIZE_WARNING:
             logger.warning(
-                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS"
+                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS",
             )
             raise OSSUploadError(
-                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS"
+                f"Uploading large file: {zip_path} ({size_mb:.2f}MB) to OSS",
             )
-        else:
-            logger.debug(
-                f"Uploading file: {zip_path} ({size_mb:.2f}MB) to OSS"
-            )
+
+        logger.debug(
+            f"Uploading file: {zip_path} ({size_mb:.2f}MB) to OSS",
+        )
 
         with open(zip_path, "rb") as file:
             response = requests.put(
-                signed_url, data=file, headers={}, timeout=BAILIAN_FILE_TIMEOUT
+                signed_url,
+                data=file,
+                headers={},
+                timeout=BAILIAN_FILE_TIMEOUT,
             )
 
             if response.status_code != 200:
                 error_msg = response.text
                 raise OSError(
-                    f"OSS upload failed ({response.status_code}): {error_msg}"
+                    f"OSS upload failed ({response.status_code}): {error_msg}",
                 )
 
             return response.status_code
     except Exception as e:
         logger.error(f"OSS upload failed: {str(e)}", exc_info=True)
-        raise RuntimeErrorWithCode("OSS upload error", error_code=4400) from e
+        raise RuntimeErrorWithCode(
+            "OSS upload error",
+            error_code=4400,
+        ) from e
 
 
 @retry(
@@ -539,24 +587,28 @@ def _sync_upload_to_oss(signed_url: str, zip_path: str) -> int:
             requests.exceptions.ConnectionError,
             requests.exceptions.Timeout,
             requests.exceptions.ChunkedEncodingError,
-        )
+        ),
     ),
     reraise=True,
 )
 async def upload_zip_to_oss_and_by_signed_url(
-    signed_url: str, zip_path: str
+    signed_url: str,
+    zip_path: str,
 ) -> int:
     """Asynchronously upload ZIP file to OSS with retry mechanism."""
     try:
         return await asyncio.to_thread(
-            _sync_upload_to_oss, signed_url, zip_path
+            _sync_upload_to_oss,
+            signed_url,
+            zip_path,
         )
     except BasePermissionError:
         raise  # Re-raise permission errors directly
     except Exception as e:
         if "403" in str(e):
             raise BasePermissionError(
-                "OSS access denied (403)", error_code=4401
+                "OSS access denied (403)",
+                error_code=4401,
             ) from e
         raise
 
@@ -625,15 +677,19 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
 
         # Handle errors
         if result.get("status", {}).get("code", 200) != 200:
-            raise OutputError(f"File upload failed: {result}", error_code=4500)
+            raise OutputError(
+                f"File upload failed: {result}",
+                error_code=4500,
+            )
 
         data = result.get("data", {})
         if "failed_uploads" in data and data["failed_uploads"]:
             failed_files = ", ".join(
-                [f["name"] for f in data["failed_uploads"]]
+                [f["name"] for f in data["failed_uploads"]],
             )
             raise OutputError(
-                f"Partial upload failed: {failed_files}", error_code=4501
+                f"Partial upload failed: {failed_files}",
+                error_code=4501,
             )
 
         # Collect uploaded file IDs
@@ -646,7 +702,10 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
 
     except Exception as e:
         logger.error(f"File upload failed: {str(e)}", exc_info=True)
-        raise OutputError("File upload error", error_code=4502) from e
+        raise OutputError(
+            "File upload error",
+            error_code=4502,
+        ) from e
 
 
 def secret_part_str(value: str):
@@ -705,7 +764,7 @@ def set_api_key(api_key: Optional[str] = None) -> None:
         os.environ["DASHSCOPE_API_KEY"] = api_key
         logger.debug(
             f"Set environ DASHSCOPE_API_KEY: "
-            f"{api_key if LOG_LEVEL=='DEBUG' else deep_mask(api_key)}"
+            f"{api_key if LOG_LEVEL=='DEBUG' else deep_mask(api_key)}",
         )
         return
 
@@ -750,8 +809,8 @@ def get_filepath_classname(full_path: str) -> Tuple[str, str]:
             )
         if ":" in parts[1]:
             raise InputError(
-                f"Invalid class name format '{parts[1]}'. Class name cannot "
-                f"contain colon.",
+                f"Invalid class name format '{parts[1]}'. "
+                f"Class name cannot contain colon.",
                 error_code=4701,
             )
 
@@ -807,7 +866,8 @@ def deep_remove_none(obj):
 
 
 def get_weights_from_file(
-    filepath: str, classname: str = ""
+    filepath: str,
+    classname: str = "",
 ) -> Dict[str, float]:
     """
     Extract reward weights from a Python file
@@ -837,7 +897,8 @@ def get_weights_from_file(
 
 
 def extract_reward_weights(
-    source_code: str, classname: str
+    source_code: str,
+    classname: str,
 ) -> Dict[str, float]:
     """
     Static analyzer to extract reward weights from decorated functions.
@@ -865,7 +926,7 @@ def extract_reward_weights(
                     args_dict["name"] = _resolve_str_literal(kw.value)
                 elif kw.arg == "sub_weight":
                     args_dict["sub_weight"] = _resolve_numeric_literal(
-                        kw.value
+                        kw.value,
                     )
         return args_dict
 
@@ -880,9 +941,13 @@ def extract_reward_weights(
 
     def _resolve_numeric_literal(node) -> Optional[float]:
         if isinstance(node, ast.Num):
-            return node.n
+            val = node.n
+            if isinstance(val, complex):
+                return None
+            return float(val)
         elif isinstance(node, ast.Constant) and isinstance(
-            node.value, (int, float)
+            node.value,
+            (int, float),
         ):
             return node.value
         return None
@@ -922,7 +987,8 @@ def serialize_for_output(data: Any) -> Any:
     """
     Safely serialize various data types for output formatting.
 
-    This function recursively processes data to ensure it can be serialized to formats like JSON.
+    This function recursively processes data to ensure it can be serialized
+    to formats like JSON.
     It handles:
     - Pydantic V2 models using model_dump()
     - Pydantic V1 models using dict()
@@ -934,7 +1000,8 @@ def serialize_for_output(data: Any) -> Any:
         data: Input data to serialize (any type)
 
     Returns:
-        Serialized data in a format suitable for output (Dict, list, or primitive)
+        Serialized data in a format suitable for output (Dict, list,
+        or primitive)
     """
     # Handle Pydantic models (version detection)
     if hasattr(data, "model_dump"):  # Pydantic V2

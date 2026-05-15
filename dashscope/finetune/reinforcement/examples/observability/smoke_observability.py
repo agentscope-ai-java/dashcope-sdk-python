@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 smoke_observability.py
 
@@ -7,7 +8,8 @@ Goal: validate the **public** observability APIs exposed in `UserGuide.md`:
 - `@observe_processor`: processor-level span
 - `@observe_llm`: LLM span
 - `@observe_tool`: tool span
-- `trace_client(...)`: OpenAI-compatible client instrumentation (one canonical shape)
+- `trace_client(...)`: OpenAI-compatible client instrumentation (one
+canonical shape)
 - `trace_tool(...)`: tool instrumentation (one canonical shape)
 
 Prerequisites (example):
@@ -18,16 +20,20 @@ Run:
   ENABLE_TRAJECTORY=true python smoke_observability.py
 
 Notes:
-- This script uses `InMemorySpanExporter` to print spans locally. This is for demo/smoke only.
-  If you see spans printed here but nothing shows up in ARMS, that's expected: this script does not
-  export to ARMS/OTLP. Follow `UserGuide.md` to configure tracing export for production runs.
-  Do NOT copy the `TracerProvider` / `set_tracer_provider(...)` part into your business processors
-  (e.g. `rollout.py` / `reward.py`). In production, configure tracing via the SDK switch / standard
-  OpenTelemetry exporters (OTLP/Collector), rather than setting a global provider in each module.
-- In some environments, optional tracing dependencies may segfault at interpreter shutdown.
-  To keep this script reliably runnable, it performs a hard exit at the end.
+- This script uses `InMemorySpanExporter` to print spans locally. This is
+for demo/smoke only. If you see spans printed here but nothing shows up in
+ARMS, that's expected: this script does not export to ARMS/OTLP. Follow
+`UserGuide.md` to configure tracing export for production runs. Do NOT copy
+the `TracerProvider` / `set_tracer_provider(...)` part into your business
+processors (e.g. `rollout.py` / `reward.py`). In production, configure
+tracing via the SDK switch / standard OpenTelemetry exporters (
+OTLP/Collector), rather than setting a global provider in each module.
+- In some environments, optional tracing dependencies may segfault at
+interpreter shutdown. To keep this script reliably runnable, it performs a
+hard exit at the end.
 """
 
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import argparse
@@ -35,14 +41,15 @@ import asyncio
 import logging
 import os
 import sys
+from types import SimpleNamespace
+from typing import Any, Dict, List, Sequence
+
 from opentelemetry import trace as otel_trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
-from types import SimpleNamespace
-from typing import Any, Dict, List, Sequence
 
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,
@@ -58,17 +65,19 @@ from dashscope.finetune.reinforcement.component.data.rollout_input import (
     RolloutInput,
 )
 from dashscope.finetune.reinforcement.component.func_manager import FuncManager
-from dashscope.finetune.reinforcement.component.observability import (
+from dashscope.finetune.reinforcement.component.observability.genai import (
     observe_llm,
-    observe_processor,
     observe_tool,
     trace_client,
     trace_tool,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import (
+from dashscope.finetune.reinforcement.component.observability.processor_span import (  # noqa: E501  # pylint: disable=line-too-long
+    observe_processor,
+)
+from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import (  # noqa: E501  # pylint: disable=line-too-long
     AbstractRewardProcessor,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
+from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (  # noqa: E501  # pylint: disable=line-too-long
     AbstractRolloutProcessor,
 )
 
@@ -163,16 +172,23 @@ def _make_rollout_input(*, rollout_id: str) -> RolloutInput:
 
 class _SmokeRewardProcessor(AbstractRewardProcessor):
     @observe_processor
-    def process(self, input: RewardInput) -> Any:  # type: ignore[override]
-        return {"reward": 1.0, "rollout_id": input.rollout_id}
+    def process(
+        self,
+        input_data: RewardInput,
+    ) -> Any:  # pylint: disable=redefined-builtin
+        return {"reward": 1.0, "rollout_id": input_data.rollout_id}
 
 
 class _SmokeRolloutProcessor(AbstractRolloutProcessor):
+    # pylint: disable=invalid-overridden-method
     @observe_processor
-    def process(self, input: RolloutInput) -> Any:  # type: ignore[override]
+    def process(
+        self,
+        input_data: RolloutInput,
+    ) -> Any:  # pylint: disable=redefined-builtin
         return {
             "trajectory": ["step1"],
-            "rollout_id": getattr(input, "rollout_id", "ro-unknown"),
+            "rollout_id": getattr(input_data, "rollout_id", "ro-unknown"),
         }
 
 
@@ -184,10 +200,15 @@ class _SmokeRolloutProcessor(AbstractRolloutProcessor):
 def smoke_observe_processor_reward() -> bool:
     _log("\n=== 1) @observe_processor (Reward) emits span ===")
     fm = FuncManager(
-        FuncType.REWARD, processor=_SmokeRewardProcessor(), observe=False
+        FuncType.REWARD,
+        processor=_SmokeRewardProcessor(),
+        observe=False,
     )
     _ = asyncio.run(
-        _await_fm_process(fm, _make_reward_input(rollout_id="ro-smoke-reward"))
+        _await_fm_process(
+            fm,
+            _make_reward_input(rollout_id="ro-smoke-reward"),
+        ),
     )
     ok = _print_spans("REWARD")
     _clear_spans()
@@ -197,12 +218,15 @@ def smoke_observe_processor_reward() -> bool:
 def smoke_observe_processor_rollout() -> bool:
     _log("\n=== 2) @observe_processor (Rollout) emits span ===")
     fm = FuncManager(
-        FuncType.ROLLOUT, processor=_SmokeRolloutProcessor(), observe=False
+        FuncType.ROLLOUT,
+        processor=_SmokeRolloutProcessor(),
+        observe=False,
     )
     _ = asyncio.run(
         _await_fm_process(
-            fm, _make_rollout_input(rollout_id="ro-smoke-rollout")
-        )
+            fm,
+            _make_rollout_input(rollout_id="ro-smoke-rollout"),
+        ),
     )
     ok = _print_spans("ROLLOUT")
     _clear_spans()
@@ -218,13 +242,17 @@ def smoke_observe_llm() -> bool:
         messages_arg="messages",
     )
     def _call_llm(*, model: str, messages: List[Dict[str, str]]) -> Any:
+        _ = messages
         choice = SimpleNamespace(
             message=SimpleNamespace(content="42", role="assistant"),
             finish_reason="stop",
         )
         usage = SimpleNamespace(prompt_tokens=5, completion_tokens=2)
         return SimpleNamespace(
-            model=model, id="mock-id", choices=[choice], usage=usage
+            model=model,
+            id="mock-id",
+            choices=[choice],
+            usage=usage,
         )
 
     _ = _call_llm(
@@ -251,16 +279,20 @@ def smoke_observe_tool() -> bool:
 
 def smoke_trace_client_openai_shape() -> bool:
     _log(
-        "\n=== 5) trace_client instruments OpenAI-compatible client (chat.completions.create) ==="
+        "\n=== 5) trace_client instruments OpenAI-compatible client ("
+        "chat.completions.create) ===",
     )
 
     class _Completions:
-        def create(self, **kwargs: Any) -> Any:
+        def create(self, **_kwargs: Any) -> Any:
             msg = SimpleNamespace(role="assistant", content="hello")
             choice = SimpleNamespace(message=msg, finish_reason="stop")
             usage = SimpleNamespace(prompt_tokens=10, completion_tokens=5)
             return SimpleNamespace(
-                model="fake-model", id="fake-id", choices=[choice], usage=usage
+                model="fake-model",
+                id="fake-id",
+                choices=[choice],
+                usage=usage,
             )
 
     class _Chat:
@@ -272,7 +304,8 @@ def smoke_trace_client_openai_shape() -> bool:
     client = _Client()
     trace_client(client)
     _ = client.chat.completions.create(
-        model="gpt-fake", messages=[{"role": "user", "content": "hi"}]
+        model="gpt-fake",
+        messages=[{"role": "user", "content": "hi"}],
     )
     ok = _print_spans("trace_client")
     _clear_spans()
@@ -286,15 +319,21 @@ def smoke_trace_tool_single() -> bool:
         name = "single_tool"
 
         def invoke(
-            self, input: Any, config: Any = None, **kwargs: Any
+            self,
+            tool_input: Any,
+            _config: Any = None,
+            **_kwargs: Any,
         ) -> Dict[str, Any]:
-            return {"ok": True, "input": input}
+            return {"ok": True, "input": tool_input}
 
         async def ainvoke(
-            self, input: Any, config: Any = None, **kwargs: Any
+            self,
+            tool_input: Any,
+            _config: Any = None,
+            **_kwargs: Any,
         ) -> Dict[str, Any]:
             await asyncio.sleep(0)
-            return {"ok": True, "input": input}
+            return {"ok": True, "input": tool_input}
 
     tool = _Tool()
     trace_tool(tool)
@@ -357,9 +396,11 @@ if __name__ == "__main__":
 
     total = len(checks)
     print(
-        f"\nRESULT: {'PASS' if passed == total else 'FAIL'} ({passed}/{total})",
+        f"\nRESULT: {'PASS' if passed == total else 'FAIL'} ({passed}"
+        f"/{total})",
         flush=True,
     )
     # Some optional tracing dependencies may segfault at interpreter shutdown
-    # (outside of this SDK). Hard-exit keeps this script usable as a smoke check.
+    # (outside of this SDK). Hard-exit keeps this script usable as a smoke
+    # check.
     os._exit(0)

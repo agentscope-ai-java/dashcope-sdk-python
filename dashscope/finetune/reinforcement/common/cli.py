@@ -1,5 +1,5 @@
-# dashscope/cli_agentic_rl.py
 # -*- coding: utf-8 -*-
+# dashscope/cli_agentic_rl.py
 """
 Agentic RL Fine-Tuning CLI
 Production-grade command-line interface built with Typer, Rich, and AsyncIO.
@@ -7,6 +7,7 @@ Production-grade command-line interface built with Typer, Rich, and AsyncIO.
 import asyncio
 import json
 from pathlib import Path
+from typing import Optional, List, Dict, Any
 
 import typer
 import yaml
@@ -14,7 +15,6 @@ from rich.console import Console
 from rich.json import JSON
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from typing import Optional, List, Dict, Any
 
 from dashscope.finetune.agentic_rl import AgenticRL
 from dashscope.finetune.reinforcement import (
@@ -47,12 +47,14 @@ def format_output(data: Any, fmt: str = "table") -> None:
         console.print(JSON.from_data(data))
     elif fmt == "yaml":
         console.print(
-            yaml.dump(data, default_flow_style=False, allow_unicode=True)
+            yaml.dump(data, default_flow_style=False, allow_unicode=True),
         )
     else:
         if isinstance(data, Dict):
             table = Table(
-                title="Result", show_header=True, header_style="bold cyan"
+                title="Result",
+                show_header=True,
+                header_style="bold cyan",
             )
             table.add_column("Key", style="cyan")
             table.add_column("Value", style="green")
@@ -83,7 +85,8 @@ def load_json_input(data_str: str) -> Dict[str, Any]:
             return json.load(f)
 
     raise ValueError(
-        f"Invalid input: '{data_str}' is neither a valid JSON string nor an existing file path."
+        f"Invalid input: '{data_str}' is neither a valid JSON string nor an "
+        f"existing file path.",
     )
 
 
@@ -96,7 +99,8 @@ async def _register_fc_async(
     lazy_load: bool = True,
     api_key: Optional[str] = "",
 ) -> Dict[str, Any]:
-    """🧩 Register Rollout/Reward/Group-reward function components, returns entity_id & instance_id"""
+    """🧩 Register Rollout/Reward/Group-reward function components, returns
+    entity_id & instance_id"""
     # Validate at least one parameter is provided
     if (
         not rollout_classpaths
@@ -105,7 +109,7 @@ async def _register_fc_async(
     ):
         console.print(
             "[red]❌ At least one of rollout_classpaths or reward_classpaths "
-            "or group_reward_classpaths must be provided[/red]"
+            "or group_reward_classpaths must be provided[/red]",
         )
         raise typer.Exit(1)
 
@@ -159,17 +163,21 @@ async def _register_fc_async(
 @app.command("register_functions")
 def register_fc(
     rollout_classpaths: Optional[List[str]] = typer.Option(
-        None, help="List for rollout class path (file.py:ClassName)"
+        None,
+        help="List for rollout class path (file.py:ClassName)",
     ),
     reward_classpaths: Optional[List[str]] = typer.Option(
-        None, help="List for reward class path (file.py:ClassName)"
+        None,
+        help="List for reward class path (file.py:ClassName)",
     ),
     group_reward_classpaths: Optional[List[str]] = typer.Option(
-        None, help="List for group-reward class path (file.py:ClassName)"
+        None,
+        help="List for group-reward class path (file.py:ClassName)",
     ),
     workspace_dir: str = typer.Option("./", help="Local workspace directory"),
     lazy_load: bool = typer.Option(
-        True, help="Delay instance loading (set False for debugging)"
+        True,
+        help="Delay instance loading (set False for debugging)",
     ),
     api_key: Optional[str] = typer.Option(
         None,
@@ -178,10 +186,14 @@ def register_fc(
         help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)",
     ),
     output_format: str = typer.Option(
-        "json", "--output-format", "-o", help="Output format: table|json|yaml"
+        "json",
+        "--output-format",
+        "-o",
+        help="Output format: table|json|yaml",
     ),
 ):
-    """🧩 Register Rollout/Reward function components, returns entity_id & instance_id
+    """🧩 Register Rollout/Reward function components, returns entity_id &
+    instance_id
 
     Requires at least one of:
     - rollout_classpath
@@ -196,7 +208,7 @@ def register_fc(
                 workspace_dir=workspace_dir,
                 lazy_load=lazy_load,
                 api_key=api_key,
-            )
+            ),
         )
 
         format_output(result, fmt=output_format)
@@ -236,7 +248,10 @@ def test_fc(
         help="Target function instance ID (e.g., ro-ins-xxx or rw-ins-xxx)",
     ),
     func_type: str = typer.Option(
-        ..., "--type", "-t", help="Function type: ROLLOUT or REWARD"
+        ...,
+        "--type",
+        "-t",
+        help="Function type: ROLLOUT or REWARD",
     ),
     input_data: str = typer.Option(
         ...,
@@ -251,10 +266,14 @@ def test_fc(
         help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)",
     ),
     output_format: str = typer.Option(
-        "json", "--output-format", "-o", help="Output format: table|json|yaml"
+        "json",
+        "--output-format",
+        "-o",
+        help="Output format: table|json|yaml",
     ),
 ):
-    """🧪 Test a registered Rollout/Reward function instance with custom input data."""
+    """🧪 Test a registered Rollout/Reward function instance with custom
+    input data."""
     try:
         input_dict = load_json_input(input_data)
         result = asyncio.run(
@@ -263,7 +282,7 @@ def test_fc(
                 func_type=func_type,
                 input_data=input_dict,
                 api_key=api_key,
-            )
+            ),
         )
 
         format_output(result, fmt=output_format)
@@ -278,11 +297,13 @@ async def _upload_data_async(
     validation_files: Optional[List[str]] = None,
     api_key: Optional[str] = "",
 ):
-    """📦 Upload training/validation datasets to the platform, returns file IDs"""
+    """📦 Upload training/validation datasets to the platform, returns file
+    IDs"""
     try:
         client = AgenticRL(api_key=api_key or "")
         train_ids, val_ids = await client.upload_datasets(
-            training_files=training_files, validation_files=validation_files
+            training_files=training_files,
+            validation_files=validation_files,
         )
         return {
             "uploaded_training_ids": train_ids,
@@ -298,10 +319,12 @@ async def _upload_data_async(
 @app.command("upload_data")
 def upload_data(
     training_files: List[str] = typer.Option(
-        ..., help="List of training dataset file paths"
+        ...,
+        help="List of training dataset file paths",
     ),
     validation_files: Optional[List[str]] = typer.Option(
-        None, help="List of validation dataset file paths"
+        None,
+        help="List of validation dataset file paths",
     ),
     api_key: Optional[str] = typer.Option(
         None,
@@ -310,17 +333,21 @@ def upload_data(
         help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)",
     ),
     output_format: str = typer.Option(
-        "json", "--output-format", "-o", help="Output format: table|json|yaml"
+        "json",
+        "--output-format",
+        "-o",
+        help="Output format: table|json|yaml",
     ),
 ):
-    """📦 Upload training/validation datasets to the platform, returns file IDs"""
+    """📦 Upload training/validation datasets to the platform, returns file
+    IDs"""
     try:
         result = asyncio.run(
             _upload_data_async(
                 training_files=training_files,
                 validation_files=validation_files,
                 api_key=api_key,
-            )
+            ),
         )
 
         format_output(result, fmt=output_format)
@@ -363,10 +390,14 @@ async def _run_workflow_async(
 @app.command()
 def run(
     config: Path = typer.Option(
-        ..., "-c", "--config", help="Path to YAML configuration file"
+        ...,
+        "-c",
+        "--config",
+        help="Path to YAML configuration file",
     ),
     job_name: Optional[str] = typer.Option(
-        None, help="Custom name for the tuning job"
+        None,
+        help="Custom name for the tuning job",
     ),
     api_key: Optional[str] = typer.Option(
         None,
@@ -375,14 +406,21 @@ def run(
         help="DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted)",
     ),
     output_format: str = typer.Option(
-        "table", "--output-format", "-o", help="Output format: table|json|yaml"
+        "table",
+        "--output-format",
+        "-o",
+        help="Output format: table|json|yaml",
     ),
     verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Enable detailed error traces"
+        False,
+        "--verbose",
+        "-v",
+        help="Enable detailed error traces",
     ),
 ):
     """
-    🚀 Launch the complete RL tuning workflow (function registration → dataset upload → job submission)
+    🚀 Launch the complete RL tuning workflow (function registration →
+    dataset upload → job submission)
 
     Execution modes:
     1. Configuration-driven: Use -c/--config to specify a YAML file
@@ -409,7 +447,8 @@ def run(
             transient=True,
         ) as progress:
             task = progress.add_task(
-                "🔄 Executing RL tuning workflow...", total=None
+                "🔄 Executing RL tuning workflow...",
+                total=None,
             )
 
             # Execute async workflow
@@ -419,13 +458,14 @@ def run(
                     api_key=api_key,
                     # functions=functions,
                     run_kwargs=run_kwargs,
-                )
+                ),
             )
 
             # Handle API response errors
             if result.status_code != 200:
                 raise OutputError(
-                    f"API returned status {result.status_code}: {result.message}"
+                    f"API returned status {result.status_code}:"
+                    f" {result.message}",
                 )
 
             progress.update(
@@ -472,7 +512,7 @@ def get(
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                f"API returned status {result.status_code}: {result.message}"
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         format_output(
@@ -506,7 +546,7 @@ def cancel(
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                f"API returned status {result.status_code}: {result.message}"
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         console.print(f"[green]✅ Job {job_id} canceled successfully[/green]")
@@ -532,13 +572,16 @@ def logs(
     """📜 Fetch job execution logs (supports pagination)"""
     try:
         result = AgenticRL.logs(
-            job_id=job_id, offset=offset, lines=lines, api_key=api_key or ""
+            job_id=job_id,
+            offset=offset,
+            lines=lines,
+            api_key=api_key or "",
         )
 
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                f"API returned status {result.status_code}: {result.message}"
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         format_output(
@@ -566,17 +609,19 @@ def list_jobs(
     """📋 List historical fine-tuning jobs with pagination"""
     try:
         result = AgenticRL.list(
-            page_no=page, page_size=size, api_key=api_key or ""
+            page_no=page,
+            page_size=size,
+            api_key=api_key or "",
         )
 
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                f"API returned status {result.status_code}: {result.message}"
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         output_data = serialize_for_output(
-            result.output if hasattr(result, "output") else result
+            result.output if hasattr(result, "output") else result,
         )
         format_output(output_data, fmt=output_format)
     except Exception as e:

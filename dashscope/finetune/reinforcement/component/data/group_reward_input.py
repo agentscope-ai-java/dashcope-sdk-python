@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/data/group_reward_input.py
 
@@ -18,9 +19,9 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 )
 
 
-# ============================================================================ #
-#                         INPUT: GROUP REWARD REQUEST                          #
-# ============================================================================ #
+# ========================================================================== #
+#                         INPUT: GROUP REWARD REQUEST                        #
+# ========================================================================== #
 
 
 class GroupRewardInput(BaseDataModel):
@@ -44,7 +45,8 @@ class GroupRewardInput(BaseDataModel):
 
     ground_truth: Optional[Any] = Field(
         default=None,
-        description="The expected gold-standard answer used for reward calculation or automated evaluation.",
+        description="The expected gold-standard answer used for reward "
+        "calculation or automated evaluation.",
     )
 
     class Config:

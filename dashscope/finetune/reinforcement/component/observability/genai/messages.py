@@ -1,16 +1,24 @@
-"""Chat / completion / DashScope response → GenAI InputMessage / OutputMessage conversion.
+# -*- coding: utf-8 -*-
+"""Chat / completion / DashScope response → GenAI InputMessage /
+OutputMessage conversion.
 
-Tool-call ``arguments`` in GenAI ``ToolCall`` parts are sanitized before export:
+Tool-call ``arguments`` in GenAI ``ToolCall`` parts are sanitized before
+export:
 
-- Length: ``AGENTIC_RL_TOOL_CALL_ARGUMENTS_MAX_CHARS`` (default: 32 KiB per serialized arguments string).
+- Length: ``AGENTIC_RL_TOOL_CALL_ARGUMENTS_MAX_CHARS`` (default: 32 KiB
+  per serialized arguments string).
 - Masking: ``AGENTIC_RL_TOOL_CALL_ARGUMENTS_MASK``:
-  - **Unset** → masking **on** by default (``deep_mask`` on JSON-decodable arguments).
-  - **``false`` / ``0`` / ``no``** (and other non-truthy values) → masking **off** (plaintext export; truncation still applies).
-  - **Truthy** ``true`` / ``1`` / ``yes`` / ``y`` / ``on`` → masking **on** (explicit; same behavior as unset).
+  - **Unset** → masking **on** by default (``deep_mask`` on
+    JSON-decodable arguments).
+  - **``false`` / ``0`` / ``no``** (and other non-truthy values) → masking
+    **off** (plaintext export; truncation still applies).
+  - **Truthy** ``true`` / ``1`` / ``yes`` / ``y`` / ``on`` → masking **on**
+    (explicit; same behavior as unset).
 
-Diagnostics: set ``AGENTIC_RL_DEBUG_LLM_TOOL_CALLS`` to ``1`` / ``true`` / ``yes`` / ``y`` / ``on`` to log
-per-message tool-call shapes and per-``tool_calls`` item mapping (branch, argument types/lengths)
-without dumping full payloads — for tracing ``"{}"`` / missing arguments issues.
+Diagnostics: set ``AGENTIC_RL_DEBUG_LLM_TOOL_CALLS`` to ``1`` / ``true`` /
+``yes`` / ``y`` / ``on`` to log per-message tool-call shapes and
+per-``tool_calls`` item mapping (branch, argument types/lengths) without
+dumping full payloads — for tracing ``"{}"`` / missing arguments issues.
 """
 
 from __future__ import annotations
@@ -21,16 +29,14 @@ from typing import Any, Dict, List, Optional
 
 from dashscope.finetune.reinforcement.common.log import logger
 from dashscope.finetune.reinforcement.common.utils import deep_mask
-from dashscope.finetune.reinforcement.component.observability.genai._core import (
-    GENAI_AVAILABLE,
-    InputMessage,
-    OutputMessage,
-    Text,
-    ToolCall,
-)
+from dashscope.finetune.reinforcement.component.observability import genai
 
-# Default max length for serialized tool ``arguments`` written into GenAI ToolCall parts.
-# Override with ``AGENTIC_RL_TOOL_CALL_ARGUMENTS_MAX_CHARS`` (integer).
+# pylint: disable=protected-access
+_core = genai._core
+
+# Default max length for serialized tool ``arguments`` written into GenAI
+# ToolCall parts. Override with ``AGENTIC_RL_TOOL_CALL_ARGUMENTS_MAX_CHARS``
+# (integer).
 _DEFAULT_TOOL_CALL_ARGUMENTS_MAX_CHARS = 32 * 1024
 
 _ENV_TOOL_ARGS_MAX = "AGENTIC_RL_TOOL_CALL_ARGUMENTS_MAX_CHARS"
@@ -49,7 +55,8 @@ def _debug_llm_tool_calls() -> bool:
 
 
 def _env_truthy(name: str, *, default: bool = False) -> bool:
-    """Match truthy set used by ``AGENTIC_RL_DEBUG_*`` / tool-module env flags."""
+    """Match truthy set used by ``AGENTIC_RL_DEBUG_*`` / tool-module env
+    flags."""
     raw = os.environ.get(name)
     if raw is None:
         return default
@@ -57,7 +64,8 @@ def _env_truthy(name: str, *, default: bool = False) -> bool:
 
 
 def _debug_llm_tool_calls_log_exc() -> None:
-    """If diagnostic ``logger.info`` raises, record at DEBUG without affecting callers."""
+    """If diagnostic ``logger.info`` raises, record at DEBUG without affecting
+    callers."""
     try:
         logger.debug(
             "[agentic_rl_debug_llm_tool_calls] diagnostic logging raised",
@@ -83,7 +91,8 @@ def _truncate_tool_arguments_string(s: str, max_chars: int) -> str:
     suffix = "...[truncated]"
     head = max_chars - len(suffix)
     if head <= 0:
-        # ``max_chars`` too small for the full suffix; avoid a chopped marker string.
+        # ``max_chars`` too small for the full suffix; avoid a chopped marker
+        # string.
         return s[:max_chars]
     return s[:head] + suffix
 
@@ -100,7 +109,8 @@ def _coerce_tool_arguments_to_str(arguments: Any) -> str:
 
 
 def _sanitize_tool_call_arguments(arguments: Any) -> str:
-    """Truncate + optional ``deep_mask`` for JSON-shaped arguments (best-effort)."""
+    """Truncate + optional ``deep_mask`` for JSON-shaped arguments
+    (best-effort)."""
     s = _coerce_tool_arguments_to_str(arguments)
     mask_on = _env_truthy(_ENV_TOOL_ARGS_MASK, default=True)
     if mask_on:
@@ -114,14 +124,19 @@ def _sanitize_tool_call_arguments(arguments: Any) -> str:
                 s = json.dumps(masked, ensure_ascii=False, default=str)
             except Exception:
                 logger.warning(
-                    "agentic_rl: tool_call arguments masking failed; exporting raw arguments",
+                    (
+                        "agentic_rl: tool_call arguments masking failed; "
+                        "exporting raw arguments"
+                    ),
                     exc_info=True,
                 )
     max_chars = _tool_call_arguments_max_chars()
     return _truncate_tool_arguments_string(s, max_chars)
 
 
-def unwrap_openai_completion(completion: Any) -> Any:
+def unwrap_openai_completion(  # pylint: disable=too-many-return-statements
+    completion: Any,
+) -> Any:
     """Best-effort unwrap OpenAI-compatible completion containers.
 
     Some clients return wrapper response objects (e.g. LegacyAPIResponse) where
@@ -146,7 +161,8 @@ def unwrap_openai_completion(completion: Any) -> Any:
 
 
 def _shape_args_for_debug(arguments: Any) -> Dict[str, Any]:
-    """Short, log-safe summary of tool-call payload before sanitize (no raw values)."""
+    """Short, log-safe summary of tool-call payload before sanitize (no raw
+    values)."""
     if arguments is None:
         return {"args_type": "None", "args_str_len": 0}
     if isinstance(arguments, str):
@@ -172,16 +188,26 @@ def _first_tool_call_keys(tc: Any) -> Any:
     return out or type(tc).__name__
 
 
-def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
-    """Convert common ``tool_calls`` structures found on OpenAI and DashScope messages to ``ToolCall`` parts."""
-    if not tool_calls or not GENAI_AVAILABLE:
+# pylint: disable=too-many-branches
+def tool_calls_to_parts(
+    tool_calls: Any,
+) -> List[Any]:  # pylint: disable=too-many-branches
+    """Convert common ``tool_calls`` shapes on OpenAI/DashScope messages to
+    parts.
+
+    Maps structures to ``ToolCall`` parts for the GenAI handler.
+    """
+    if not tool_calls or not _core.GENAI_AVAILABLE:
         if _debug_llm_tool_calls():
             try:
                 logger.info(
-                    "[agentic_rl_debug_llm_tool_calls] tool_calls_to_parts:early_return "
-                    "tool_calls_empty=%s genai_available=%s",
+                    (
+                        "[agentic_rl_debug_llm_tool_calls] "
+                        "tool_calls_to_parts:early_return "
+                        "tool_calls_empty=%s genai_available=%s"
+                    ),
                     not bool(tool_calls),
-                    GENAI_AVAILABLE,
+                    _core.GENAI_AVAILABLE,
                 )
             except Exception:
                 _debug_llm_tool_calls_log_exc()
@@ -196,10 +222,12 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
         tid = None
         branch = "nested_function"
         if fn is not None:
-            # ``function`` may be an OpenAI SDK object or a plain ``dict`` (e.g. serialized
-            # ``messages`` history).  Never use ``getattr(fn, "arguments", "{}")`` for dicts:
-            # ``getattr`` returns the default literal ``"{}"``, which is truthy and prevents
-            # the ``or fn.get("arguments", ...)`` fallback from running — real arguments are lost.
+            # ``function`` may be an OpenAI SDK object or a plain ``dict``
+            # (e.g. serialized ``messages`` history).  Never use
+            # ``getattr(fn, "arguments", "{}")`` for dicts: ``getattr`` returns
+            # the default literal ``"{}"``, which is truthy and prevents the
+            # ``or fn.get("arguments", ...)`` fallback from running — real
+            # arguments are lost.
             if isinstance(fn, Dict):
                 name = fn.get("name") or ""
                 raw_args = fn.get("arguments")
@@ -212,8 +240,9 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
             name = getattr(tc, "name", "") or (
                 tc.get("name") if isinstance(tc, Dict) else ""
             )
-            # LangChain ``ToolCall`` / LC-like dicts: payload lives in top-level ``args``, not
-            # OpenAI's nested ``function.arguments`` string.
+            # LangChain ``ToolCall`` / LC-like dicts: payload lives in
+            # top-level ``args``, not OpenAI's nested ``function.arguments``
+            # string.
             if isinstance(tc, Dict):
                 if tc.get("args") is not None:
                     args = tc["args"]
@@ -249,9 +278,12 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
                         ),
                     }
                 logger.info(
-                    "[agentic_rl_debug_llm_tool_calls] tool_calls_to_parts:map "
-                    "idx=%s branch=%s tc_type=%s tc_keys=%s nested_fn=%s "
-                    "pre_sanitize=%s post_sanitize_len=%s name_len=%s",
+                    (
+                        "[agentic_rl_debug_llm_tool_calls] "
+                        "tool_calls_to_parts:map "
+                        "idx=%s branch=%s tc_type=%s tc_keys=%s nested_fn=%s "
+                        "pre_sanitize=%s post_sanitize_len=%s name_len=%s"
+                    ),
                     i,
                     branch,
                     type(tc).__name__,
@@ -264,11 +296,11 @@ def tool_calls_to_parts(tool_calls: Any) -> List[Any]:
             except Exception:
                 _debug_llm_tool_calls_log_exc()
         parts.append(
-            ToolCall(
+            _core.ToolCall(
                 name=name or "tool",
                 arguments=args_str,
                 id=tid,
-            )
+            ),
         )
     return parts
 
@@ -284,7 +316,8 @@ def _extract_tool_calls_from_message_obj(m: Any) -> Any:
 
 
 def _should_include_tool_calls_in_input(
-    raw_role: Any, tool_calls: Any
+    raw_role: Any,
+    tool_calls: Any,
 ) -> bool:
     if not tool_calls:
         return False
@@ -295,19 +328,24 @@ def _should_include_tool_calls_in_input(
     return False
 
 
-def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
-    """Convert an OpenAI-style ``messages`` list to a list of ``InputMessage`` objects.
+# pylint: disable-next=too-many-branches,too-many-statements
+def openai_chat_messages_to_input_messages(
+    messages: Any,
+) -> List[Any]:
+    """Convert an OpenAI-style ``messages`` list to a list of ``InputMessage``
+    objects.
 
     Handles both dict-based messages (``{"role": ..., "content": ...}``) and
-    object-based messages (attributes ``role`` / ``content``).  Multi-part content
-    lists are JSON-serialised into a single ``Text`` part.
+    object-based messages (attributes ``role`` / ``content``).  Multi-part
+    content lists are JSON-serialised into a single ``Text`` part.
 
-    Assistant messages may carry ``tool_calls`` with empty ``content``; those calls
-    are appended as ``ToolCall`` parts (same mapping as completion output).
+    Assistant messages may carry ``tool_calls`` with empty ``content``;
+    those calls are appended as ``ToolCall`` parts (same mapping as
+    completion output).
 
-    When ``role`` is missing or empty but ``tool_calls`` is present (legacy /
-    malformed history), ``tool_calls`` are still mapped and ``role`` is displayed
-    as ``assistant`` for observability.
+    When ``role`` is missing or empty but ``tool_calls`` is present (legacy
+    / malformed history), ``tool_calls`` are still mapped and ``role`` is
+    displayed as ``assistant`` for observability.
     """
     if not messages:
         return []
@@ -315,10 +353,13 @@ def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
     if dbg:
         try:
             logger.info(
-                "[agentic_rl_debug_llm_tool_calls] openai_chat_messages_to_input_messages:enter "
-                "msg_count=%s genai_available=%s",
+                (
+                    "[agentic_rl_debug_llm_tool_calls] "
+                    "openai_chat_messages_to_input_messages:enter "
+                    "msg_count=%s genai_available=%s"
+                ),
                 len(messages),
-                GENAI_AVAILABLE,
+                _core.GENAI_AVAILABLE,
             )
         except Exception:
             _debug_llm_tool_calls_log_exc()
@@ -342,8 +383,12 @@ def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
                 if tool_calls and len(tool_calls) > 0:
                     first_keys = _first_tool_call_keys(tool_calls[0])
                 logger.info(
-                    "[agentic_rl_debug_llm_tool_calls] openai_chat_messages_to_input_messages:msg "
-                    "idx=%s raw_role=%r msg_type=%s tc_len=%s include_tc=%s first_tc_keys=%s",
+                    (
+                        "[agentic_rl_debug_llm_tool_calls] "
+                        "openai_chat_messages_to_input_messages:msg "
+                        "idx=%s raw_role=%r msg_type=%s tc_len=%s "
+                        "include_tc=%s first_tc_keys=%s"
+                    ),
                     idx,
                     raw_role,
                     type(m).__name__,
@@ -358,30 +403,32 @@ def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
 
         parts: List[Any] = []
         if content is None:
-            parts.append(Text(content=""))
+            parts.append(_core.Text(content=""))
         elif isinstance(content, str):
-            parts.append(Text(content=content))
+            parts.append(_core.Text(content=content))
         elif isinstance(content, list):
             parts.append(
-                Text(
+                _core.Text(
                     content=json.dumps(
-                        content, ensure_ascii=False, default=str
-                    )
-                )
+                        content,
+                        ensure_ascii=False,
+                        default=str,
+                    ),
+                ),
             )
         else:
-            parts.append(Text(content=str(content)))
+            parts.append(_core.Text(content=str(content)))
         if include_tc:
             parts.extend(tool_calls_to_parts(tool_calls))
-        out.append(InputMessage(role=norm_role, parts=parts))
-    if dbg and GENAI_AVAILABLE and ToolCall is not None:
+        out.append(_core.InputMessage(role=norm_role, parts=parts))
+    if dbg and _core.GENAI_AVAILABLE and _core.ToolCall is not None:
         try:
             per_msg: List[Dict[str, Any]] = []
             for idx, im in enumerate(out):
                 n_tool = 0
                 arg_lens: List[int] = []
                 for p in getattr(im, "parts", None) or []:
-                    if isinstance(p, ToolCall):
+                    if isinstance(p, _core.ToolCall):
                         n_tool += 1
                         arg_lens.append(len(getattr(p, "arguments", "") or ""))
                 if n_tool:
@@ -391,12 +438,15 @@ def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
                             "norm_role": getattr(im, "role", None),
                             "toolcall_parts": n_tool,
                             "arguments_str_lens": arg_lens,
-                        }
+                        },
                     )
             if per_msg:
                 logger.info(
-                    "[agentic_rl_debug_llm_tool_calls] openai_chat_messages_to_input_messages:out "
-                    "input_messages_with_tool_parts=%s",
+                    (
+                        "[agentic_rl_debug_llm_tool_calls] "
+                        "openai_chat_messages_to_input_messages:out "
+                        "input_messages_with_tool_parts=%s"
+                    ),
                     per_msg,
                 )
         except Exception:
@@ -404,11 +454,15 @@ def openai_chat_messages_to_input_messages(messages: Any) -> List[Any]:
     return out
 
 
-def openai_completion_to_output_messages(completion: Any) -> List[Any]:
-    """Convert an OpenAI ``ChatCompletion`` response to a list of ``OutputMessage`` objects.
+def openai_completion_to_output_messages(  # pylint: disable=too-many-branches
+    completion: Any,
+) -> List[Any]:
+    """Convert an OpenAI ``ChatCompletion`` response to a list of
+    ``OutputMessage`` objects.
 
-    Each choice becomes one ``OutputMessage``.  Both text content and ``tool_calls``
-    are extracted; an empty ``Text`` part is appended when a choice has neither.
+    Each choice becomes one ``OutputMessage``.  Both text content and
+    ``tool_calls`` are extracted; an empty ``Text`` part is appended when a
+    choice has neither.
     """
     completion = unwrap_openai_completion(completion)
 
@@ -445,13 +499,13 @@ def openai_completion_to_output_messages(completion: Any) -> List[Any]:
                 content = getattr(msg, "content", None)
             if content:
                 parts.append(
-                    Text(
+                    _core.Text(
                         content=(
                             content
                             if isinstance(content, str)
                             else str(content)
-                        )
-                    )
+                        ),
+                    ),
                 )
             if isinstance(msg, Dict):
                 tool_calls = msg.get("tool_calls")
@@ -460,16 +514,20 @@ def openai_completion_to_output_messages(completion: Any) -> List[Any]:
             if tool_calls:
                 parts.extend(tool_calls_to_parts(tool_calls))
         if not parts:
-            parts.append(Text(content=""))
+            parts.append(_core.Text(content=""))
         result.append(
-            OutputMessage(role=role, parts=parts, finish_reason=finish)
+            _core.OutputMessage(role=role, parts=parts, finish_reason=finish),
         )
     return result
 
 
 def dashscope_response_to_output_messages(response: Any) -> List[Any]:
-    """Convert a non-streaming ``GenerationResponse`` from ``Generation.call`` to a list of ``OutputMessage`` objects."""
-    if not GENAI_AVAILABLE:
+    """Convert ``GenerationResponse`` from ``Generation.call`` to
+    ``OutputMessage`` list.
+
+    Non-streaming responses only.
+    """
+    if not _core.GENAI_AVAILABLE:
         return []
     output = getattr(response, "output", None)
     if output is None:
@@ -493,31 +551,37 @@ def dashscope_response_to_output_messages(response: Any) -> List[Any]:
                     tool_calls = getattr(msg, "tool_calls", None)
                 if content:
                     parts.append(
-                        Text(
+                        _core.Text(
                             content=(
                                 content
                                 if isinstance(content, str)
                                 else str(content)
-                            )
-                        )
+                            ),
+                        ),
                     )
                 if tool_calls:
                     parts.extend(tool_calls_to_parts(tool_calls))
             if not parts:
-                parts.append(Text(content=""))
+                parts.append(_core.Text(content=""))
             result.append(
-                OutputMessage(role=role, parts=parts, finish_reason=finish)
+                _core.OutputMessage(
+                    role=role,
+                    parts=parts,
+                    finish_reason=finish,
+                ),
             )
         return result
     text = getattr(output, "text", None)
     if text:
         return [
-            OutputMessage(
+            _core.OutputMessage(
                 role="assistant",
                 parts=[
-                    Text(content=text if isinstance(text, str) else str(text))
+                    _core.Text(
+                        content=(text if isinstance(text, str) else str(text)),
+                    ),
                 ],
                 finish_reason="stop",
-            )
+            ),
         ]
     return []

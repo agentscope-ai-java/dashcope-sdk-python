@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import ast
@@ -9,8 +10,8 @@ import multiprocessing
 import operator
 import socket
 import time
-from mcp.server.fastmcp import FastMCP
 from typing import Dict, List
+from mcp.server.fastmcp import FastMCP
 from langchain_core.messages import (
     AIMessage,
     ChatMessage,
@@ -25,17 +26,22 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
+# Public names are provided lazily via __getattr__; __all__ entries are not
+# bindings.
+# pylint: disable=undefined-all-variable
 from dashscope.finetune.reinforcement import RolloutInput, RolloutOutput
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     AgentOutput,
     TaskStatus,
 )
+
+# pylint: disable=no-name-in-module
 from dashscope.finetune.reinforcement.component.observability import (
     observe_processor,
     trace_client,
     trace_tool,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractRolloutProcessor,
 )
 
@@ -44,9 +50,9 @@ logger = logging.getLogger(__name__)
 MCP_PORT = 10086
 
 
-# ============================================================================ #
-#                             MCP SERVER                                       #
-# ============================================================================ #
+# ========================================================================== #
+#                             MCP SERVER                                     #
+# ========================================================================== #
 
 
 def _evaluate_exp(expression: str) -> str:
@@ -107,7 +113,9 @@ def _run_mcp_server():
 
 
 def _wait_for_port(
-    port: int, host: str = "localhost", timeout: float = 30.0
+    port: int,
+    host: str = "localhost",
+    timeout: float = 30.0,
 ) -> bool:
     start_time = time.perf_counter()
     while True:
@@ -118,13 +126,13 @@ def _wait_for_port(
             time.sleep(0.5)
             if time.perf_counter() - start_time >= timeout:
                 raise TimeoutError(
-                    f"[DashSystem] Cannot connect to {port} in {timeout} s!"
+                    f"[DashSystem] Cannot connect to {port} in {timeout} s!",
                 ) from exc
 
 
-# ============================================================================ #
-#                          ROLLOUT PROCESSOR                                   #
-# ============================================================================ #
+# ========================================================================== #
+#                          ROLLOUT PROCESSOR                                 #
+# ========================================================================== #
 
 
 class CalcXRolloutProcessor(AbstractRolloutProcessor):
@@ -144,15 +152,17 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
 
         if self._is_port_in_use(MCP_PORT):
             logger.info(
-                f"MCP Server already running on port {MCP_PORT}. Skipping initialization."
+                f"MCP Server already running on port {MCP_PORT}. Skipping "
+                f"initialization.",
             )
             self.mcp_process = None
         else:
             logger.info(
-                f"Port {MCP_PORT} is free. Starting MCP Server process..."
+                f"Port {MCP_PORT} is free. Starting MCP Server process...",
             )
             self.mcp_process = multiprocessing.Process(
-                target=_run_mcp_server, daemon=True
+                target=_run_mcp_server,
+                daemon=True,
             )
             self.mcp_process.start()
             try:
@@ -183,10 +193,13 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
         }
 
     async def _init_resources_async(
-        self, max_retries: int = 5, base_delay: float = 1.0
+        self,
+        max_retries: int = 5,
+        base_delay: float = 1.0,
     ):
         logger.info(
-            "Initializing shared MCP Client and Graph for this worker instance..."
+            "Initializing shared MCP Client and Graph for this worker "
+            "instance...",
         )
         last_exc = None
         for attempt in range(1, max_retries + 1):
@@ -200,19 +213,21 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
                 self._shared_graph = graph
                 self._shared_mcp_client = client
                 logger.info(
-                    "Shared MCP Client successfully initialized. Tools cached."
+                    "Shared MCP Client successfully initialized. Tools "
+                    "cached.",
                 )
                 return
             except Exception as e:
                 last_exc = e
                 delay = base_delay * attempt
                 logger.warning(
-                    f"MCP Client init attempt {attempt}/{max_retries} failed: {e}. "
-                    f"Retrying in {delay}s..."
+                    f"MCP Client init attempt {attempt}/{max_retries} "
+                    f"failed: {e}. "
+                    f"Retrying in {delay}s...",
                 )
                 await asyncio.sleep(delay)
         raise RuntimeError(
-            f"Failed to initialize MCP Client after {max_retries} attempts"
+            f"Failed to initialize MCP Client after {max_retries} attempts",
         ) from last_exc
 
     # ------------------------------------------------------------------ #
@@ -227,7 +242,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
         except Exception as e:
             logger.error(f"Model invoke error with {model.model}: {e}")
             return {
-                "messages": [("ai", f"Error: Model invocation failed. {e}")]
+                "messages": [("ai", f"Error: Model invocation failed. {e}")],
             }
 
     def _should_continue(self, state: MessagesState):
@@ -244,13 +259,15 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
         standard_tool_node = ToolNode(tools)
 
         async def tool_node_with_logging(
-            state: MessagesState, config: RunnableConfig
+            state: MessagesState,
+            config: RunnableConfig,
         ):
             last_message = state["messages"][-1]
             if hasattr(last_message, "tool_calls") and last_message.tool_calls:
                 for call in last_message.tool_calls:
                     logger.info(
-                        f"[Tool Call] Tool: {call.get('name')}, Args: {call.get('args')}"
+                        f"[Tool Call] Tool: {call.get('name')}, Args:"
+                        f" {call.get('args')}",
                     )
             return await standard_tool_node.ainvoke(state, config)
 
@@ -258,13 +275,15 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
         workflow.add_node("tools", tool_node_with_logging)
         workflow.set_entry_point("agent")
         workflow.add_conditional_edges(
-            "agent", self._should_continue, {"tools": "tools", END: END}
+            "agent",
+            self._should_continue,
+            {"tools": "tools", END: END},
         )
         workflow.add_edge("tools", "agent")
         return workflow.compile()
 
     # ------------------------------------------------------------------ #
-    #  Helpers                                                            #
+    #  Helpers                                                           #
     # ------------------------------------------------------------------ #
 
     def _build_llm(self, input_data: RolloutInput) -> ChatOpenAI:
@@ -331,7 +350,8 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
 
         logger.info(
             f"[CalcXRolloutProcessor] Starting rollout {rollout_id} "
-            f"with model {input_data.model_resource.model_name} at {input_data.model_resource.base_url}"
+            f"with model {input_data.model_resource.model_name} at"
+            f" {input_data.model_resource.base_url}",
         )
 
         start_time = time.time()
@@ -357,7 +377,8 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
             )
 
             final_state = await graph.ainvoke(
-                {"messages": messages}, config=config
+                {"messages": messages},
+                config=config,
             )
             final_messages = final_state["messages"]
             output_content = str(final_messages[-1].content)
@@ -374,7 +395,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
 
             logger.info(
                 f"Rollout result {rollout_id} | latency: {latency}s | "
-                f"reward: {reward} | content: {json.dumps(output_content)}"
+                f"reward: {reward} | content: {json.dumps(output_content)}",
             )
             return RolloutOutput(
                 agent_output=agent_output,
@@ -417,7 +438,7 @@ class CalcXRolloutProcessor(AbstractRolloutProcessor):
 
 
 if __name__ == "__main__":
-    from dashscope.finetune.reinforcement.component.data.base_data_model import (
+    from dashscope.finetune.reinforcement.component.data.base_data_model import (  # noqa: E501
         ModelResource,
     )
     import os
@@ -426,7 +447,8 @@ if __name__ == "__main__":
 
     input_format = (
         "Output the answer when you are ready. The answer should be "
-        "surrounded by three sharps (`###`), in the form of ### ANSWER: <answer> ###."
+        "surrounded by three sharps (`###`), in the form of ### ANSWER: "
+        "<answer> ###."
     )
 
     rollout_input = RolloutInput(

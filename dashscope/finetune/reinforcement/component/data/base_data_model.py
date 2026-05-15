@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/data/base_data_model.py
 
@@ -15,9 +16,9 @@ from dashscope.finetune.reinforcement.common.model_types import (
 )
 
 
-# ============================================================================ #
-#                              Utility Functions                               #
-# ============================================================================ #
+# ========================================================================== #
+#                              Utility Functions                             #
+# ========================================================================== #
 
 
 def _generate_ro_id(length: int) -> str:
@@ -25,9 +26,9 @@ def _generate_ro_id(length: int) -> str:
     return "ro-" + hashlib.sha1(uuid.uuid4().bytes).hexdigest()[:length]
 
 
-# ============================================================================ #
-#                              Enum Definitions                                #
-# ============================================================================ #
+# ========================================================================== #
+#                              Enum Definitions                              #
+# ========================================================================== #
 
 
 class TaskStatus(str, Enum):
@@ -44,9 +45,9 @@ class ModelProtocol(str, Enum):
     ANTHROPIC = "anthropic"
 
 
-# ============================================================================ #
-#                              Base Class Definitions                          #
-# ============================================================================ #
+# ========================================================================== #
+#                              Base Class Definitions                        #
+# ========================================================================== #
 
 
 class BaseDataModel(BaseModel):
@@ -61,9 +62,9 @@ class BaseDataModel(BaseModel):
         extra = "allow"
 
 
-# ============================================================================ #
-#                         REQUEST METADATA                                     #
-# ============================================================================ #
+# ========================================================================== #
+#                         REQUEST METADATA                                   #
+# ========================================================================== #
 
 
 class ModelResource(BaseModel):
@@ -77,10 +78,12 @@ class ModelResource(BaseModel):
         "'llama-3-70b').",
     )
     base_url: str = Field(
-        ..., description="The endpoint URL for the model provider."
+        ...,
+        description="The endpoint URL for the model provider.",
     )
     api_key: SecretStr = Field(
-        ..., description="The authentication key for the provider."
+        ...,
+        description="The authentication key for the provider.",
     )
 
 
@@ -108,9 +111,9 @@ class RequestMetadata(BaseModel):
     )
 
 
-# ============================================================================ #
-#                         AGENT TASK BASE COMPONENTS                           #
-# ============================================================================ #
+# ========================================================================== #
+#                         AGENT TASK BASE COMPONENTS                         #
+# ========================================================================== #
 
 
 class Task(BaseModel):
@@ -137,7 +140,8 @@ class Task(BaseModel):
 
     training_state: Optional[Dict[str, Any]] = Field(
         default_factory=dict,
-        description="Optional training state information (e.g., task_id, epoch).",
+        description="Optional training state information (e.g., task_id, "
+        "epoch).",
     )
 
 

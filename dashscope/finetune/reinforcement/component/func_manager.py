@@ -1,10 +1,13 @@
+# -*- coding: utf-8 -*-
 """
 component/func_manager.py
 
-FuncManager - Unified management of parameter parsing and business processing routing.
+FuncManager - Unified management of parameter parsing and business
+processing routing.
 
 Responsibilities:
-1. Retrieve corresponding parameter parser based on FunctionType (internal fixed components)
+1. Retrieve corresponding parameter parser based on FunctionType (internal
+fixed components)
 2. Manage processor registration and retrieval (user-customizable)
 3. Provide unified request handling with automatic parse→process pipeline
 """
@@ -29,26 +32,27 @@ from dashscope.finetune.reinforcement.component.observability.tracing import (
     trace_processor_process,
     async_trace_processor_process,
 )
-from dashscope.finetune.reinforcement.component.parser.base_parser import (
+from dashscope.finetune.reinforcement.component.parser import (
     BaseRequestParser,
 )
-from dashscope.finetune.reinforcement.component.parser.group_reward_parser import (
+from dashscope.finetune.reinforcement.component.parser import (
     GroupRewardRequestParser,
 )
-from dashscope.finetune.reinforcement.component.parser.reward_parser import (
+from dashscope.finetune.reinforcement.component.parser import (
     RewardRequestParser,
 )
-from dashscope.finetune.reinforcement.component.parser.rollout_parser import (
+from dashscope.finetune.reinforcement.component.parser import (
     RolloutRequestParser,
 )
-from dashscope.finetune.reinforcement.component.processor import (
+from dashscope.finetune.reinforcement.component.processor.abstract_processor import (  # noqa: E501
     AbstractProcessor,
 )
 
 
 class FuncManager:
     """
-    Function service manager for unified parameter parsing and processing routing.
+    Function service manager for unified parameter parsing and processing
+    routing.
 
     Usage Example:
         >>> # Create with custom processor
@@ -78,7 +82,8 @@ class FuncManager:
         Args:
             func_type: Function type determining parser
             processor: Processor instance (required)
-            observe: Whether to enable OpenTelemetry tracing on process() calls (default: True).
+            observe: Whether to enable OpenTelemetry tracing on process()
+            calls (default: True).
                      Effective only when ENABLE_TRAJECTORY env var is set.
                      Set to False to disable tracing for this manager.
 
@@ -89,11 +94,13 @@ class FuncManager:
         if processor is None:
             raise ValueError(
                 f"Processor is required for FuncManager. "
-                f"Please provide a processor instance for func_type={func_type.value}"
+                f"Please provide a processor instance for func_type"
+                f"={func_type.value}",
             )
         if not isinstance(processor, AbstractProcessor):
             raise TypeError(
-                f"Processor must be a AbstractProcessor subclass, got {type(processor)}"
+                f"Processor must be a AbstractProcessor subclass, got"
+                f" {type(processor)}",
             )
 
         self._func_type = func_type
@@ -106,7 +113,7 @@ class FuncManager:
             f"[FuncManager] initialized | func_type={func_type.value} | "
             f"parser={type(self._parser).__name__} | "
             f"processor={type(self._processor).__name__} | "
-            f"observe={observe}"
+            f"observe={observe}",
         )
 
     def set_executor(self, executor: Optional[Executor]) -> None:
@@ -133,7 +140,7 @@ class FuncManager:
         parser_cls = self._PARSER_MAP.get(func_type)
         if parser_cls is None:
             raise ValueError(
-                f"No parser registered for func_type={func_type.value}"
+                f"No parser registered for func_type={func_type.value}",
             )
         return parser_cls()
 
@@ -142,18 +149,21 @@ class FuncManager:
         Register custom business processor.
 
         Args:
-            processor: Custom processor instance (must subclass AbstractProcessor)
+            processor: Custom processor instance (must subclass
+            AbstractProcessor)
 
         Raises:
             TypeError: If processor is not a AbstractProcessor subclass
         """
         if not isinstance(processor, AbstractProcessor):
             raise TypeError(
-                f"Processor must be a AbstractProcessor subclass, got {type(processor)}"
+                f"Processor must be a AbstractProcessor subclass, got"
+                f" {type(processor)}",
             )
         self._processor = processor
         logger.info(
-            f"[FuncManager] registered custom processor: {type(processor).__name__}"
+            f"[FuncManager] registered custom processor:"
+            f" {type(processor).__name__}",
         )
 
     def parses(self, raw_data: Dict[str, Any]) -> BaseDataModel:
@@ -203,7 +213,9 @@ class FuncManager:
         if self._observe and is_tracing_enabled():
             if inspect.iscoroutinefunction(self._processor.process):
                 return await async_trace_processor_process(
-                    self._func_type, self._processor, input_data
+                    self._func_type,
+                    self._processor,
+                    input_data,
                 )
             return await self._run_sync(
                 partial(
@@ -211,13 +223,13 @@ class FuncManager:
                     self._func_type,
                     self._processor,
                     input_data,
-                )
+                ),
             )
 
         if inspect.iscoroutinefunction(self._processor.process):
             return await self._processor.process(input_data)
         return await self._run_sync(
-            partial(self._processor.process, input_data)
+            partial(self._processor.process, input_data),
         )
 
     def execute(self, raw_data: Dict[str, Any]) -> Any:
@@ -244,7 +256,8 @@ class FuncManager:
 
         Args:
             func_type: Function type
-            processor_class_path: Full path to processor class (e.g., "my_module.MyProcessor")
+            processor_class_path: Full path to processor class (e.g.,
+            "my_module.MyProcessor")
 
         Returns:
             FuncManager instance
@@ -256,8 +269,10 @@ class FuncManager:
         """
         if not processor_class_path:
             raise ValueError(
-                f"processor_class_path is required for FuncManager.create_from_env(). "
-                f"Please provide a processor class path for func_type={func_type.value}"
+                f"processor_class_path is required for "
+                f"FuncManager.create_from_env(). "
+                f"Please provide a processor class path for func_type"
+                f"={func_type.value}",
             )
 
         logger.info(f"[FuncManager] loading processor: {processor_class_path}")
@@ -272,7 +287,8 @@ class FuncManager:
         Dynamically load and instantiate processor class.
 
         Args:
-            class_path: Full class path (e.g., "my_module.sub_module.MyProcessor")
+            class_path: Full class path (e.g.,
+            "my_module.sub_module.MyProcessor")
 
         Returns:
             Processor instance
@@ -284,7 +300,8 @@ class FuncManager:
         parts = class_path.rsplit(".", 1)
         if len(parts) != 2:
             raise ImportError(
-                f"Invalid class path '{class_path}'. Expected 'module.submodule.ClassName'"
+                f"Invalid class path '{class_path}'. Expected "
+                f"'module.submodule.ClassName'",
             )
 
         module_path, class_name = parts
@@ -293,14 +310,14 @@ class FuncManager:
             module = importlib.import_module(module_path)
         except ImportError as e:
             raise ImportError(
-                f"Module import failed: '{module_path}' - " f"{e}"
+                f"Module import failed: '{module_path}' - " f"{e}",
             ) from e
 
         try:
             processor_cls = getattr(module, class_name)
         except AttributeError as exc:
             raise ImportError(
-                f"Class '{class_name}' not found in '{module_path}'"
+                f"Class '{class_name}' not found in '{module_path}'",
             ) from exc
 
         # Instantiate
@@ -308,13 +325,14 @@ class FuncManager:
             processor = processor_cls()
         except Exception as e:
             raise TypeError(
-                f"Instantiation failed for '{class_path}': {e}"
+                f"Instantiation failed for '{class_path}': {e}",
             ) from e
 
         # Type validation
         if not isinstance(processor, AbstractProcessor):
             raise TypeError(
-                f"Class '{class_path}' must inherit AbstractProcessor, got: {processor_cls.__bases__}"
+                f"Class '{class_path}' must inherit AbstractProcessor, "
+                f"got: {processor_cls.__bases__}",
             )
 
         return processor

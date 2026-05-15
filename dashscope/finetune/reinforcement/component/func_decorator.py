@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import asyncio
 import copy
 from functools import wraps
@@ -52,7 +53,7 @@ class RewardProcessorMeta:
     def __deepcopy__(self, memo):
         """Create a deep copy of RewardProcessorMeta"""
         new_meta = RewardProcessorMeta(
-            processor_id=copy.deepcopy(self.processor_id, memo)
+            processor_id=copy.deepcopy(self.processor_id, memo),
         )
 
         # Deep copy all sub-functions
@@ -64,7 +65,8 @@ class RewardProcessorMeta:
         # Deep copy aggregate function if exists
         if self.aggregate_function:
             new_meta.aggregate_function = copy.deepcopy(
-                self.aggregate_function, memo
+                self.aggregate_function,
+                memo,
             )
 
         return new_meta
@@ -78,7 +80,8 @@ class RewardProcessorMeta:
 
 # ================= Decorator Implementation =================
 def reward_func(processor_id: str) -> Callable[[Type], Type]:
-    """Class decorator to mark reward processors and collect sub-function information"""
+    """Class decorator to mark reward processors and collect sub-function
+    information"""
 
     def decorator(cls: Type) -> Type:
         # Create metadata object and attach to class
@@ -86,7 +89,8 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
         setattr(cls, "reward_meta", meta)
 
         async def process(self, input_data: RewardInput) -> RewardOutput:
-            """Processes input by executing all sub-reward functions and aggregating results"""
+            """Processes input by executing all sub-reward functions and
+            aggregating results"""
             sub_rewards: Dict[str, RewardOutput] = {}
 
             tasks = []
@@ -101,7 +105,9 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
                     # Run synchronous function in executor
                     loop = asyncio.get_running_loop()
                     task = loop.run_in_executor(
-                        self.executor, func, input_data
+                        self.executor,
+                        func,
+                        input_data,
                     )
                 tasks.append((name, task))
 
@@ -113,7 +119,7 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
 
                 except Exception as e:
                     logger.error(
-                        f"Error in sub-reward function {name}: {str(e)}"
+                        f"Error in sub-reward function {name}: {str(e)}",
                     )
                     # Store error as a zero score
                     sub_rewards[name] = RewardOutput(
@@ -166,7 +172,8 @@ def reward_func(processor_id: str) -> Callable[[Type], Type]:
 
 
 def sub_reward_func(
-    name: Optional[str] = None, sub_weight: float = 1.0
+    name: Optional[str] = None,
+    sub_weight: float = 1.0,
 ) -> Callable[[Callable], Callable]:
     """Decorator to mark sub-reward functions and specify weights"""
 

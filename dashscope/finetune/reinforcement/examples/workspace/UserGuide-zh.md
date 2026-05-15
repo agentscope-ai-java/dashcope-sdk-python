@@ -141,7 +141,7 @@ from dashscope.finetune.reinforcement import reward_func, sub_reward_func, aggre
 class SafetyProcessor(AbstractRewardProcessor):
     @sub_reward_func("toxicity", sub_weight=0.7)
     def toxicity(self, input: RewardInput) -> RewardOutput: ...
-    
+
     @sub_reward_func("refusal", sub_weight=0.3)
     async def refusal(self, input: RewardInput) -> RewardOutput: ...
 
@@ -150,7 +150,7 @@ class SafetyProcessor(AbstractRewardProcessor):
         weights = self.get_weights()
         scores = self.get_scores(sub_rewards)
         reward_metrics = self.get_reward_metrics(sub_rewards)
-        
+
         total = ...  # 计算总奖励
         return RewardOutput(...)
 ```
@@ -253,7 +253,7 @@ class MyRolloutProcessor(AbstractRolloutProcessor):
             model=model,
             messages=messages,
         )
-        
+
         content = response.choices[0].message.content if response.choices else ""
 
         return RolloutOutput(
@@ -355,14 +355,14 @@ rollout_iids, reward_iids, group_iids = await rl.register_functions(
 
 **[CLI] register_functions**
 
-**用法: dashscope register_functions [OPTIONS]**                                                                                                                                                             
-```bash                                                                                                                                                                                                                       
- 🧩 注册 Rollout/Reward 函数组件，返回 entity_id & instance_id                                                                                                                                        
-                                                                                                                                                                                                                        
- 至少需要以下一项:                                                                                                                                                                                              
- - rollout_classpath                                                                                                                                                                                                    
- - reward_classpaths                                                                                                                                                                                                    
-                                                                                                                                                                                                                        
+**用法: dashscope register_functions [OPTIONS]**
+```bash
+ 🧩 注册 Rollout/Reward 函数组件，返回 entity_id & instance_id
+
+ 至少需要以下一项:
+ - rollout_classpath
+ - reward_classpaths
+
 ╭─ 选项 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --rollout-classpaths                             TEXT  Rollout 类路径列表 (file.py:ClassName)                                                                                                               │
 │ --reward-classpaths                              TEXT  Reward 类路径列表 (file.py:ClassName)                                                                                                                │
@@ -429,9 +429,9 @@ result = await AgenticRL.test_functions(
 **[CLI] test_functions**
 
 **用法: dashscope test_functions [OPTIONS] INSTANCE_ID**
-```bash   
- 🧪 使用自定义输入数据测试已注册的 Rollout/Reward 函数实例                                                                                                                                          
-                                                                                                                                                                                                                        
+```bash
+ 🧪 使用自定义输入数据测试已注册的 Rollout/Reward 函数实例
+
 ╭─ 参数 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    instance_id      TEXT  目标函数实例 ID (例如 ro-ins-xxx 或 rw-ins-xxx) [必需]                                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -509,19 +509,19 @@ job = await rl.run(
 
 **[CLI] run**
 
-**用法: dashscope run [OPTIONS]**                                                                                                                                                                                   
-```bash                                                                                                                                                                                                                   
- 🚀 启动完整的 RL 调优工作流（函数注册 → 数据集上传 → 作业提交）                                                                                                                    
-                                                                                                                                                                                                                        
- 执行模式:                                                                                                                                                                                                       
- 1. 配置驱动: 使用 -c/--config 指定 YAML 文件                                                                                                                                                        
- 2. 直接参数: 通过 CLI 选项提供所有必需参数                                                                                                                                                    
-                                                                                                                                                                                                                        
- 必需参数:                                                                                                                                                                                                   
- - rollout_classpath                                                                                                                                                                                                    
- - reward_classpaths (至少一个)                                                                                                                                                                                     
- - training_files (至少一个)                                                                                                                                                                                        
-                                                                                                                                                                                                                        
+**用法: dashscope run [OPTIONS]**
+```bash
+ 🚀 启动完整的 RL 调优工作流（函数注册 → 数据集上传 → 作业提交）
+
+ 执行模式:
+ 1. 配置驱动: 使用 -c/--config 指定 YAML 文件
+ 2. 直接参数: 通过 CLI 选项提供所有必需参数
+
+ 必需参数:
+ - rollout_classpath
+ - reward_classpaths (至少一个)
+ - training_files (至少一个)
+
 ╭─ 选项 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --config                   -c      PATH   YAML 配置文件路径                                                                                                                                            │
 │ --model                            TEXT   基础模型标识符                                                                                                                                                      │
@@ -579,9 +579,9 @@ job = AgenticRL.get("ft-12345")
 **[CLI] get**
 
 **用法: dashscope get [OPTIONS] JOB_ID**
-```bash 
- 📊 查询特定作业的当前状态和元数据                                                                                                                                                             
-                                                                                                                                                                                                                        
+```bash
+ 📊 查询特定作业的当前状态和元数据
+
 ╭─ 参数 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    job_id      TEXT  目标作业 ID [必需]                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -616,10 +616,10 @@ AgenticRL.cancel("ft-12345")
 
 **[CLI] cancel**
 
-**用法: dashscope cancel [OPTIONS] JOB_ID**                                                                                                                                                                     
-```bash                                                                                                                                                                                                                    
- 🛑 取消正在运行的作业                                                                                                                                                                                                
-                                                                                                                                                                                                                        
+**用法: dashscope cancel [OPTIONS] JOB_ID**
+```bash
+ 🛑 取消正在运行的作业
+
 ╭─ 参数 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    job_id      TEXT  目标作业 ID [必需]                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -640,11 +640,11 @@ dashscope rl cancel "$JOB_ID"
 
 CLI 镜像了 SDK 的功能。使用 `dashscope rl --help` 获取详细信息。
 
-### 用法: dashscope [OPTIONS] COMMAND [ARGS]...  
+### 用法: dashscope [OPTIONS] COMMAND [ARGS]...
 ```bash
-                                                                                                                                                                                                                                                                                                                                                                             
- 🚀 Agentic RL 微调 CLI        
-                                                                                                                                                                                                                                                                                                                                                                                           
+
+ 🚀 Agentic RL 微调 CLI
+
 ╭─ 选项 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          显示此消息并退出                                                                                                                                                                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

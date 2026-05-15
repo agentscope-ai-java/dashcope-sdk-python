@@ -5,7 +5,7 @@
 # Create Date: 2026-03-16 11:30
 # Modify Author: @alibaba-inc.com
 # Modify Date: 2026-03-16 11:30
-# Function: 
+# Function:
 #***************************************************************#
 curl -X POST https://dashscope.aliyuncs.com/api/v1/fine-tunes \
   -H "Content-Type: application/json" \

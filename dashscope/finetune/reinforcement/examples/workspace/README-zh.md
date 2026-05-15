@@ -14,11 +14,6 @@ pip install dashscope>=1.25.18
 # 必填：API密钥（也可在代码中初始化: AgenticRL(api_key="for your api key") ）
 export DASHSCOPE_API_KEY="your_api_key_here"
 
-# 必选：函数组件基础依赖（默认dashscope PyPI源版本；支持本地WHL或PyPI版本；本地whl包，需要放置在项目目录下agentic-rl-example/）
-export FC_PYPI_LIB="dashscope>=1.25.18"
-# 或者安装本地whl包，但需要通过scripts/build.sh脚本生成
-# export FC_PYPI_LIB="dashscope-1.25.18-py3-none-any.whl"
-
 # 可选：日志级别设置info/debug/warning/critical（默认info）
 export LOG_LEVEL="info"
 ```
@@ -28,14 +23,19 @@ export LOG_LEVEL="info"
 创建`requirements.txt`文件，包含以下核心依赖：
 
 ```requirements.txt
+# 基础（必须）
+dashscope>=1.25.18
+
 # 框架依赖
 fastapi==0.136.0
 uvicorn==0.45.0
+# 省略
 
 # 轨迹函数依赖
 langchain-core==1.3.0
 langchain-mcp-adapters==0.2.2
 langchain-openai==1.2.0
+# 省略
 
 # 添加其他自定义依赖...
 ```
@@ -82,10 +82,10 @@ dashscope rl --help  # 查看完整命令帮助
 ```
 
 ```bash
- Usage: dashscope [OPTIONS] COMMAND [ARGS]...                                                                                                                                                                      
-                                                                                                                                                                                                                   
- 🚀 Agentic RL Fine-Tuning CLI   
-                                                                                                                                                                                                                                                                                                                                                                                                
+ Usage: dashscope [OPTIONS] COMMAND [ARGS]...
+
+ 🚀 Agentic RL Fine-Tuning CLI
+
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                                                                                                                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -110,7 +110,7 @@ ROLLOUT_INSTANCE_ID="ro-ins-****"
 dashscope rl test_functions "$ROLLOUT_INSTANCE_ID" \
   --type rollout \
   --input ./resources/rollout_input.json
-  
+
 dashscope rl run -c job.yaml -o json
 
 JOB_ID="ft-****"
@@ -132,3 +132,7 @@ dashscope rl cancel "$JOB_ID"
 > 注：项目`workspace/`目录下，设置上传排除的子目录和文件，参考环境变量：FC_ZIP_EXCLUDE_PATTERNS
 >
 > 注：项目`workspace/`目录下的所有文件打包上传限制大小：200M；可以通过环境变量FC_OSS_FILE_SIZE_WARNING修改
+> 
+> 注：如果要使用本地build的dashscope whl包（通过scripts/build.sh脚本生成），可以设置：
+> export FC_PYPI_LIB="dashscope-1.25.18-py3-none-any.whl"，
+> 并且放置在项目目录下workspace/；再把requirements.txt中dashscope依赖去掉。

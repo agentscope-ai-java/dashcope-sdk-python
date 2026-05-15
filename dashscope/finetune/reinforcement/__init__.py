@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from dashscope.finetune.reinforcement.common.constants import (
     BAILIAN_FILE_API,
     BAILIAN_FILE_TIMEOUT,
@@ -113,13 +114,13 @@ from dashscope.finetune.reinforcement.component.data import (
 from dashscope.finetune.reinforcement.component.func_decorator import (
     RewardProcessorMeta,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractRolloutProcessor,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractRewardProcessor,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractGroupRewardProcessor,
 )
 
@@ -132,6 +133,7 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+# pylint: disable=undefined-all-variable
 __all__ = [
     # Constants
     "BAILIAN_FILE_API",

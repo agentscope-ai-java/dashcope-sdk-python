@@ -1,12 +1,16 @@
+# -*- coding: utf-8 -*-
 """
 examples/workspace/functions/rollout/simple_rollout.py
 
 Demo implementation of a Rollout Processor.
-Demonstrates how to construct a simple rollout execution flow (simulating Agent invocation).
+Demonstrates how to construct a simple rollout execution flow (simulating
+Agent invocation).
 
 Observability coverage:
-- @observe_processor : ENTRY-level Span for the whole rollout (auto-inferred as ROLLOUT)
-- @observe_llm       : LLM-level Span wrapping the simulated model call (_call_llm)
+- @observe_processor : ENTRY-level Span for the whole rollout
+    (auto-inferred as ROLLOUT)
+- @observe_llm       : LLM-level Span wrapping the simulated model call (
+_call_llm)
 - @observe_tool      : Tool-level Span wrapping tool calls
 - trace_client       : Exercises all four routing branches via mock clients:
                         1. Full OpenAI client (.chat.completions.create)
@@ -38,6 +42,8 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
     AgentOutput,
     TaskStatus,
 )
+
+# pylint: disable=no-name-in-module
 from dashscope.finetune.reinforcement.component.observability import (
     observe_processor,
     observe_llm,
@@ -45,18 +51,21 @@ from dashscope.finetune.reinforcement.component.observability import (
     trace_client,
     trace_tool,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractRolloutProcessor,
 )
 
 
-# ============================================================================ #
-# Mock clients for trace_client routing coverage                               #
-# ============================================================================ #
+# ========================================================================== #
+# Mock clients for trace_client routing coverage                             #
+# ========================================================================== #
 
 
 def _make_mock_response(
-    content: str, model: str, prompt_tokens: int, completion_tokens: int
+    content: str,
+    model: str,
+    prompt_tokens: int,
+    completion_tokens: int,
 ) -> SimpleNamespace:
     """Factory for OpenAI-shaped mock responses."""
     return SimpleNamespace(
@@ -64,10 +73,11 @@ def _make_mock_response(
             SimpleNamespace(
                 message=SimpleNamespace(content=content),
                 finish_reason="stop",
-            )
+            ),
         ],
         usage=SimpleNamespace(
-            prompt_tokens=prompt_tokens, completion_tokens=completion_tokens
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
         ),
         model=model,
     )
@@ -81,9 +91,18 @@ class _MockSyncCompletions:
 
     # pylint: disable=unused-argument
     def create(
-        self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
+        self,
+        *,
+        model: str,
+        messages: List[Dict[str, str]],
+        **kwargs: Any,
     ) -> SimpleNamespace:
-        return _make_mock_response("[mock] sync openai client", model, 5, 3)
+        return _make_mock_response(
+            "[mock] sync openai client",
+            model,
+            5,
+            3,
+        )
 
 
 class _MockAsyncCompletions:
@@ -91,10 +110,19 @@ class _MockAsyncCompletions:
 
     # pylint: disable=unused-argument
     async def create(
-        self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
+        self,
+        *,
+        model: str,
+        messages: List[Dict[str, str]],
+        **kwargs: Any,
     ) -> SimpleNamespace:
         await asyncio.sleep(0)
-        return _make_mock_response("[mock] async openai client", model, 4, 2)
+        return _make_mock_response(
+            "[mock] async openai client",
+            model,
+            4,
+            2,
+        )
 
 
 class _MockChat:
@@ -122,14 +150,24 @@ class MockOpenAIAsyncClient:
 
 
 class MockDirectCompletions:
-    """Already a completions object (e.g. ChatOpenAI.client). Has .create, no .chat."""
+    """Already a completions object (e.g. ChatOpenAI.client). Has .create,
+    no .chat."""
 
     # pylint: disable=unused-argument
     async def create(
-        self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
+        self,
+        *,
+        model: str,
+        messages: List[Dict[str, str]],
+        **kwargs: Any,
     ) -> SimpleNamespace:
         await asyncio.sleep(0)
-        return _make_mock_response("[mock] direct completions", model, 3, 2)
+        return _make_mock_response(
+            "[mock] direct completions",
+            model,
+            3,
+            2,
+        )
 
 
 # 3. LangChain-like wrapper: .client (sync) + .async_client (async)
@@ -140,9 +178,18 @@ class _MockLangChainSyncCompletions:
 
     # pylint: disable=unused-argument
     def create(
-        self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
+        self,
+        *,
+        model: str,
+        messages: List[Dict[str, str]],
+        **kwargs: Any,
     ) -> SimpleNamespace:
-        return _make_mock_response("[mock] langchain sync client", model, 6, 3)
+        return _make_mock_response(
+            "[mock] langchain sync client",
+            model,
+            6,
+            3,
+        )
 
 
 class _MockLangChainAsyncCompletions:
@@ -150,11 +197,18 @@ class _MockLangChainAsyncCompletions:
 
     # pylint: disable=unused-argument
     async def create(
-        self, *, model: str, messages: List[Dict[str, str]], **kwargs: Any
+        self,
+        *,
+        model: str,
+        messages: List[Dict[str, str]],
+        **kwargs: Any,
     ) -> SimpleNamespace:
         await asyncio.sleep(0)
         return _make_mock_response(
-            "[mock] langchain async client", model, 5, 2
+            "[mock] langchain async client",
+            model,
+            5,
+            2,
         )
 
 
@@ -176,21 +230,25 @@ class MockDashScopeGeneration:
     def call(
         cls,
         model: Any = None,
-        prompt: Any = None,
-        history: Any = None,
-        api_key: Any = None,
-        messages: Any = None,
-        **kwargs: Any,
+        _prompt: Any = None,
+        _history: Any = None,
+        _api_key: Any = None,
+        _messages: Any = None,
+        **_kwargs: Any,
     ) -> SimpleNamespace:
-        # Match DashScope Generation.call signature: model can be positional or keyword
+        # Match DashScope Generation.call signature: model can be positional
+        # or keyword
         return _make_mock_response(
-            "[mock] dashscope generation", model or "unknown", 7, 4
+            "[mock] dashscope generation",
+            model or "unknown",
+            7,
+            4,
         )
 
 
-# ============================================================================ #
-# Mock tools for trace_tool coverage                                           #
-# ============================================================================ #
+# ========================================================================== #
+# Mock tools for trace_tool coverage                                         #
+# ========================================================================== #
 
 
 class MockBaseTool:
@@ -207,13 +265,19 @@ class MockBaseTool:
         self.ainvoke_count = 0
 
     def invoke(
-        self, input_data: Any, config: Any = None, **kwargs: Any
+        self,
+        input_data: Any,
+        _config: Any = None,
+        **_kwargs: Any,
     ) -> Dict[str, Any]:
         self.invoke_count += 1
         return {"tool": self.name, "result": self._result, "input": input_data}
 
     async def ainvoke(
-        self, input_data: Any, config: Any = None, **kwargs: Any
+        self,
+        input_data: Any,
+        _config: Any = None,
+        **_kwargs: Any,
     ) -> Dict[str, Any]:
         self.ainvoke_count += 1
         await asyncio.sleep(0)
@@ -248,7 +312,8 @@ class NotATool:
 class DemoRolloutProcessor(AbstractRolloutProcessor):
     """
     Demo implementation of a Rollout Processor.
-    Demonstrates how to construct a simple rollout execution flow (simulating Agent invocation).
+    Demonstrates how to construct a simple rollout execution flow (
+    simulating Agent invocation).
 
     In production scenarios, this should invoke real Agent/model services,
     e.g., through OpenAI SDK or Dashscope SDK.
@@ -258,12 +323,13 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         """
         Initialize workspace before processing requests.
 
-        Creates mock LLM clients covering all four trace_client routing branches
-        and instruments each one. This demonstrates that trace_client correctly
-        detects client shape via duck typing and patches the appropriate method.
+        Creates mock LLM clients covering all four trace_client routing
+        branches and instruments each one. This demonstrates that
+        trace_client correctly detects client shape via duck typing and
+        patches the appropriate method.
         """
         logger.info(
-            "[DemoRolloutProcessor] setup() called - initializing workspace"
+            "[DemoRolloutProcessor] setup() called - initializing workspace",
         )
 
         # Branch 1: Full OpenAI sync client (.chat.completions.create, sync)
@@ -275,14 +341,14 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         self._openai_async = MockOpenAIAsyncClient()
         trace_client(self._openai_async)
         logger.info(
-            "[DemoRolloutProcessor] MockOpenAIAsyncClient instrumented"
+            "[DemoRolloutProcessor] MockOpenAIAsyncClient instrumented",
         )
 
         # Branch 2: Direct completions object (.create, no .chat)
         self._direct_completions = MockDirectCompletions()
         trace_client(self._direct_completions)
         logger.info(
-            "[DemoRolloutProcessor] MockDirectCompletions instrumented"
+            "[DemoRolloutProcessor] MockDirectCompletions instrumented",
         )
 
         # Branch 3: LangChain-like wrapper (.client / .async_client)
@@ -293,7 +359,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         # Branch 4: DashScope Generation-like (classmethod call)
         trace_client(MockDashScopeGeneration)
         logger.info(
-            "[DemoRolloutProcessor] MockDashScopeGeneration instrumented"
+            "[DemoRolloutProcessor] MockDashScopeGeneration instrumented",
         )
 
         # ====================================================================
@@ -331,7 +397,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
             [
                 MockBaseTool("node_tool_0"),
                 MockBaseTool("node_tool_1"),
-            ]
+            ],
         )
         trace_tool(self._tool_node)
         logger.info("[DemoRolloutProcessor] tool_node instrumented")
@@ -340,20 +406,22 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         self._mcp_tool = MockMCPTool("mcp_auto_tool")
         trace_tool(self._mcp_tool)  # should auto-set provider="mcp"
         logger.info(
-            "[DemoRolloutProcessor] mcp_tool instrumented (auto-detected)"
+            "[DemoRolloutProcessor] mcp_tool instrumented (auto-detected)",
         )
 
         # 7. Custom provider
         self._custom_tool = MockBaseTool("custom_provider_tool")
         trace_tool(self._custom_tool, provider="my-plugin")
         logger.info(
-            "[DemoRolloutProcessor] custom_tool instrumented (provider=my-plugin)"
+            "[DemoRolloutProcessor] custom_tool instrumented ("
+            "provider=my-plugin)",
         )
 
         # 8. Unsupported object (triggers warning, no error)
         trace_tool(NotATool())
         logger.info(
-            "[DemoRolloutProcessor] unsupported object handled (warning expected)"
+            "[DemoRolloutProcessor] unsupported object handled (warning "
+            "expected)",
         )
 
         # 9. Idempotency: patch same tool twice
@@ -401,17 +469,20 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         """
         # Branch 1: Full OpenAI sync client (sync call in async context)
         _ = self._openai_sync.chat.completions.create(
-            model=model, messages=messages
+            model=model,
+            messages=messages,
         )
 
         # Branch 1: Full OpenAI async client
         _ = await self._openai_async.chat.completions.create(
-            model=model, messages=messages
+            model=model,
+            messages=messages,
         )
 
         # Branch 2: Direct completions object
         _ = await self._direct_completions.create(
-            model=model, messages=messages
+            model=model,
+            messages=messages,
         )
 
         # Branch 3: LangChain-like wrapper (sync .client)
@@ -419,14 +490,20 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 
         # Branch 3: LangChain-like wrapper (async .async_client)
         _ = await self._langchain_llm.async_client.create(
-            model=model, messages=messages
+            model=model,
+            messages=messages,
         )
 
         # Branch 4: DashScope Generation-like (classmethod)
         _ = MockDashScopeGeneration.call(model=model, messages=messages)
 
         # Return a response for the @observe_llm wrapper to record
-        return _make_mock_response("[demo] aggregated response", model, 30, 16)
+        return _make_mock_response(
+            "[demo] aggregated response",
+            model,
+            30,
+            16,
+        )
 
     @observe_tool(name="trace_tool_tester")
     async def _call_tools(self) -> Dict[str, Any]:
@@ -445,14 +522,14 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         for tool in self._list_tools:
             results[f"list_{tool.name}_sync"] = tool.invoke("test_input")
             results[f"list_{tool.name}_async"] = await tool.ainvoke(
-                "test_input"
+                "test_input",
             )
 
         # Tuple tools
         for tool in self._tuple_tools:
             results[f"tuple_{tool.name}_sync"] = tool.invoke("test_input")
             results[f"tuple_{tool.name}_async"] = await tool.ainvoke(
-                "test_input"
+                "test_input",
             )
 
         # Dict tools
@@ -482,7 +559,8 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         Simulated tool: assigns a fixed reward score to the LLM response.
 
         In production, this could call an external grader API or run a local
-        reward model.  ``@observe_tool`` records the function name and arguments
+        reward model.  ``@observe_tool`` records the function name and
+        arguments
         as a Tool Span.
         """
         # Demo: always return a fixed score
@@ -518,7 +596,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         logger.info(
             f"[DemoRolloutProcessor] starting rollout | "
             f"model={input_data.model_resource.model_name}, "
-            f"rollout_id={rollout_id}"
+            f"rollout_id={rollout_id}",
         )
 
         start = time.time()
@@ -537,7 +615,8 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
         # Step 2: Exercise trace_tool coverage (produces Tool Spans)
         tool_results = await self._call_tools()
         logger.info(
-            f"[DemoRolloutProcessor] trace_tool results: {len(tool_results)} calls"
+            f"[DemoRolloutProcessor] trace_tool results: "
+            f"{len(tool_results)} calls",
         )
 
         # Step 3: Score the response (produces a Tool Span via @observe_tool)
@@ -560,6 +639,6 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 
         logger.info(
             f"[DemoRolloutProcessor][Async] result: rollout_id={rollout_id}, "
-            f"latency={latency}s, score={score}"
+            f"latency={latency}s, score={score}",
         )
         return result

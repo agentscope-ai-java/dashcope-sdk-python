@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/parser/base_parser.py
 
@@ -15,7 +16,8 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 class BaseRequestParser(ABC):
     """
     Base class for request parameter parsing.
-    Each business type must implement parse() method to convert raw request dict
+    Each business type must implement parse() method to convert raw request
+    dict
     into corresponding BaseDataModel subclass instance.
     """
 

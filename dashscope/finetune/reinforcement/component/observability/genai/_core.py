@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 """Optional dependency ``loongsuite-util-genai`` and safe handler entry point.
 
-This module is the *single* place where we integrate with ``loongsuite-util-genai``.
-It provides a hardened handler wrapper so that **observability failures never
+This module is the *single* place where we integrate with
+``loongsuite-util-genai``. It provides a hardened handler wrapper so that
+**observability failures never
 impact business logic**.
 
 Debug environment variables
@@ -14,22 +16,26 @@ These are **diagnostics only**; unset in production unless troubleshooting.
     (handler ``_WrappedCM`` and ``tools.trace_tool`` / ``observe_tool`` paths).
 
 ``AGENTIC_RL_DEBUG_LLM_OUTPUT``
-    Set to ``1`` / ``true`` / ``yes`` / ``y`` in ``llm_openai`` to log completion /
+    Set to ``1`` / ``true`` / ``yes`` / ``y`` in ``llm_openai`` to log
+    completion /
     ``output_messages`` shapes (see ``_DEBUG_LLM_OUTPUT`` there).
 
 ``AGENTIC_RL_DEBUG_LLM_TOOL_CALLS``
-    Set to ``1`` / ``true`` / ``yes`` / ``y`` in ``messages`` to log per-message
-    ``tool_calls`` shapes and per-item ``tool_calls_to_parts`` mapping (branch,
-    argument types/lengths) when building LLM ``input_messages`` — for diagnosing
-    empty ``tool_call.arguments`` in traces.
+    Set to ``1`` / ``true`` / ``yes`` / ``y`` in ``messages`` to log
+    per-message ``tool_calls`` shapes and per-item ``tool_calls_to_parts``
+    mapping (branch, argument types/lengths) when building LLM
+    ``input_messages`` — for diagnosing empty ``tool_call.arguments`` in
+    traces.
 
 Recommended check before merging changes under ``…/observability/genai/``::
 
     PYTHONPATH=. pytest tests/observability/genai/ -q
 
-(Requires the SDK repo layout and ``tests/observability/genai/`` contract tests.)
+(Requires the SDK repo layout and ``tests/observability/genai/`` contract
+tests.)
 """
 
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import json
@@ -64,7 +70,8 @@ except ImportError:  # pragma: no cover
 _logger = logging.getLogger(__name__)
 
 _DEBUG_BINDING = os.environ.get(
-    "AGENTIC_RL_DEBUG_SPAN_BINDING", ""
+    "AGENTIC_RL_DEBUG_SPAN_BINDING",
+    "",
 ).strip().lower() in (
     "1",
     "true",
@@ -86,7 +93,9 @@ class _SerializeLimits:
 
 
 def to_jsonable(
-    obj: Any, *, limits: _SerializeLimits = _SerializeLimits()
+    obj: Any,
+    *,
+    limits: _SerializeLimits = _SerializeLimits(),
 ) -> Any:
     """Best-effort conversion to a JSON-serializable, size-bounded structure.
 
@@ -96,7 +105,13 @@ def to_jsonable(
 
     seen: Set[int] = set()
 
-    def _inner(x: Any, depth: int) -> Any:
+    # pylint: disable=too-many-branches
+    # Serialization tree walk: many early returns / type branches by design.
+    def _inner(  # pylint: disable=too-many-return-statements,
+        # too-many-branches
+        x: Any,
+        depth: int,
+    ) -> Any:
         if x is None or isinstance(x, (bool, int, float)):
             return x
         if isinstance(x, str):
@@ -128,7 +143,7 @@ def to_jsonable(
                     pass
         if hasattr(x, "dict") and callable(getattr(x, "dict", None)):
             try:
-                return _inner(x.dict(), depth + 1)  # type: ignore[call-arg]
+                return _inner(x.Dict(), depth + 1)  # type: ignore[call-arg]
             except Exception:
                 pass
         if isinstance(x, Dict):
@@ -162,7 +177,8 @@ def to_jsonable(
 
 
 class SafeSpanProxy:
-    """Proxy an OTel span-like object and suppress any errors from span operations."""
+    """Proxy an OTel span-like object and suppress any errors from span
+    operations."""
 
     def __init__(self, span: Any):
         self._span = span
@@ -230,14 +246,19 @@ class SafeSpanProxy:
                     }
                 )
                 self._span.record_exception(
-                    exception, attributes=safe_attrs, **kwargs
+                    exception,
+                    attributes=safe_attrs,
+                    **kwargs,
                 )
         except Exception:
             return
 
 
 class SafeInvocationProxy:
-    """Proxy the GenAI invocation object to enforce JSON-safe payloads and suppress span failures."""
+    """Proxy the GenAI invocation object to enforce JSON-safe payloads.
+
+    Span failures at the invocation boundary are suppressed.
+    """
 
     _SERIALIZE_FIELDS = {
         "tool_call_arguments",
@@ -258,14 +279,14 @@ class SafeInvocationProxy:
         inv = object.__getattribute__(self, "_inv")
         try:
             if name in ("input_messages", "output_messages"):
-                # Important: loongsuite-util-genai expects typed message objects
-                # (InputMessage/OutputMessage) so it can read fields like
-                # OutputMessage.finish_reason during span finalization. If we
-                # eagerly convert them to dicts, handler.__exit__ may crash and
-                # corrupt context propagation.
+                # Important: loongsuite-util-genai expects typed message
+                # objects (InputMessage/OutputMessage) so it can read fields
+                # like OutputMessage.finish_reason during span finalization.
+                # If we eagerly convert them to dicts, handler.__exit__ may
+                # crash and corrupt context propagation.
                 #
-                # We therefore only apply to_jsonable when the payload is clearly
-                # not a list of message-like objects.
+                # We therefore only apply to_jsonable when the payload is
+                # clearly not a list of message-like objects.
                 v = value
                 if isinstance(v, list):
                     all_msg_like = True
@@ -291,7 +312,8 @@ class SafeInvocationProxy:
 
 
 class _SimpleCircuitBreaker:
-    """Lightweight, process-local breaker to avoid repeated observability failures."""
+    """Lightweight, process-local breaker to avoid repeated observability
+    failures."""
 
     def __init__(self) -> None:
         self._fail_count = 0
@@ -345,11 +367,13 @@ class SafeHandlerProxy:
 class NoopHandler:
     """A drop-in handler that does nothing and never raises."""
 
-    def llm(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover
+    def llm(self, *_: Any, **_kwargs: Any) -> Any:  # pragma: no cover
         return _noop_cm()
 
     def execute_tool(
-        self, *args: Any, **kwargs: Any
+        self,
+        *_: Any,
+        **_kwargs: Any,
     ) -> Any:  # pragma: no cover
         return _noop_cm()
 
@@ -391,21 +415,25 @@ class _WrappedCM:
             return SafeInvocationProxy(type("NoopInv", (), {})())
 
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> bool:
-        # Delegate: business exceptions pass through; __exit__ errors suppressed below.
+        # Delegate: business exceptions pass through; __exit__ errors
+        # suppressed below.
         try:
             return bool(self._cm.__exit__(exc_type, exc, tb))
         except Exception as e:
             _breaker.record_failure()
             if _DEBUG_BINDING:
                 _logger.warning(
-                    "[OTel] %s __exit__ error (suppressed): %s", self._label, e
+                    "[OTel] %s __exit__ error (suppressed): %s",
+                    self._label,
+                    e,
                 )
             else:
                 _logger.debug("[OTel] %s __exit__ error: %s", self._label, e)
-            # Critical: if the underlying handler failed in __exit__, it may have
-            # skipped context detach / span end. That would corrupt downstream
-            # span parenting (e.g. tools appearing as siblings) and may prevent
-            # spans from being exported. Best-effort cleanup here.
+            # Critical: if the underlying handler failed in __exit__,
+            # it may have skipped context detach / span end. That would
+            # corrupt downstream span parenting (e.g. tools appearing as
+            # siblings) and may prevent spans from being exported.
+            # Best-effort cleanup here.
             try:
                 inv = self._last_inv
                 token = (

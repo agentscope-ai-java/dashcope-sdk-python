@@ -1,26 +1,31 @@
+# -*- coding: utf-8 -*-
 """
-OTel span decorator for the ``process`` method of Reward / Rollout and similar processors.
+OTel span decorator for the ``process`` method of Reward / Rollout and
+similar processors.
 
-Emits a full business span (``gen_ai.span.kind=REWARD`` / ``ROLLOUT``) and records
-input / output / result attributes.
+Emits a full business span (``gen_ai.span.kind=REWARD`` / ``ROLLOUT``) and
+records input / output / result attributes.
 
-Forms a parent-child hierarchy with
-:func:`~dashscope.finetune.reinforcement.component.observability.tracing.trace_processor_process`
-(the ``FuncManager`` CHAIN entry span): the CHAIN span handles Baggage injection and dispatch
-tracking, while this decorator records business-level semantics. Both can be used together.
+Forms a parent-child hierarchy with the ``FuncManager`` CHAIN entry span
+from ``tracing.trace_processor_process``: the CHAIN span handles Baggage
+injection and dispatch tracking, while this decorator records business-level
+semantics. Both can be used together.
 
-Span naming convention (aligned with Bailian Agentic RL Tracing specification):
+Span naming convention (aligned with Bailian Agentic RL Tracing
+specification):
 - Rollout: ``invoke_rollout <ClassName>``
 - Reward:  ``invoke_reward <ClassName>``
 
-OpenTelemetry ``SpanKind`` is ``INTERNAL`` (overridable). Logical kind is ``gen_ai.span.kind`` (``REWARD`` / ``ROLLOUT``).
+OpenTelemetry ``SpanKind`` is ``INTERNAL`` (overridable). Logical kind is
+``gen_ai.span.kind`` (``REWARD`` / ``ROLLOUT``).
 
 .. note::
 
-    ``FuncManager(..., observe=True)`` (default) produces a lightweight CHAIN span
-    (``gen_ai.span.kind=CHAIN``). The business span produced by this decorator
-    (``REWARD`` / ``ROLLOUT``) is semantically its child; both can be used simultaneously.
-    If ``FuncManager(..., observe=False)`` and this decorator is also absent, no span is emitted.
+    ``FuncManager(..., observe=True)`` (default) produces a lightweight CHAIN
+    span (``gen_ai.span.kind=CHAIN``). The business span produced by this
+    decorator (``REWARD`` / ``ROLLOUT``) is semantically its child; both can be
+    used simultaneously. If ``FuncManager(..., observe=False)`` and this
+    decorator is also absent, no span is emitted.
 """
 
 from __future__ import annotations
@@ -58,7 +63,7 @@ except ImportError:  # pragma: no cover
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def trace_processor_span(
+def trace_processor_span(  # pylint: disable=too-many-statements
     _fn: Optional[F] = None,
     *,
     logical_kind: str,
@@ -66,14 +71,16 @@ def trace_processor_span(
     capture_io_attributes: bool = True,
 ) -> Any:
     """
-    Generic decorator wrapping ``process(self, input: BaseDataModel, ...) -> Any``.
+    Generic decorator wrapping ``process(self, input: BaseDataModel, ...)``
+    ``-> Any``.
 
-    ``logical_kind`` is used to resolve the span kind to ``reward`` / ``rollout``
-    (case-insensitive) when ``input.func_type`` is absent; otherwise ``input_data.func_type``
-    takes precedence (consistent with ``FuncManager``).
+    ``logical_kind`` is used to resolve the span kind to ``reward`` /
+    ``rollout`` (case-insensitive) when ``input.func_type`` is absent;
+    otherwise ``input_data.func_type`` takes precedence (consistent with
+    ``FuncManager``).
     """
 
-    def decorator(fn: F) -> F:
+    def decorator(fn: F) -> F:  # pylint: disable=too-many-statements
         default_kind = (
             SpanKind.INTERNAL
             if _OTEL_SPAN_API and SpanKind is not None
@@ -95,21 +102,27 @@ def trace_processor_span(
             if tracer is None or not _OTEL_SPAN_API:
                 if is_tracing_enabled() and tracer is None:
                     logger.warning(
-                        "ENABLE_TRAJECTORY is set but OpenTelemetry is not installed. "
-                        "pip install 'dashscope[agentic_rl_tracing]'"
+                        (
+                            "ENABLE_TRAJECTORY is set but "
+                            "OpenTelemetry is not "
+                            "installed. "
+                            "pip install 'dashscope[agentic_rl_tracing]'"
+                        ),
                     )
                 return fn(self, input_data, *args, **kwargs)
 
             try:
                 func_type = resolve_processor_func_type_for_span(
-                    input_data, logical_kind
+                    input_data,
+                    logical_kind,
                 )
             except ValueError as e:
                 logger.warning("trace_processor_span: %s — skipping span", e)
                 return fn(self, input_data, *args, **kwargs)
 
             ensure_agentic_rl_baggage_span_processor()
-            # Span name: "invoke_rollout <ClassName>" or "invoke_reward <ClassName>"
+            # Span name: "invoke_rollout <ClassName>" or
+            # "invoke_reward <ClassName>"
             prefix = (
                 _ROLLOUT_SPAN_PREFIX
                 if func_type.value.lower() == "rollout"
@@ -135,7 +148,9 @@ def trace_processor_span(
                     span.set_status(Status(StatusCode.ERROR, str(exc)))
                     raise
                 apply_processor_span_attributes_after(
-                    span, result, capture_full_io=capture_io_attributes
+                    span,
+                    result,
+                    capture_full_io=capture_io_attributes,
                 )
                 span.set_status(Status(StatusCode.OK))
                 return result
@@ -154,14 +169,16 @@ def trace_processor_span(
 
             try:
                 func_type = resolve_processor_func_type_for_span(
-                    input_data, logical_kind
+                    input_data,
+                    logical_kind,
                 )
             except ValueError as e:
                 logger.warning("trace_processor_span: %s — skipping span", e)
                 return await fn(self, input_data, *args, **kwargs)
 
             ensure_agentic_rl_baggage_span_processor()
-            # Span name: "invoke_rollout <ClassName>" or "invoke_reward <ClassName>"
+            # Span name: "invoke_rollout <ClassName>" or
+            # "invoke_reward <ClassName>"
             prefix = (
                 _ROLLOUT_SPAN_PREFIX
                 if func_type.value.lower() == "rollout"
@@ -187,7 +204,9 @@ def trace_processor_span(
                     span.set_status(Status(StatusCode.ERROR, str(exc)))
                     raise
                 apply_processor_span_attributes_after(
-                    span, result, capture_full_io=capture_io_attributes
+                    span,
+                    result,
+                    capture_full_io=capture_io_attributes,
                 )
                 span.set_status(Status(StatusCode.OK))
                 return result
@@ -208,18 +227,17 @@ def observe_processor(
     capture_io_attributes: bool = True,
 ) -> Any:
     """
-    Unified processor decorator that infers ``func_type`` automatically from the decorated class's MRO.
+    Processor decorator that infers ``func_type`` from the decorated class MRO.
 
     - Inherits ``AbstractRolloutProcessor`` → ``FuncType.ROLLOUT``
     - Inherits ``AbstractRewardProcessor``  → ``FuncType.REWARD``
-    - Falls back to ``logical_kind="generic"`` on inference failure (no error raised)
+    - Falls back to ``logical_kind="generic"`` on inference failure (no error
+      raised)
 
     Replaces the explicit ``@trace_processor_span(logical_kind=...)`` style.
     """
-    from dashscope.finetune.reinforcement.component.processor.abstract_reward_processor import (
+    from dashscope.finetune.reinforcement.component.processor import (
         AbstractRewardProcessor,
-    )
-    from dashscope.finetune.reinforcement.component.processor.abstract_rollout_processor import (
         AbstractRolloutProcessor,
     )
 
@@ -236,10 +254,12 @@ def observe_processor(
 
     def decorator(fn: F) -> F:
         # Pre-compile wrappers for two fixed paths:
-        # 1. has_func_type path: logical_kind is unused (resolve reads input.func_type directly)
-        # 2. inferred path: the kind for each subclass is fixed and could be pre-compiled,
-        #    but since it depends on the type of self (unknown at decoration time),
-        #    one cached wrapper per "Reward" / "Rollout" / "generic" is kept instead.
+        # 1. has_func_type path: logical_kind is unused (resolve reads
+        #    input.func_type directly)
+        # 2. inferred path: the kind for each subclass is fixed and could be
+        #    pre-compiled, but since it depends on the type of self (unknown at
+        #    decoration time), one cached wrapper per "Reward" / "Rollout" /
+        #    "generic" is kept instead.
         _cached: Dict[str, Any] = {}
 
         def _get_wrapped(kind: str) -> Any:
@@ -256,7 +276,10 @@ def observe_processor(
 
             @wraps(fn)
             async def auto_wrapper(
-                self: Any, input_data: Any, *args: Any, **kwargs: Any
+                self: Any,
+                input_data: Any,
+                *args: Any,
+                **kwargs: Any,
             ) -> Any:
                 has_func_type = (
                     getattr(input_data, "func_type", None) is not None
@@ -265,7 +288,10 @@ def observe_processor(
                     "reward_or_rollout" if has_func_type else _infer_kind(self)
                 )
                 return await _get_wrapped(kind)(
-                    self, input_data, *args, **kwargs
+                    self,
+                    input_data,
+                    *args,
+                    **kwargs,
                 )
 
             return auto_wrapper  # type: ignore[return-value]
@@ -274,7 +300,10 @@ def observe_processor(
             @wraps(fn)
             # type: ignore[misc]
             def auto_wrapper(
-                self: Any, input_data: Any, *args: Any, **kwargs: Any
+                self: Any,
+                input_data: Any,
+                *args: Any,
+                **kwargs: Any,
             ) -> Any:
                 has_func_type = (
                     getattr(input_data, "func_type", None) is not None

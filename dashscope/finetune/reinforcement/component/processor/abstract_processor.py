@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/processor/abstract_processor.py
 
@@ -6,7 +7,6 @@ Abstract base class definitions for business processing.
 
 from abc import ABC, abstractmethod
 from typing import Any
-import asyncio
 
 from dashscope.finetune.reinforcement.component.data.base_data_model import (
     BaseDataModel,
@@ -16,7 +16,8 @@ from dashscope.finetune.reinforcement.component.data.base_data_model import (
 class AbstractProcessor(ABC):
     """
     Abstract base class for business processing.
-    Each business type should inherit this class and implement the process() method.
+    Each business type should inherit this class and
+    implement the process() method.
     """
 
     def setup(self) -> None:
@@ -30,7 +31,8 @@ class AbstractProcessor(ABC):
         - Loading configuration files
         - Pre-computing static data
 
-        This method is called once during server startup, before any requests are processed.
+        This method is called once during server startup, before any
+        requests are processed.
         The default implementation does nothing.
 
         Raises:
@@ -43,7 +45,8 @@ class AbstractProcessor(ABC):
         Execute business logic and return results.
 
         Args:
-            input_data: Parsed business input object (subclass of BaseDataModel).
+            input_data: Parsed business input object (subclass of
+            BaseDataModel).
 
         Returns:
             Any serializable result object that will be returned to the caller.

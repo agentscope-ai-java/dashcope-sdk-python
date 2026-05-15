@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from unittest.mock import patch
 import pytest
@@ -5,9 +6,13 @@ from pydantic import BaseModel
 
 from dashscope.finetune.reinforcement import FunctionType
 from dashscope.finetune.reinforcement import InputError, ConfigurationError
-from dashscope.finetune.reinforcement.common.utils import \
-    generate_agentic_script, create_deployment_files, \
-    get_filepath_classname, deep_mask, set_api_key
+from dashscope.finetune.reinforcement.common.utils import (
+    generate_agentic_script,
+    create_deployment_files,
+    get_filepath_classname,
+    deep_mask,
+    set_api_key,
+)
 
 
 class SampleModel(BaseModel):
@@ -18,7 +23,8 @@ class SampleModel(BaseModel):
 
 @pytest.fixture(autouse=True)
 def clean_env():
-    """Clean DASHSCOPE_API_KEY environment variable before and after each test."""
+    """Clean DASHSCOPE_API_KEY environment variable before and after each
+    test."""
     original_key = os.environ.get("DASHSCOPE_API_KEY")
     if "DASHSCOPE_API_KEY" in os.environ:
         del os.environ["DASHSCOPE_API_KEY"]
@@ -35,20 +41,20 @@ class TestAgenticRLUtils:
             fc_pypi_repo="https://pypi.org/simple",
             requirements_path="requirements.txt",
             func_type="rollout",
-            classpath="module.path.Processor"
+            classpath="module.path.Processor",
         )
 
         # Validate core configuration
-        assert "SERVICE_TYPE=\"rollout\"" in script
-        assert "PROCESSOR_CLASS=\"module.path.Processor\"" in script
-        assert "SDK_PACKAGE=\"dashscope\"" in script
-        assert "REQUIREMENTS_FILE=\"requirements.txt\"" in script
+        assert 'SERVICE_TYPE="rollout"' in script
+        assert 'PROCESSOR_CLASS="module.path.Processor"' in script
+        assert 'SDK_PACKAGE="dashscope"' in script
+        assert 'REQUIREMENTS_FILE="requirements.txt"' in script
 
         # Validate key functional blocks
         assert "set -euo pipefail" in script  # Error handling
         assert "install_with_retry" in script  # Retry logic
         assert "python3 -m pip install" in script  # Dependency installation
-        assert "python3 -m \"${SERVER_CLASSPATH}\"" in script  # Service startup
+        assert 'python3 -m "${SERVER_CLASSPATH}"' in script  # Service startup
 
     def test_generate_script_with_empty_requirements(self):
         """Test generating a script without a requirements.txt file."""
@@ -57,12 +63,12 @@ class TestAgenticRLUtils:
             fc_pypi_repo="https://pypi.org/simple",
             requirements_path="",
             func_type="reward",
-            classpath="rewards.scoring.RewardCalculator"
+            classpath="rewards.scoring.RewardCalculator",
         )
 
         # Validate conditional logic for missing requirements
-        assert "if [ -f \"${REQUIREMENTS_FILE}\" ]; then" in script
-        assert "for pkg in \"${local_packages[@]}\"; do" in script
+        assert 'if [ -f "${REQUIREMENTS_FILE}" ]; then' in script
+        assert 'for pkg in "${local_packages[@]}"; do' in script
         assert "local_packages=($SDK_PACKAGE)" in script
 
     def test_special_characters_in_classpath(self):
@@ -72,10 +78,10 @@ class TestAgenticRLUtils:
             fc_pypi_repo="https://pypi.org/simple",
             requirements_path="reqs.txt",
             func_type="group_reward",
-            classpath="special.module:Class$With@Chars"
+            classpath="special.module:Class$With@Chars",
         )
 
-        assert "PROCESSOR_CLASS=\"special.module:Class$With@Chars\"" in script
+        assert 'PROCESSOR_CLASS="special.module:Class$With@Chars"' in script
 
     def test_create_deployment_files(self, tmp_path):
         """Test creating deployment files with requirements."""
@@ -93,17 +99,17 @@ class TestAgenticRLUtils:
             dirpath=str(test_dir),
             filepath="processor.py",
             classname="DemoProcessor",
-            requirements_path="requirements.txt"
+            requirements_path="requirements.txt",
         )
 
         # Validate generated file
         assert os.path.exists("start.sh")
 
         # Validate script content
-        with open("start.sh", "r", encoding='utf-8') as f:
+        with open("start.sh", "r", encoding="utf-8") as f:
             content = f.read()
-            assert "PROCESSOR_CLASS=\"processor.DemoProcessor\"" in content
-            assert "REQUIREMENTS_FILE=\"requirements.txt\"" in content
+            assert 'PROCESSOR_CLASS="processor.DemoProcessor"' in content
+            assert 'REQUIREMENTS_FILE="requirements.txt"' in content
 
     def test_create_files_without_requirements(self, tmp_path):
         """Test creating deployment files without requirements."""
@@ -111,23 +117,24 @@ class TestAgenticRLUtils:
         test_dir.mkdir()
         (test_dir / "module").mkdir()
         (test_dir / "module" / "processor.py").write_text(
-            "class MyProcessor: pass")
+            "class MyProcessor: pass",
+        )
 
         create_deployment_files(
             functype=FunctionType.REWARD,
             dirpath=str(test_dir),
             filepath="module/processor.py",
             classname="MyProcessor",
-            requirements_path=""
+            requirements_path="",
         )
 
         # Validate generated file
         assert os.path.exists("start.sh")
 
         # Validate script content
-        with open("start.sh", "r", encoding='utf-8') as f:
+        with open("start.sh", "r", encoding="utf-8") as f:
             content = f.read()
-            assert "PROCESSOR_CLASS=\"module.processor.MyProcessor\"" in content
+            assert 'PROCESSOR_CLASS="module.processor.MyProcessor"' in content
             assert "local_packages=($SDK_PACKAGE)" in content
 
     def test_invalid_file_path(self, tmp_path):
@@ -140,27 +147,30 @@ class TestAgenticRLUtils:
                 functype=FunctionType.GROUP_REWARD,
                 dirpath=str(test_dir),
                 filepath="missing.py",
-                classname="MissingProcessor"
+                classname="MissingProcessor",
             )
 
     def test_get_filepath_classname_colon_format(self):
         """Test colon-separated format parsing."""
         filepath, classname = get_filepath_classname(
-            "path/to/file.py:ClassName")
+            "path/to/file.py:ClassName",
+        )
         assert filepath == "path/to/file.py"
         assert classname == "ClassName"
 
     def test_get_filepath_classname_dot_format(self):
         """Test dot-separated format parsing."""
         filepath, classname = get_filepath_classname(
-            "module.submodule.ClassName")
+            "module.submodule.ClassName",
+        )
         assert filepath == "module/submodule.py"
         assert classname == "ClassName"
 
     def test_get_filepath_classname_mixed_format(self):
         """Test mixed format parsing."""
         filepath, classname = get_filepath_classname(
-            "path.with.dots/file.py:Class.Name")
+            "path.with.dots/file.py:Class.Name",
+        )
         assert filepath == "path.with.dots/file.py"
         assert classname == "Class.Name"
 
@@ -182,15 +192,15 @@ class TestAgenticRLUtils:
             "normal_field": "visible",
             "nested": {
                 "password": "123456",
-                "info": "public"
-            }
+                "info": "public",
+            },
         }
 
         masked = deep_mask(data)
 
-        assert masked["api_key"] == 'secr****alue'
+        assert masked["api_key"] == "secr****alue"
         assert masked["normal_field"] == "visible"
-        assert masked["nested"]["password"] == '****'
+        assert masked["nested"]["password"] == "****"
         assert masked["nested"]["info"] == "public"
 
     def test_deep_mask_pydantic_model(self):
@@ -198,16 +208,16 @@ class TestAgenticRLUtils:
         model = SampleModel(
             api_key="model_secret",
             normal_field="model_data",
-            nested={"token": "model_token", "data": "model_info"}
+            nested={"token": "model_token", "data": "model_info"},
         )
 
         masked = deep_mask(model)
 
         # Validate sensitive fields are masked
-        assert masked["api_key"] == 'mode****cret'
-        assert masked['normal_field'] == "model_data"
-        assert masked['nested']["token"] == 'model_token'
-        assert masked['nested']["data"] == "model_info"
+        assert masked["api_key"] == "mode****cret"
+        assert masked["normal_field"] == "model_data"
+        assert masked["nested"]["token"] == "model_token"
+        assert masked["nested"]["data"] == "model_info"
 
     def test_deep_mask_complex_structure(self):
         """Test masking in complex nested structures."""
@@ -216,16 +226,16 @@ class TestAgenticRLUtils:
             {"key": "value2", "api_token": "s2"},
             (
                 {"key": "value3", "trigger_token": "s3"},
-                {"key": "value4", "instance_token": "s4"}
-            )
+                {"key": "value4", "instance_token": "s4"},
+            ),
         ]
 
         masked = deep_mask(data)
 
-        assert masked[0]["password"] == '****'
-        assert masked[1]["api_token"] == '****'
-        assert masked[2][0]["trigger_token"] == '****'
-        assert masked[2][1]["instance_token"] == '****'
+        assert masked[0]["password"] == "****"
+        assert masked[1]["api_token"] == "****"
+        assert masked[2][0]["trigger_token"] == "****"
+        assert masked[2][1]["instance_token"] == "****"
 
     def test_set_api_key_with_argument(self):
         """Test setting API key via function argument."""

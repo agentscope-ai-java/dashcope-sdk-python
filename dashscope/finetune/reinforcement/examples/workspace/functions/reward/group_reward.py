@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 component/demo/group_reward_processor_demo.py
 
@@ -15,7 +16,7 @@ from dashscope.finetune.reinforcement import (
     TaskStatus,
 )
 from dashscope.finetune.reinforcement import logger
-from dashscope.finetune.reinforcement.component.processor.abstract_group_reward_processor import (
+from dashscope.finetune.reinforcement.component.processor import (
     AbstractGroupRewardProcessor,
 )
 
@@ -26,7 +27,8 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
     Demonstrates rule-based scoring for multiple Agent outputs in a group.
 
     Scoring Strategy:
-    - For each agent_output, check if ground_truth exists and is contained in messages
+    - For each agent_output, check if ground_truth exists and is contained
+    in messages
     - Reward 1.0 if ground_truth is found in messages
     - Reward 0.5 if messages length > 0
     - Default reward 0.0 otherwise
@@ -37,10 +39,12 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         Initialize workspace before processing requests.
 
         Demo implementation: Logs startup messages.
-        In production, this could load embedding models, initialize databases, etc.
+        In production, this could load embedding models, initialize
+        databases, etc.
         """
         logger.info(
-            "[DemoGroupRewardProcessor] setup() called - initializing workspace"
+            "[DemoGroupRewardProcessor] setup() called - initializing "
+            "workspace",
         )
         # Demo: No actual initialization needed
         # In production, you might:
@@ -49,19 +53,23 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         # - Load configuration files
         logger.info("[DemoGroupRewardProcessor] setup() completed")
 
+    # pylint: disable=invalid-overridden-method
     def process(self, input_data: GroupRewardInput) -> GroupRewardOutput:
         """
-        Demo implementation: Calculate simple rewards for multiple agent outputs
+        Demo implementation: Calculate simple rewards for multiple agent
+        outputs
         based on ground_truth matching.
 
         Args:
             input_data: GroupRewardInput input parameter
 
         Returns:
-            GroupRewardOutput object containing standardized group reward calculation
+            GroupRewardOutput object containing standardized group reward
+            calculation
         """
         logger.info(
-            f"[DemoGroupRewardProcessor] computing group reward for {len(input_data.agent_outputs)} outputs"
+            f"[DemoGroupRewardProcessor] computing group reward for"
+            f" {len(input_data.agent_outputs)} outputs",
         )
 
         rewards = []
@@ -84,10 +92,10 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
             rewards.append(
                 Reward(
                     reward_score=score,
-                )
+                ),
             )
             logger.info(
-                f"[DemoGroupRewardProcessor] output {idx}: score={score}"
+                f"[DemoGroupRewardProcessor] output {idx}: score={score}",
             )
 
         result = GroupRewardOutput(
@@ -96,6 +104,6 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
             error=None,
         )
         logger.info(
-            f"[DemoGroupRewardProcessor] result: rewards_count={len(rewards)}"
+            f"[DemoGroupRewardProcessor] result: rewards_count={len(rewards)}",
         )
         return result

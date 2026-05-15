@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 """OpenAI-compatible ``chat.completions.create`` instrumentation."""
-
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import asyncio
@@ -10,17 +11,17 @@ import random
 import threading
 import time
 import types
+from typing import Any, Dict, Optional
 from opentelemetry import context as otel_context
 from opentelemetry import trace as otel_trace
 from opentelemetry.trace.status import Status, StatusCode
-from typing import Any, Dict, Optional
 
 from dashscope.finetune.reinforcement.common.log import logger
-from dashscope.finetune.reinforcement.component.observability.genai._core import (
+from dashscope.finetune.reinforcement.component.observability.genai._core import (  # noqa: E501
     GENAI_AVAILABLE,
     get_handler,
 )
-from dashscope.finetune.reinforcement.component.observability.genai.messages import (
+from dashscope.finetune.reinforcement.component.observability.genai.messages import (  # noqa: E501
     openai_chat_messages_to_input_messages,
     openai_completion_to_output_messages,
     unwrap_openai_completion,
@@ -30,11 +31,17 @@ from dashscope.finetune.reinforcement.component.observability.tracing import (
     log_trace_id,
 )
 
+# Idempotency sentinel on the completions resource — owned by this module (
+# cf. ``trace_tool``).
+_OPENAI_COMPLETIONS_PATCHED_ATTR = "_agentic_rl_genai_openai_patched"
+
 _DEBUG_LLM_OUTPUT = os.environ.get(
-    "AGENTIC_RL_DEBUG_LLM_OUTPUT", ""
+    "AGENTIC_RL_DEBUG_LLM_OUTPUT",
+    "",
 ).lower() in ("1", "true", "yes", "y")
 _DEBUG_TRACE_CLIENT_BRANCH = os.environ.get(
-    "AGENTIC_RL_DEBUG_TRACE_CLIENT_BRANCH", ""
+    "AGENTIC_RL_DEBUG_TRACE_CLIENT_BRANCH",
+    "",
 ).lower() in (
     "1",
     "true",
@@ -108,13 +115,15 @@ def _dbg_trace_client(event: str, **fields: Any) -> None:
 
 
 def _orig_create_is_coroutine_function(orig_create: Any) -> bool:
-    """True when *orig_create* unwraps to an ``async def`` (the real OpenAI async API).
+    """True when *orig_create* unwraps to an ``async def`` (the real OpenAI
+    async API).
 
-    ``openai-python`` wraps ``AsyncCompletions.create`` with decorators; the bound
-    method's ``__func__`` is often a plain ``def`` forwarding wrapper, so
-    ``inspect.iscoroutinefunction(completions.create)`` is **False** even for
-    ``AsyncOpenAI``. Follow ``functools.wraps`` / ``__wrapped__`` via
-    :func:`inspect.unwrap` before calling :func:`inspect.iscoroutinefunction`.
+    ``openai-python`` wraps ``AsyncCompletions.create`` with decorators;
+    the bound method's ``__func__`` is often a plain ``def`` forwarding
+    wrapper, so ``inspect.iscoroutinefunction(completions.create)`` is
+    **False** even for ``AsyncOpenAI``. Follow ``functools.wraps`` /
+    ``__wrapped__`` via :func:`inspect.unwrap` before calling
+    :func:`inspect.iscoroutinefunction`.
     """
     try:
         target = inspect.unwrap(orig_create)
@@ -129,15 +138,17 @@ def _orig_create_is_coroutine_function(orig_create: Any) -> bool:
 
 
 class _SyncCreateCompletionAdapter:
-    """Let a sync ``create`` result work when upstream incorrectly ``await``s it.
+    """Let a sync ``create`` result work when upstream incorrectly
+    ``await``s it.
 
     Some stacks (e.g. LangGraph + ``ChatOpenAI`` async paths) end up doing
-    ``await completions.create(...)`` even when ``create`` is the **synchronous**
-    OpenAI client method. A plain ``ChatCompletion`` is not awaitable. This type
-    delegates attribute access to the real completion, implements ``__await__``,
-    and supplies ``parse`` / ``parsed`` shims for HTTP-wrapper-shaped call sites.
-    ``await`` resolves to **this adapter** (not only the inner completion) so
-    chained ``.parse()`` after ``await`` remains valid.
+    ``await completions.create(...)`` even when ``create`` is the
+    **synchronous** OpenAI client method. A plain ``ChatCompletion`` is not
+    awaitable. This type delegates attribute access to the real completion,
+    implements ``__await__``, and supplies ``parse`` / ``parsed`` shims for
+    HTTP-wrapper-shaped call sites. ``await`` resolves to **this adapter** (
+    not only the inner completion) so chained ``.parse()`` after ``await``
+    remains valid.
     """
 
     __slots__ = ("_inner",)
@@ -147,14 +158,16 @@ class _SyncCreateCompletionAdapter:
 
     @property
     def parsed(self) -> Any:
-        """HTTP wrappers expose ``.parsed``; raw ``ChatCompletion`` does not."""
+        """HTTP wrappers expose ``.parsed``; raw ``ChatCompletion`` does
+        not."""
         inner = object.__getattribute__(self, "_inner")
         if hasattr(inner, "parsed"):
             return getattr(inner, "parsed")
         return inner
 
     def parse(self, *args: Any, **kwargs: Any) -> Any:
-        """HTTP wrappers expose ``parse()``; raw ``ChatCompletion`` does not."""
+        """HTTP wrappers expose ``parse()``; raw ``ChatCompletion`` does
+        not."""
         inner = object.__getattribute__(self, "_inner")
         parse_fn = getattr(inner, "parse", None)
         if callable(parse_fn):
@@ -177,7 +190,8 @@ class _SyncCreateCompletionAdapter:
     def __await__(self) -> Any:
         # Return *this adapter* after await so callers still have ``.parse`` /
         # ``.parsed`` shims. Returning only ``_inner`` breaks stacks that chain
-        # ``await create()`` then ``.parse()`` (expects LegacyAPIResponse shape).
+        # ``await create()`` then ``.parse()`` (expects LegacyAPIResponse
+        # shape).
         outer = self
 
         async def _done() -> Any:
@@ -187,14 +201,17 @@ class _SyncCreateCompletionAdapter:
 
 
 def _sync_create_return_value(unwrapped: Any) -> Any:
-    """Normalize sync ``create`` return for both sync use and mistaken ``await``."""
+    """Normalize sync ``create`` return for both sync use and mistaken
+    ``await``."""
     if unwrapped is None:
         return None
     return _SyncCreateCompletionAdapter(unwrapped)
 
 
 def _fill_llm_invocation_from_openai_kwargs(
-    inv: Any, kwargs: Dict[str, Any], provider: str
+    inv: Any,
+    kwargs: Dict[str, Any],
+    provider: str,
 ) -> None:
     inv.provider = provider
     inv.request_model = kwargs.get("model")
@@ -230,7 +247,8 @@ def _apply_openai_completion_to_invocation(inv: Any, completion: Any) -> None:
         try:
             out = getattr(inv, "output_messages", None)
             logger.info(
-                "[debug_llm_output] completion_type=%s unwrapped_type=%s output_messages_len=%s",
+                "[debug_llm_output] completion_type=%s unwrapped_type=%s "
+                "output_messages_len=%s",
                 type(completion).__name__,
                 type(unwrapped).__name__,
                 (len(out) if isinstance(out, list) else "n/a"),
@@ -266,7 +284,8 @@ def _best_effort_mark_error(inv: Any, exc: BaseException) -> None:
             return
     except Exception:
         pass
-    # Status may be ignored by some backends; exception events are more reliable.
+    # Status may be ignored by some backends; exception events are more
+    # reliable.
     try:
         span.set_status(Status(StatusCode.ERROR, str(exc)))
     except Exception:
@@ -300,9 +319,10 @@ def _best_effort_cm_exit(cm: Any, exc: Optional[BaseException]) -> None:
 async def _await_and_apply(inv: Any, awaitable: Any) -> Any:
     """Await an awaitable completion and then populate invocation.
 
-    Some OpenAI-compatible clients expose a sync ``create`` method but return an
-    awaitable (coroutine/future). We must not treat that awaitable as the final
-    completion object; instead we attach instrumentation after awaiting.
+    Some OpenAI-compatible clients expose a sync ``create`` method but
+    return an awaitable (coroutine/future). We must not treat that awaitable
+    as the final completion object; instead we attach instrumentation after
+    awaiting.
     """
     try:
         completion = await awaitable
@@ -314,14 +334,16 @@ async def _await_and_apply(inv: Any, awaitable: Any) -> Any:
 
 
 def _run_coroutine_blocking(coro: Any) -> Any:
-    """Run *coro* to completion without calling ``asyncio.run`` under a running loop.
+    """Run *coro* to completion without calling ``asyncio.run`` under a
+    running loop.
 
-    Sync ``create`` sometimes returns an awaitable while the caller stack may already
-    hold an asyncio loop (e.g. LangChain inside async). ``asyncio.run`` would then
-    raise; we isolate ``asyncio.run`` in a one-off thread instead.
-
-    OTel context is attached in the worker so any span logic there stays under the
-    same trace as the caller (``contextvars`` do not propagate to thread pools).
+    Sync ``create`` sometimes returns an awaitable while the caller stack
+    may already hold an asyncio loop (e.g. LangChain inside async).
+    ``asyncio.run``  would then raise; we isolate ``asyncio.run`` in a
+    one-off thread instead.
+    OTel context is attached in the worker so any span logic there stays
+    under the same trace as the caller (``contextvars`` do not propagate to
+    thread pools).
     """
     try:
         asyncio.get_running_loop()
@@ -352,16 +374,18 @@ def _resolve_completions(client: Any) -> Any:
 
     * A full OpenAI client (``openai.OpenAI`` / ``openai.AsyncOpenAI``) that
       exposes ``.chat.completions``.
-    * A completions resource directly (e.g. ``langchain_openai.ChatOpenAI.client``
-      which is already ``openai.OpenAI(...).chat.completions``).
-      Detected by the presence of a callable ``.create`` and the *absence* of
-      a ``.chat`` attribute — the contract LangChain has kept since 0.1.x.
+    * A completions resource directly (e.g.
+    ``langchain_openai.ChatOpenAI.client`` which is already ``openai.OpenAI(
+    ...).chat.completions``). Detected by the presence of a callable
+    ``.create`` and the *absence* of a ``.chat`` attribute — the contract
+    LangChain has kept since 0.1.x.
 
     Returns ``None`` when neither shape is matched.
     """
     # Shape 2: already a completions object
     if callable(getattr(client, "create", None)) and not hasattr(
-        client, "chat"
+        client,
+        "chat",
     ):
         return client
     # Shape 1: full client with .chat.completions
@@ -372,48 +396,49 @@ def _resolve_completions(client: Any) -> Any:
     return completions
 
 
-def instrument_openai_chat_completions(
+def instrument_openai_chat_completions(  # pylint: disable=too-many-statements
     client: Any,
     *,
     provider: str = "openai",
     handler: Any = None,
 ) -> Any:
     """
-    Monkey-patch the ``create`` method on an OpenAI-compatible completions resource
-    to emit a GenAI ``llm`` span on every call.
+    Monkey-patch the ``create`` method on an OpenAI-compatible completions
+    resource to emit a GenAI ``llm`` span on every call.
 
     *client* may be:
 
-    * A full OpenAI client instance (``openai.OpenAI`` / ``openai.AsyncOpenAI``).
+    * A full OpenAI client instance (``openai.OpenAI`` /
+    ``openai.AsyncOpenAI``).
     * A completions resource directly (e.g. ``ChatOpenAI.client`` from
       ``langchain-openai``, which is ``openai.OpenAI(...).chat.completions``).
 
     The patch is idempotent — calling this function twice on the same object is
     safe (the second call is a no-op).
 
-    No-op when tracing is disabled or ``loongsuite-util-genai`` is not installed.
-    Returns *client* unchanged so the call can be chained.
+    No-op when tracing is disabled or ``loongsuite-util-genai`` is not
+    installed. Returns *client* unchanged so the call can be chained.
     """
     if not is_tracing_enabled():
         return client
     if not GENAI_AVAILABLE:
         logger.warning(
-            "GenAI tracing requested but loongsuite-util-genai is not installed. "
-            "pip install loongsuite-util-genai"
+            "GenAI tracing requested but loongsuite-util-genai is not "
+            "installed. pip install loongsuite-util-genai",
         )
         return client
 
     completions = _resolve_completions(client)
     if completions is None:
         logger.warning(
-            "instrument_openai_chat_completions: could not locate a completions "
-            "resource on %r — expected .chat.completions or a direct completions object",
+            "instrument_openai_chat_completions: could not locate a "
+            "completions resource on %r — expected .chat.completions or a "
+            "direct completions object",
             type(client),
         )
         return client
 
-    # Idempotency guard — mirrors the pattern used for DashScope.
-    if getattr(completions, "_agentic_rl_genai_openai_patched", False):
+    if getattr(completions, _OPENAI_COMPLETIONS_PATCHED_ATTR, False):
         return client
 
     orig_create = completions.create
@@ -421,7 +446,11 @@ def instrument_openai_chat_completions(
 
     if _orig_create_is_coroutine_function(orig_create):
 
-        async def async_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(  # pylint: disable=too-many-statements
+            _self: Any,
+            *args: Any,
+            **kwargs: Any,
+        ) -> Any:
             with h.llm() as inv:
                 log_trace_id("llm")
                 _fill_llm_invocation_from_openai_kwargs(inv, kwargs, provider)
@@ -439,15 +468,17 @@ def instrument_openai_chat_completions(
                         completion_type=type(completion).__name__,
                     )
                     _apply_openai_completion_to_invocation(inv, completion)
-                    # Return the client's native response object (often ``LegacyAPIResponse``
-                    # or similar) so LangChain / OpenAI stacks can call ``.parse()`` / access
-                    # HTTP-wrapper fields. GenAI attributes are filled from the same object
-                    # via ``unwrap_openai_completion`` inside ``_apply_openai_completion_to_invocation``.
+                    # Return the client's native response object (often
+                    # ``LegacyAPIResponse`` or similar) so LangChain /
+                    # OpenAI stacks can call ``.parse()`` / access
+                    # HTTP-wrapper fields. GenAI attributes are filled from
+                    # the same object via ``unwrap_openai_completion`` inside
+                    # ``_apply_openai_completion_to_invocation``.
                     _dbg_trace_client(
                         "llm_async_wrapper:return",
                         completion_type=type(completion).__name__,
                         return_has_parse=callable(
-                            getattr(completion, "parse", None)
+                            getattr(completion, "parse", None),
                         ),
                     )
                     return completion
@@ -463,23 +494,27 @@ def instrument_openai_chat_completions(
         completions.create = types.MethodType(async_wrapper, completions)
     else:
 
-        def sync_wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        def sync_wrapper(_self: Any, *args: Any, **kwargs: Any) -> Any:
             t0 = time.perf_counter()
             _dbg_trace_client(
                 "llm_sync_wrapper:enter",
                 provider=provider,
                 create_is_coro=False,
             )
-            # Some OpenAI-compatible stacks expose a *sync* create() that returns an
-            # awaitable. In that case we must keep the invocation open until the
-            # awaitable completes — but we must not block the current thread or
-            # create a new event loop thread (that path has been shown to hang).
+            # Some OpenAI-compatible stacks expose a *sync* create() that
+            # returns an awaitable. In that case we must keep the invocation
+            # open until the awaitable completes — but we must not block the
+            # current thread or create a new event loop thread (that path
+            # has been shown to hang).
             #
             # Implementation:
-            # - If create() returns a normal completion: do the usual sync path.
-            # - If create() returns an awaitable: manually enter/exit the handler's
-            #   context manager inside the returned awaitable, and attach the caller
-            #   OTel context when awaiting, so spans remain parented correctly.
+            # - If create() returns a normal completion: do the usual sync
+            # path.
+            # - If create() returns an awaitable: manually enter/exit the
+            # handler's
+            #   context manager inside the returned awaitable, and attach
+            #   the caller OTel context when awaiting, so spans remain
+            #   parented correctly.
             cm = h.llm()
             inv = cm.__enter__()
             returned_awaitable = False
@@ -497,13 +532,14 @@ def instrument_openai_chat_completions(
                 )
                 if not is_awaitable:
                     _apply_openai_completion_to_invocation(inv, completion)
-                    # Wrap the original response (do not unwrap here) so ``.parse()`` and
-                    # wrapper attributes remain available to LangChain / OpenAI clients.
+                    # Wrap the original response (do not unwrap here) so
+                    # ``.parse()`` and wrapper attributes remain available
+                    # to LangChain / OpenAI clients.
                     _dbg_trace_client(
                         "llm_sync_wrapper:return_sync",
                         completion_type=type(completion).__name__,
                         return_has_parse=callable(
-                            getattr(completion, "parse", None)
+                            getattr(completion, "parse", None),
                         ),
                     )
                     return _sync_create_return_value(completion)
@@ -516,18 +552,18 @@ def instrument_openai_chat_completions(
                     exc: Optional[BaseException] = None
                     try:
                         _dbg_trace_client(
-                            "llm_sync_wrapper:awaitable_wrap:enter"
+                            "llm_sync_wrapper:awaitable_wrap:enter",
                         )
                         token = otel_context.attach(otel_ctx)
                         resolved = await _await_and_apply(inv, awaitable)
                         _dbg_trace_client(
                             "llm_sync_wrapper:awaitable_wrap:done",
                             total_elapsed_ms=int(
-                                (time.perf_counter() - t0) * 1000
+                                (time.perf_counter() - t0) * 1000,
                             ),
                             completion_type=type(resolved).__name__,
                             return_has_parse=callable(
-                                getattr(resolved, "parse", None)
+                                getattr(resolved, "parse", None),
                             ),
                         )
                         return _sync_create_return_value(resolved)
@@ -537,7 +573,7 @@ def instrument_openai_chat_completions(
                         _dbg_trace_client(
                             "llm_sync_wrapper:awaitable_wrap:cancelled",
                             total_elapsed_ms=int(
-                                (time.perf_counter() - t0) * 1000
+                                (time.perf_counter() - t0) * 1000,
                             ),
                         )
                         raise
@@ -549,7 +585,7 @@ def instrument_openai_chat_completions(
                             err_type=type(e).__name__,
                             err=str(e),
                             total_elapsed_ms=int(
-                                (time.perf_counter() - t0) * 1000
+                                (time.perf_counter() - t0) * 1000,
                             ),
                         )
                         raise
@@ -580,5 +616,5 @@ def instrument_openai_chat_completions(
 
         completions.create = types.MethodType(sync_wrapper, completions)
 
-    completions._agentic_rl_genai_openai_patched = True
+    object.__setattr__(completions, _OPENAI_COMPLETIONS_PATCHED_ATTR, True)
     return client

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Environment Variables Configuration:
 --------------------------------------------------------------
@@ -22,7 +23,8 @@ register_functions():
 - Parameters:
   - functions: List of AgenticRLFunctionComponent configurations
   - lazy_load: If False, immediately loads components (default: False)
-- Returns tuple of registered component IDs (rollout/reward/group_reward entities and instances)
+- Returns tuple of registered component IDs (rollout/reward/group_reward
+entities and instances)
 
 test_functions():
 - Validates registered function components
@@ -56,28 +58,28 @@ async def main_functions():
             AgenticRLFunctionComponent(
                 type=FunctionType.ROLLOUT,
                 fcmodel=FunctionComponentModel(
-                    classpath="functions.rollout.rollout_only.DemoRolloutProcessor"
+                    classpath="functions.rollout.rollout_only.DemoRolloutProcessor",  # noqa: E501
                 ),
             ),
             # reward
             AgenticRLFunctionComponent(
                 type=FunctionType.REWARD,
                 fcmodel=FunctionComponentModel(
-                    classpath="functions.reward.reward.DemoRewardProcessor"
+                    classpath="functions.reward.reward.DemoRewardProcessor",
                 ),
             ),
             # reward-decorator
             AgenticRLFunctionComponent(
                 type=FunctionType.REWARD,
                 fcmodel=FunctionComponentModel(
-                    classpath="functions/reward/reward_decorator.py:SafetyProcessor"
+                    classpath="functions/reward/reward_decorator.py:SafetyProcessor",  # noqa: E501  # pylint: disable=line-too-long
                 ),
             ),
             # group-reward
             AgenticRLFunctionComponent(
                 type=FunctionType.GROUP_REWARD,
                 fcmodel=FunctionComponentModel(
-                    classpath="functions.reward.group_reward.DemoGroupRewardProcessor"
+                    classpath="functions.reward.group_reward.DemoGroupRewardProcessor",  # noqa: E501  # pylint: disable=line-too-long
                 ),
             ),
         ]
@@ -91,36 +93,45 @@ async def main_functions():
             reward_instance_ids,
             group_reward_instance_ids,
         ) = await client.register_functions(
-            functions=functions, lazy_load=False
+            functions=functions,
+            lazy_load=False,
         )  # register & load functions
 
         logger.info(
             f"agentic rl register functions: {rollout_entity_ids=},"
             f" {reward_entity_ids=}, {group_reward_entity_ids=},"
             f" {rollout_instance_ids=}, {reward_instance_ids=},"
-            f" {group_reward_instance_ids=}"
+            f" {group_reward_instance_ids=}",
         )
 
         with open(
-            "./resources/rollout_input.json", "r", encoding="utf-8"
+            "./resources/rollout_input.json",
+            "r",
+            encoding="utf-8",
         ) as file:
             json_data = json.load(file)
             rollout_input = json_data
 
         with open(
-            "./resources/reward_input.json", "r", encoding="utf-8"
+            "./resources/reward_input.json",
+            "r",
+            encoding="utf-8",
         ) as file:
             json_data = json.load(file)
             reward_input = json_data
 
         with open(
-            "./resources/reward_decorator_input.json", "r", encoding="utf-8"
+            "./resources/reward_decorator_input.json",
+            "r",
+            encoding="utf-8",
         ) as file:
             json_data = json.load(file)
             reward_decorator_input = json_data
 
         with open(
-            "./resources/group_reward_input.json", "r", encoding="utf-8"
+            "./resources/group_reward_input.json",
+            "r",
+            encoding="utf-8",
         ) as file:
             json_data = json.load(file)
             group_reward_input = json_data
@@ -133,7 +144,8 @@ async def main_functions():
                 input_data=rollout_input,
             )
             logger.info(
-                f"agentic rl test rollout: {rollout_instance_ids[0]=}, {result=}"
+                f"agentic rl test rollout: {rollout_instance_ids[0]=},"
+                f" {result=}",
             )
             status = result.get("status", None)
             assert (
@@ -148,7 +160,8 @@ async def main_functions():
                 input_data=reward_input,
             )
             logger.info(
-                f"agentic rl test rewards: {reward_instance_ids[0]=}, {result=}"
+                f"agentic rl test rewards: {reward_instance_ids[0]=},"
+                f" {result=}",
             )
             status = result.get("status", None)
             assert (
@@ -156,15 +169,22 @@ async def main_functions():
             ), f"Expected status, got {status}"
 
         # Testing reward-decorator functions
-        if reward_instance_ids and len(
-                reward_instance_ids) >1 and reward_instance_ids[1]:
+        if (
+            reward_instance_ids
+            and len(
+                reward_instance_ids,
+            )
+            > 1
+            and reward_instance_ids[1]
+        ):
             result = await AgenticRL.test_functions(
                 instance_id=reward_instance_ids[1],
                 functype=FunctionType.REWARD,
                 input_data=reward_decorator_input,
             )
             logger.info(
-                f"agentic rl test rewards-decorator: {reward_instance_ids[1]=}, {result=}"
+                f"agentic rl test rewards-decorator: "
+                f"{reward_instance_ids[1]=}, {result=}",
             )
             reward_score = result.get("reward", {}).get("reward_score", 0.0)
             assert (
@@ -179,7 +199,8 @@ async def main_functions():
                 input_data=group_reward_input,
             )
             logger.info(
-                f"agentic rl test group-rewards: {group_reward_instance_ids[0]=}, {result=}"
+                f"agentic rl test group-rewards: "
+                f"{group_reward_instance_ids[0]=}, {result=}",
             )
             status = result.get("status", None)
             assert (

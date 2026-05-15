@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """OpenTelemetry integration for AgenticRL function components.
 
-This module provides a *stable public surface* while keeping heavy observability
-dependencies lazily imported.  User-facing imports such as::
+This module provides a *stable public surface* while keeping heavy
+observability dependencies lazily imported.  User-facing imports such as::
 
     from dashscope.finetune.reinforcement.component.observability import (
         observe_processor,
@@ -12,23 +13,23 @@ dependencies lazily imported.  User-facing imports such as::
 continue to work unchanged, but underlying GenAI / OTel helpers are only
 imported on first attribute access, reducing cold-start and import-time
 failure risk when features are unused.
+
+For pylint / pyright in **library** code, prefer explicit submodule imports
+(``...observability.genai``, ``...observability.processor_span``,
+``...observability.tracing``) so static analysis matches the lazy surface.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from .processor_span import observe_processor
-from .genai import trace_client
-from .genai import trace_tool
-from .genai import observe_llm
-from .genai import observe_tool
-
-
+# Public names are provided lazily via __getattr__; __all__ entries are not
+# bindings.
+# pylint: disable=undefined-all-variable
 __all__ = [
     # public API
-    "observe_processor",
     "observe_llm",
+    "observe_processor",
     "observe_tool",
     "rollout_context",
     "trace_client",
@@ -57,6 +58,7 @@ __all__ = [
     "async_trace_processor_process",
     "trace_processor_span",
 ]
+# pylint: enable=undefined-all-variable
 
 
 def __getattr__(name: str) -> Any:

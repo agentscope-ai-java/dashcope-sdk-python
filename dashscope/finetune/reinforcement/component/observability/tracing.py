@@ -1,23 +1,29 @@
+# -*- coding: utf-8 -*-
 """
 OpenTelemetry tracing for rollout / reward processors.
 
-Enable tracing (install OpenTelemetry, e.g. ``pip install 'dashscope[agentic_rl_tracing]'``):
+Enable tracing (install OpenTelemetry, e.g.
+``pip install 'dashscope[agentic_rl_tracing]'``):
 
 - ``ENABLE_TRAJECTORY=true``
 
-Optional: ``AGENTIC_RL_LOG_TRACE_ID=true`` enables ``logger.info`` lines that print the
-current W3C ``trace_id`` on processor / GenAI spans (see :func:`log_trace_id`).
-Default is off for stable production workloads.
+Optional: ``AGENTIC_RL_LOG_TRACE_ID=true`` enables ``logger.info`` lines that
+print the current W3C ``trace_id`` on processor / GenAI spans (see
+:func:`log_trace_id`). Default is off for stable production workloads.
 
-With the SDK installed, :func:`ensure_agentic_rl_baggage_span_processor` registers
-:class:`~opentelemetry.processor.baggage.BaggageSpanProcessor` so
-:func:`rollout_context` can stamp ``bailian.agentic_rl.rollout_id`` / ``sample_id`` / ``attempt_id``
-onto all descendant spans as both W3C Baggage entries and span attributes.
+With the SDK installed, :func:`ensure_agentic_rl_baggage_span_processor`
+registers :class:`~opentelemetry.processor.baggage.BaggageSpanProcessor` so
+:func:`rollout_context` can stamp
+``bailian.agentic_rl.rollout_id`` / ``sample_id`` / ``attempt_id`` onto all
+descendant spans as both W3C Baggage entries and span attributes.
 
-Span naming conventions (aligned with Bailian Agentic RL Tracing specification):
+Span naming conventions (aligned with Bailian Agentic RL Tracing
+specification):
 - Entry root span  : ``invoke_agentic_rl``  (``gen_ai.span.kind=CHAIN``)
-- Rollout processor: ``invoke_rollout <ClassName>``  (``gen_ai.span.kind=ROLLOUT``)
-- Reward processor : ``invoke_reward <ClassName>``   (``gen_ai.span.kind=REWARD``)
+- Rollout processor: ``invoke_rollout <ClassName>``
+  (``gen_ai.span.kind=ROLLOUT``)
+- Reward processor : ``invoke_reward <ClassName>``
+  (``gen_ai.span.kind=REWARD``)
 """
 
 from __future__ import annotations
@@ -62,28 +68,32 @@ _MAX_FORCE_FLUSH_TIMEOUT_MS = 60_000
 _TRACER_NAME = "dashscope.finetune.reinforcement"
 # I/O preview limits for span attributes.
 _IO_MAX_LEN = 128 * 1024  # 128KB per input/output preview
-# Per-string limit applied during JSON-friendly conversion (before json.dumps()).
+# Per-string limit applied during JSON-friendly conversion (before
+# json.dumps()).
 _SERIALIZE_MAX_STR_LEN = 128 * 1024  # 128KB per string field
 
 # Request-local upstream trace linkage (used to decide whether FC traces can
 # correlate with upstream RFT traces). Stored in contextvars so it propagates
 # across async and threadpool offload (FuncManager uses copy_context()).
-_UPSTREAM_TRACEPARENT_PRESENT: contextvars.ContextVar[bool] = (
-    contextvars.ContextVar(
-        "agentic_rl_upstream_traceparent_present", default=False
-    )
+_UPSTREAM_TRACEPARENT_PRESENT: contextvars.ContextVar[
+    bool
+] = contextvars.ContextVar(
+    "agentic_rl_upstream_traceparent_present",
+    default=False,
 )
-_UPSTREAM_TRACE_ID: contextvars.ContextVar[Optional[str]] = (
-    contextvars.ContextVar("agentic_rl_upstream_trace_id", default=None)
-)
+_UPSTREAM_TRACE_ID: contextvars.ContextVar[
+    Optional[str]
+] = contextvars.ContextVar("agentic_rl_upstream_trace_id", default=None)
 
 # Baggage keys — aligned with the Bailian Agentic RL Tracing specification.
-# BaggageSpanProcessor propagates these keys as span attributes on every descendant span.
+# BaggageSpanProcessor propagates these keys as span attributes on every
+# descendant span.
 AGENTIC_RL_ROLLOUT_ID_BAGGAGE_KEY = "bailian.agentic_rl.rollout_id"
 AGENTIC_RL_SAMPLE_ID_BAGGAGE_KEY = "bailian.agentic_rl.sample_id"
 AGENTIC_RL_ATTEMPT_ID_BAGGAGE_KEY = "bailian.agentic_rl.attempt_id"
 
-# Span name constants — aligned with the Bailian Agentic RL Tracing specification.
+# Span name constants — aligned with the Bailian Agentic RL Tracing
+# specification.
 _ENTRY_SPAN_NAME = "invoke_agentic_rl"
 _ROLLOUT_SPAN_PREFIX = "invoke_rollout"
 _REWARD_SPAN_PREFIX = "invoke_reward"
@@ -173,7 +183,8 @@ def maybe_force_flush(*, reason: str) -> None:
 
     - Never raises (silent degradation).
     - No-ops when tracing is disabled or OTel SDK is unavailable.
-    - Uses ``AGENTIC_RL_FORCE_FLUSH_MODE`` and ``AGENTIC_RL_FORCE_FLUSH_TIMEOUT_MS``.
+    - Uses ``AGENTIC_RL_FORCE_FLUSH_MODE`` and
+      ``AGENTIC_RL_FORCE_FLUSH_TIMEOUT_MS``.
     """
 
     if not is_tracing_enabled():
@@ -203,7 +214,8 @@ async def maybe_force_flush_async(*, reason: str) -> None:
     """Async wrapper around :func:`maybe_force_flush` for async servers.
 
     This avoids blocking the event loop when force flushing spans.
-    It preserves silent degradation semantics and the same env-driven decision logic.
+    It preserves silent degradation semantics and the same env-driven decision
+    logic.
     """
     # Fast-path: if force flush would no-op, return quickly without offloading.
     if not is_tracing_enabled() or not _OTEL_AVAILABLE:
@@ -223,7 +235,10 @@ def _should_log_trace_id() -> bool:
 
 
 def current_trace_id_hex() -> Optional[str]:
-    """Return the current OTel trace id as a 32-char hex string, or None if there is no active span or OTel is not installed."""
+    """Return the current OTel trace id as 32-char hex, or None.
+
+    Returns None when there is no active span or OTel is not installed.
+    """
     if not _OTEL_AVAILABLE:
         return None
     try:
@@ -238,7 +253,10 @@ def current_trace_id_hex() -> Optional[str]:
 
 
 def current_span_ids_hex() -> Tuple[Optional[str], Optional[str]]:
-    """Return (trace_id_hex, span_id_hex) for the current span, or (None, None) when absent."""
+    """Return trace/span id hex for the current span.
+
+    Returns ``(None, None)`` when absent.
+    """
     if not _OTEL_AVAILABLE:
         return None, None
     try:
@@ -273,17 +291,22 @@ def reset_upstream_trace_linkage(
 
 
 def get_upstream_trace_linkage() -> Tuple[bool, Optional[str]]:
-    """Return (traceparent_present, upstream_trace_id) for current request context."""
+    """Return upstream linkage for the current request.
+
+    Tuple is ``(traceparent_present, upstream_trace_id)``.
+    """
     return _UPSTREAM_TRACEPARENT_PRESENT.get(), _UPSTREAM_TRACE_ID.get()
 
 
 def log_trace_id(role: str) -> None:
     """
-    Log the current ``trace_id`` at ``logger.info`` level (stdout by default) for easy correlation with Console/OTLP.
+    Log the current ``trace_id`` at ``logger.info`` (stdout by default).
 
-    No-op unless ``AGENTIC_RL_LOG_TRACE_ID`` is truthy (default off).
+    Helps correlate with Console/OTLP. No-op unless
+    ``AGENTIC_RL_LOG_TRACE_ID`` is truthy (default off).
 
-    ``role`` should be a short label such as ``processor``, ``execute_tool:get_weather``, or ``llm``.
+    ``role`` should be a short label such as ``processor``,
+    ``execute_tool:get_weather``, or ``llm``.
     """
     if not _should_log_trace_id():
         return
@@ -302,8 +325,15 @@ def _truncate(s: str, max_len: int = _IO_MAX_LEN) -> str:
     return s[: max_len - 3] + "..."
 
 
-def _to_json_friendly(obj: Any) -> Any:
-    """Recursively convert a Pydantic model or nested structure into a ``json.dumps``-serialisable native type, suitable for span attributes."""
+# pylint: disable-next=too-many-return-statements,too-many-branches
+def _to_json_friendly(
+    obj: Any,
+) -> Any:
+    """Recursively convert models/nested structures to JSON-serialisable
+    natives.
+
+    Suitable for span attributes (via ``json.dumps``).
+    """
     if obj is None:
         return None
     if isinstance(obj, str):
@@ -328,7 +358,7 @@ def _to_json_friendly(obj: Any) -> Any:
             return _to_json_friendly(dumped)
     if hasattr(obj, "dict"):
         try:
-            dumped = obj.dict()  # type: ignore[call-arg]
+            dumped = obj.Dict()  # type: ignore[call-arg]
         except Exception:
             dumped = None
         if dumped is not None:
@@ -346,15 +376,19 @@ def _safe_json_preview(obj: Any) -> str:
 
 def span_payload_preview(obj: Any) -> str:
     """
-    Serialize any business object to a JSON string suitable for a span attribute, truncated to ``_IO_MAX_LEN``.
+    JSON-serialise ``obj`` for span attributes, truncated to ``_IO_MAX_LEN``.
 
-    Used by :mod:`dashscope.finetune.reinforcement.component.observability.processor_span` and similar modules.
+    Used by ``observability.processor_span`` and similar modules in the same
+    component package.
     """
     return _safe_json_preview(obj)
 
 
 def get_tracer() -> Optional[Any]:
-    """Return the OTel :class:`~opentelemetry.trace.Tracer` used by this library, or ``None`` if the SDK is not installed."""
+    """Return this library's OTel :class:`~opentelemetry.trace.Tracer`.
+
+    Returns None when the SDK is not installed.
+    """
     if not _OTEL_AVAILABLE:
         return None
     return otel_trace.get_tracer(_TRACER_NAME)
@@ -362,20 +396,25 @@ def get_tracer() -> Optional[Any]:
 
 def ensure_agentic_rl_baggage_span_processor() -> None:
     """
-    Ensure a real SDK :class:`~opentelemetry.sdk.trace.TracerProvider` is active and register
-    :class:`~opentelemetry.processor.baggage.BaggageSpanProcessor` on it so baggage entries
-    ``bailian.agentic_rl.rollout_id`` / ``sample_id`` / ``attempt_id`` are copied onto every
-    new span as attributes (see :func:`rollout_context`).
+    Ensure a real SDK :class:`~opentelemetry.sdk.trace.TracerProvider` is
+    active and register
+    :class:`~opentelemetry.processor.baggage.BaggageSpanProcessor` on it so
+    baggage entries ``bailian.agentic_rl.rollout_id`` / ``sample_id`` /
+    ``attempt_id`` are copied onto every new span as attributes (see
+    :func:`rollout_context`).
 
-    Designed to be called from FastAPI ``startup_event`` / ``lifespan``, which runs **inside**
-    each uvicorn worker process after ``os.fork()``.  This makes it safe to initialize
-    :class:`~opentelemetry.sdk.trace.export.BatchSpanProcessor` (which spawns a background thread
-    and opens a network connection) here — every worker gets its own independent exporter.
+    Designed to be called from FastAPI ``startup_event`` / ``lifespan``,
+    which runs **inside** each uvicorn worker process after ``os.fork()``.
+    This makes it safe to initialize
+    :class:`~opentelemetry.sdk.trace.export.BatchSpanProcessor` (which spawns
+    a background thread and opens a network connection) here — every worker
+    gets its own independent exporter.
 
-    If no real SDK TracerProvider is found, one is created automatically using the standard
-    ``OTEL_*`` environment variables (endpoint, headers, protocol, resource attributes, etc.).
-    ``service.instance.id`` is injected as ``worker-<pid>`` to distinguish per-worker spans in
-    the backend.  If ``OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`` is absent, initialization is skipped
+    If no real SDK TracerProvider is found, one is created automatically using
+    the standard ``OTEL_*`` environment variables (endpoint, headers,
+    protocol, resource attributes, etc.). ``service.instance.id`` is injected
+    as ``worker-<pid>`` to distinguish per-worker spans in the backend. If
+    ``OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`` is absent, initialization is skipped
     and tracing is silently disabled for this worker.
 
     No-op if OpenTelemetry SDK / baggage processor packages are unavailable.
@@ -403,32 +442,37 @@ def ensure_agentic_rl_baggage_span_processor() -> None:
             # This runs inside the forked worker process, so BatchSpanProcessor
             # background thread and exporter connection are fork-safe.
             endpoint = os.getenv(
-                "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT"
+                "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
             ) or os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
             if not endpoint:
-                # No endpoint configured — keep state "pending" so that if an external
-                # set_tracer_provider() call happens later, a retry can still succeed.
+                # No endpoint: keep "pending" so a later external
+                # set_tracer_provider() can still succeed.
                 logger.debug(
-                    "[OTel] OTEL_EXPORTER_OTLP_TRACES_ENDPOINT not set; skipping TracerProvider init"
+                    "[OTel] OTEL_EXPORTER_OTLP_TRACES_ENDPOINT not set; "
+                    "skipping TracerProvider init",
                 )
                 return
             try:
-                from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-                    OTLPSpanExporter as OTLPHttpExporter,
+                from opentelemetry.exporter.otlp.proto.http import (
+                    trace_exporter,
                 )
                 from opentelemetry.sdk.resources import Resource
                 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-                # Resource.create() reads OTEL_SERVICE_NAME and OTEL_RESOURCE_ATTRIBUTES
-                # automatically; we only inject service.instance.id (pid) on top.
+                OTLPHttpExporter = trace_exporter.OTLPSpanExporter
+
+                # Resource.create() reads OTEL_SERVICE_NAME and
+                # OTEL_RESOURCE_ATTRIBUTES automatically; we only inject
+                # service.instance.id (pid) on top.
                 resource = Resource.create(
-                    {"service.instance.id": f"worker-{os.getpid()}"}
+                    {"service.instance.id": f"worker-{os.getpid()}"},
                 )
                 provider = TracerProvider(resource=resource)
-                # Pass endpoint explicitly: OTLPSpanExporter auto-reads OTEL_EXPORTER_OTLP_ENDPOINT
-                # but NOT OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, so we resolve it ourselves.
+                # Pass endpoint explicitly: OTLPSpanExporter auto-reads
+                # OTEL_EXPORTER_OTLP_ENDPOINT but not
+                # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT; resolve it ourselves.
                 provider.add_span_processor(
-                    BatchSpanProcessor(OTLPHttpExporter(endpoint=endpoint))
+                    BatchSpanProcessor(OTLPHttpExporter(endpoint=endpoint)),
                 )
                 ot_trace.set_tracer_provider(provider)
                 logger.info(
@@ -438,7 +482,8 @@ def ensure_agentic_rl_baggage_span_processor() -> None:
                 )
             except Exception as exc:  # pragma: no cover
                 logger.error(
-                    "[OTel] Failed to initialize TracerProvider: %s", exc
+                    "[OTel] Failed to initialize TracerProvider: %s",
+                    exc,
                 )
                 _baggage_span_processor_state = "skipped"
                 return
@@ -453,7 +498,8 @@ def ensure_agentic_rl_baggage_span_processor() -> None:
         provider.add_span_processor(BaggageSpanProcessor(_allow_baggage_key))
         _baggage_span_processor_state = "installed"
         logger.info(
-            "[OTel] BaggageSpanProcessor registered (pid=%s)", os.getpid()
+            "[OTel] BaggageSpanProcessor registered (pid=%s)",
+            os.getpid(),
         )
 
 
@@ -464,9 +510,10 @@ def rollout_context(
     attempt_id: Optional[str] = None,
 ) -> Iterator[None]:
     """
-    Inject ``rollout_id`` / ``sample_id`` / ``attempt_id`` into W3C Baggage so that
-    all descendant spans created inside the block automatically carry these three business IDs
-    as span attributes (keys: ``bailian.agentic_rl.rollout_id`` / ``sample_id`` / ``attempt_id``).
+    Inject ``rollout_id`` / ``sample_id`` / ``attempt_id`` into W3C Baggage
+    so that all descendant spans created inside the block automatically carry
+    these three business IDs as span attributes (keys:
+    ``bailian.agentic_rl.rollout_id`` / ``sample_id`` / ``attempt_id``).
     """
     if not _OTEL_AVAILABLE or not (rollout_id or sample_id or attempt_id):
         yield
@@ -480,15 +527,21 @@ def rollout_context(
     ctx = otel_context.get_current()
     if rollout_id:
         ctx = baggage.set_baggage(
-            AGENTIC_RL_ROLLOUT_ID_BAGGAGE_KEY, rollout_id, ctx
+            AGENTIC_RL_ROLLOUT_ID_BAGGAGE_KEY,
+            rollout_id,
+            ctx,
         )
     if sample_id:
         ctx = baggage.set_baggage(
-            AGENTIC_RL_SAMPLE_ID_BAGGAGE_KEY, sample_id, ctx
+            AGENTIC_RL_SAMPLE_ID_BAGGAGE_KEY,
+            sample_id,
+            ctx,
         )
     if attempt_id:
         ctx = baggage.set_baggage(
-            AGENTIC_RL_ATTEMPT_ID_BAGGAGE_KEY, attempt_id, ctx
+            AGENTIC_RL_ATTEMPT_ID_BAGGAGE_KEY,
+            attempt_id,
+            ctx,
         )
     token = otel_context.attach(ctx)
     try:
@@ -547,7 +600,8 @@ def resolve_processor_func_type_for_span(
 ) -> FuncType:
     """
     Decorator-path helper: prefer ``input_data.func_type`` when available;
-    otherwise map ``logical_kind`` (case-insensitive) to ``Reward`` / ``Rollout``.
+    otherwise map ``logical_kind`` (case-insensitive) to ``Reward`` /
+    ``Rollout``.
     """
     ft = getattr(input_data, "func_type", None)
     if ft is not None:
@@ -559,7 +613,7 @@ def resolve_processor_func_type_for_span(
         return FuncType.ROLLOUT
     raise ValueError(
         f"Cannot resolve FunctionType for span: input has no func_type and "
-        f"logical_kind={logical_kind!r} is not reward/rollout"
+        f"logical_kind={logical_kind!r} is not reward/rollout",
     )
 
 
@@ -571,13 +625,17 @@ def apply_processor_span_attributes_before(
     capture_full_io: bool = True,
 ) -> None:
     """
-    Reward/Rollout processor span: unified input-side attributes used by ``@observe_processor`` / ``trace_processor_span`` decorators.
+    Reward/Rollout processor span: input-side attributes for
+    ``@observe_processor`` / ``trace_processor_span``.
 
     - ``gen_ai.span.kind`` is ``REWARD`` or ``ROLLOUT`` (uppercase).
-    - ``operation.name`` is ``invoke_reward`` or ``invoke_rollout`` (aligned with Bailian specification).
-    - Traffic labels ``bailian.agentic_rl.rollout_id`` / ``sample_id`` / ``attempt_id`` are set directly
-      on the span (in addition to being propagated via Baggage by BaggageSpanProcessor).
-    - ``input.value`` is truncated JSON of the input model unless ``capture_full_io=False``.
+    - ``operation.name`` is ``invoke_reward`` or ``invoke_rollout``
+      (aligned with Bailian specification).
+    - Traffic labels ``bailian.agentic_rl.rollout_id`` / ``sample_id`` /
+      ``attempt_id`` are set on the span; BaggageSpanProcessor also copies
+      them via Baggage.
+    - ``input.value`` is truncated JSON of the input model unless
+      ``capture_full_io=False``.
     """
     kind_upper = func_type.value.upper()  # "ROLLOUT" or "REWARD"
     span.set_attribute("gen_ai.span.kind", kind_upper)
@@ -607,9 +665,15 @@ def apply_processor_span_attributes_before(
 
 
 def apply_processor_span_attributes_after(
-    span: Any, result: Any, *, capture_full_io: bool = True
+    span: Any,
+    result: Any,
+    *,
+    capture_full_io: bool = True,
 ) -> None:
-    """Set output-side span attributes: full ``output.value`` payload and a result summary (consistent with ``_set_result_attributes``)."""
+    """Set output-side attributes: ``output.value`` and result summary.
+
+    Consistent with ``_set_result_attributes``.
+    """
     if capture_full_io and result is not None:
         span.set_attribute("output.value", span_payload_preview(result))
     _set_result_attributes(span, result)
@@ -643,10 +707,11 @@ def _set_entry_chain_span_attributes(
     sid: Optional[str],
     aid: Optional[str],
 ) -> None:
-    """Populate the ``invoke_agentic_rl`` CHAIN span with identification attributes.
+    """Populate the ``invoke_agentic_rl`` CHAIN span with id attributes.
 
-    Only routing / identification attributes are written here; business-level I/O
-    belongs exclusively to the child ROLLOUT/REWARD span produced by ``@observe_processor``.
+    Only routing / identification attributes are written here; business-level
+    I/O belongs exclusively to the child ROLLOUT/REWARD span produced by
+    ``@observe_processor``.
     """
     span.set_attribute("gen_ai.span.kind", "CHAIN")
     span.set_attribute("operation.name", _ENTRY_SPAN_NAME)
@@ -667,17 +732,19 @@ def _set_entry_chain_span_attributes(
 
 
 def trace_processor_process(
-    func_type: FuncType,
+    _func_type: FuncType,
     processor: Any,
     input_data: BaseDataModel,
 ) -> Any:
     """
-    FuncManager call path (sync processor): emit the root entry span (``invoke_agentic_rl``,
-    ``gen_ai.span.kind=CHAIN``) whose main responsibility is injecting Baggage and serving as
-    the trace root anchor for all downstream LLM/Tool spans.
+    FuncManager call path (sync processor): emit the root entry span
+    (``invoke_agentic_rl``, ``gen_ai.span.kind=CHAIN``) whose main
+    responsibility is injecting Baggage and serving as the trace root anchor
+    for all downstream LLM/Tool spans.
 
-    Full input/output/result attributes are intentionally omitted here — they belong to
-    the ``@observe_processor`` decorator layer (ROLLOUT/REWARD spans).
+    Full input/output/result attributes are intentionally omitted here — they
+    belong to the ``@observe_processor`` decorator layer (ROLLOUT/REWARD
+    spans).
     """
     if not is_tracing_enabled():
         return processor.process(input_data)
@@ -686,7 +753,7 @@ def trace_processor_process(
         logger.warning(
             "ENABLE_TRAJECTORY is set but "
             "OpenTelemetry is not installed. Install with: "
-            "pip install 'dashscope[agentic_rl_tracing]'"
+            "pip install 'dashscope[agentic_rl_tracing]'",
         )
         return processor.process(input_data)
 
@@ -713,14 +780,15 @@ def trace_processor_process(
 
 
 async def async_trace_processor_process(
-    func_type: FuncType,
+    _func_type: FuncType,
     processor: Any,
     input_data: BaseDataModel,
 ) -> Any:
     """
-    FuncManager call path (async processor): same logic as :func:`trace_processor_process`,
-    but ``await``s ``processor.process`` inside the entry span's ``with`` context so that
-    child spans correctly inherit the parent span context.
+    FuncManager call path (async processor): same logic as
+    :func:`trace_processor_process`, but ``await``s ``processor.process``
+    inside the entry span's ``with`` context so that child spans correctly
+    inherit the parent span context.
     """
     if not is_tracing_enabled():
         return await processor.process(input_data)
@@ -729,7 +797,7 @@ async def async_trace_processor_process(
         logger.warning(
             "ENABLE_TRAJECTORY is set but "
             "OpenTelemetry is not installed. Install with: "
-            "pip install 'dashscope[agentic_rl_tracing]'"
+            "pip install 'dashscope[agentic_rl_tracing]'",
         )
         return await processor.process(input_data)
 

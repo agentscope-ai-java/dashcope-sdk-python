@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import os
 
@@ -23,7 +24,8 @@ def get_int_env(env_var: str, default: int) -> int:
 
 # Base URL configuration
 DASHSCOPE_HTTP_BASE_URL = os.environ.get(
-    "DASHSCOPE_HTTP_BASE_URL", "https://dashscope.aliyuncs.com/api/v1"
+    "DASHSCOPE_HTTP_BASE_URL",
+    "https://dashscope.aliyuncs.com/api/v1",
 )
 
 # API Key configuration
@@ -56,40 +58,49 @@ HTTP_REQUEST_TIMEOUT = get_int_env("HTTP_REQUEST_TIMEOUT", 600)
 
 # Bailian File Service
 BAILIAN_FILE_API = os.environ.get(
-    "BAILIAN_FILE_API", f"{DASHSCOPE_HTTP_BASE_URL}/files"
+    "BAILIAN_FILE_API",
+    f"{DASHSCOPE_HTTP_BASE_URL}/files",
 )
 BAILIAN_FILE_TIMEOUT = get_int_env("BAILIAN_FILE_TIMEOUT", 600)
 
 # Function Compute Endpoints
 FC_BASE_ENDPOINT = f"{DASHSCOPE_HTTP_BASE_URL}/fine-tunes"
 FC_UPLOAD_OSS_API = os.environ.get(
-    "FC_UPLOAD_OSS_API", f"{FC_BASE_ENDPOINT}/generate/faas/upload/url"
+    "FC_UPLOAD_OSS_API",
+    f"{FC_BASE_ENDPOINT}/generate/faas/upload/url",
 )
 FC_REGISTER_ROLLOUT_API = os.environ.get(
-    "FC_REGISTER_ROLLOUT_API", f"{FC_BASE_ENDPOINT}/create/rollout"
+    "FC_REGISTER_ROLLOUT_API",
+    f"{FC_BASE_ENDPOINT}/create/rollout",
 )
 FC_REGISTER_REWARD_API = os.environ.get(
-    "FC_REGISTER_REWARD_API", f"{FC_BASE_ENDPOINT}/create/reward"
+    "FC_REGISTER_REWARD_API",
+    f"{FC_BASE_ENDPOINT}/create/reward",
 )
 FC_REGISTER_GROUP_REWARD_API = os.environ.get(
-    "FC_REGISTER_GROUP_REWARD_API", f"{FC_BASE_ENDPOINT}/create/group-reward"
+    "FC_REGISTER_GROUP_REWARD_API",
+    f"{FC_BASE_ENDPOINT}/create/group-reward",
 )
 FC_LOAD_API = os.environ.get("FC_LOAD_API", f"{FC_BASE_ENDPOINT}/online/faas")
 FC_QUERY_API = os.environ.get("FC_QUERY_API", f"{FC_BASE_ENDPOINT}/query/faas")
 FC_LAYER_CREATE_API = os.environ.get(  # POST
-    "FC_LAYER_CREATE_API", f"{FC_BASE_ENDPOINT}/create/faas/layer"
+    "FC_LAYER_CREATE_API",
+    f"{FC_BASE_ENDPOINT}/create/faas/layer",
 )
 FC_LAYER_QUERY_API = os.environ.get(  # GET
-    "FC_LAYER_QUERY_API", f"{FC_BASE_ENDPOINT}/query/faas/layer/status"
+    "FC_LAYER_QUERY_API",
+    f"{FC_BASE_ENDPOINT}/query/faas/layer/status",
 )
 
 # --------------------------
 # Function Compute Runtime
 # --------------------------
 FC_FILES_START = "start.sh"
-FC_PYPI_LIB = os.environ.get("FC_PYPI_LIB", "dashscope")
+#FC_PYPI_LIB = os.environ.get("FC_PYPI_LIB", "dashscope")
+FC_PYPI_LIB = os.environ.get("FC_PYPI_LIB", "")
 FC_PYPI_REPO = os.environ.get(
-    "FC_PYPI_REPO", "https://mirrors.aliyun.com/pypi/simple/"
+    "FC_PYPI_REPO",
+    "https://mirrors.aliyun.com/pypi/simple/",
 )
 FC_SERVER_CLASSPATH = os.environ.get(
     "FC_SERVER_CLASSPATH",
@@ -106,7 +117,8 @@ FC_ZIP_EXCLUDE_PATTERNS = os.environ.get(
     "build,develop-eggs,.eggs,test,tests,tmp,temp,data",
 )
 FC_OSS_FILE_SIZE_WARNING = get_int_env(
-    "FC_OSS_FILE_SIZE_WARNING", 200 * 1024 * 1024
+    "FC_OSS_FILE_SIZE_WARNING",
+    200 * 1024 * 1024,
 )  # 200M
 
 # --------------------------

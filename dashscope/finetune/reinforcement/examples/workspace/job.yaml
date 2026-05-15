@@ -63,7 +63,7 @@ training:
     n_rollouts: 8
     ppo_mini_batch_size: 8
     save_steps: 100
-    save_strategy: epoch
+    save_strategy: steps
     save_total_limit: 1
   resources:
     charge_type: mtu_postpaid

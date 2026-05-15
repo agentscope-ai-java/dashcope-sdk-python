@@ -1,3 +1,6 @@
+# base (Must)
+dashscope>=1.25.18
+
 # framework
 fastapi==0.136.0
 uvicorn==0.45.0

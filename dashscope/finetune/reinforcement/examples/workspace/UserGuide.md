@@ -139,7 +139,7 @@ from dashscope.finetune.reinforcement import reward_func, sub_reward_func, aggre
 class SafetyProcessor(AbstractRewardProcessor):
     @sub_reward_func("toxicity", sub_weight=0.7)
     def toxicity(self, input: RewardInput) -> RewardOutput: ...
-    
+
     @sub_reward_func("refusal", sub_weight=0.3)
     async def refusal(self, input: RewardInput) -> RewardOutput: ...
 
@@ -148,7 +148,7 @@ class SafetyProcessor(AbstractRewardProcessor):
         weights = self.get_weights()
         scores = self.get_scores(sub_rewards)
         reward_metrics = self.get_reward_metrics(sub_rewards)
-        
+
         total = ...  # Calculate total reward
         return RewardOutput(...)
 ```
@@ -243,7 +243,7 @@ class MyRolloutProcessor(AbstractRolloutProcessor):
             model=model,
             messages=messages,
         )
-        
+
         content = response.choices[0].message.content if response.choices else ""
 
         return RolloutOutput(
@@ -343,14 +343,14 @@ rollout_iids, reward_iids, group_iids = await rl.register_functions(
 
 **[CLI] register_functions**
 
-**Usage: dashscope register_functions [OPTIONS]**                                                                                                                                                             
-```bash                                                                                                                                                                                                                       
- 🧩 Register Rollout/Reward function components, returns entity_id & instance_id                                                                                                                                        
-                                                                                                                                                                                                                        
- Requires at least one of:                                                                                                                                                                                              
- - rollout_classpath                                                                                                                                                                                                    
- - reward_classpaths                                                                                                                                                                                                    
-                                                                                                                                                                                                                        
+**Usage: dashscope register_functions [OPTIONS]**
+```bash
+ 🧩 Register Rollout/Reward function components, returns entity_id & instance_id
+
+ Requires at least one of:
+ - rollout_classpath
+ - reward_classpaths
+
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --rollout-classpaths                             TEXT  List for rollout class path (file.py:ClassName)                                                                                                               │
 │ --reward-classpaths                              TEXT  List for reward class path (file.py:ClassName)                                                                                                                │
@@ -417,9 +417,9 @@ result = await AgenticRL.test_functions(
 **[CLI] test_functions**
 
 **Usage: dashscope test_functions [OPTIONS] INSTANCE_ID**
-```bash   
- 🧪 Test a registered Rollout/Reward function instance with custom input data.                                                                                                                                          
-                                                                                                                                                                                                                        
+```bash
+ 🧪 Test a registered Rollout/Reward function instance with custom input data.
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    instance_id      TEXT  Target function instance ID (e.g., ro-ins-xxx or rw-ins-xxx) [required]                                                                                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -498,19 +498,19 @@ job = await rl.run(
 
 **[CLI] run**
 
-**Usage: dashscope run [OPTIONS]**                                                                                                                                                                                   
-```bash                                                                                                                                                                                                                   
- 🚀 Launch the complete RL tuning workflow (function registration → dataset upload → job submission)                                                                                                                    
-                                                                                                                                                                                                                        
- Execution modes:                                                                                                                                                                                                       
- 1. Configuration-driven: Use -c/--config to specify a YAML file                                                                                                                                                        
- 2. Direct parameter: Provide all required arguments via CLI options                                                                                                                                                    
-                                                                                                                                                                                                                        
- Required parameters:                                                                                                                                                                                                   
- - rollout_classpath                                                                                                                                                                                                    
- - reward_classpaths (at least one)                                                                                                                                                                                     
- - training_files (at least one)                                                                                                                                                                                        
-                                                                                                                                                                                                                        
+**Usage: dashscope run [OPTIONS]**
+```bash
+ 🚀 Launch the complete RL tuning workflow (function registration → dataset upload → job submission)
+
+ Execution modes:
+ 1. Configuration-driven: Use -c/--config to specify a YAML file
+ 2. Direct parameter: Provide all required arguments via CLI options
+
+ Required parameters:
+ - rollout_classpath
+ - reward_classpaths (at least one)
+ - training_files (at least one)
+
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --config                   -c      PATH   Path to YAML configuration file                                                                                                                                            │
 │ --model                            TEXT   Base model identifier                                                                                                                                                      │
@@ -568,9 +568,9 @@ job = AgenticRL.get("job-12345")
 **[CLI] get**
 
 **Usage: dashscope get [OPTIONS] JOB_ID**
-```bash 
- 📊 Query the current status and metadata of a specific job                                                                                                                                                             
-                                                                                                                                                                                                                        
+```bash
+ 📊 Query the current status and metadata of a specific job
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    job_id      TEXT  Target job ID [required]                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -605,10 +605,10 @@ AgenticRL.cancel("job-12345")
 
 **[CLI] cancel**
 
-**Usage: dashscope cancel [OPTIONS] JOB_ID**                                                                                                                                                                     
-```bash                                                                                                                                                                                                                    
- 🛑 Cancel a running job                                                                                                                                                                                                
-                                                                                                                                                                                                                        
+**Usage: dashscope cancel [OPTIONS] JOB_ID**
+```bash
+ 🛑 Cancel a running job
+
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *    job_id      TEXT  Target job ID [required]                                                                                                                                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -629,11 +629,11 @@ dashscope rl cancel "$JOB_ID"
 
 The CLI mirrors the SDK functionality. Use `dashscope rl --help` for details.
 
-### Usage: dashscope [OPTIONS] COMMAND [ARGS]...  
+### Usage: dashscope [OPTIONS] COMMAND [ARGS]...
 ```bash
-                                                                                                                                                                                                                                                                                                                                                                             
- 🚀 Agentic RL Fine-Tuning CLI        
-                                                                                                                                                                                                                                                                                                                                                                                           
+
+ 🚀 Agentic RL Fine-Tuning CLI
+
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                                                                                                                                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯

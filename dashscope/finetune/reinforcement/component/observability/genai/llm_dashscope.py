@@ -1,30 +1,36 @@
+# -*- coding: utf-8 -*-
 """DashScope native ``Generation.call`` class-method instrumentation."""
-
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from opentelemetry.trace.status import Status, StatusCode
 from typing import Any, Dict
 
+from opentelemetry.trace.status import Status, StatusCode
+
 from dashscope.finetune.reinforcement.common.log import logger
-from dashscope.finetune.reinforcement.component.observability.genai._core import (
+from dashscope.finetune.reinforcement.component.observability.genai._core import (  # noqa: E501
     GENAI_AVAILABLE,
     get_handler,
 )
-from dashscope.finetune.reinforcement.component.observability.genai.messages import (
+from dashscope.finetune.reinforcement.component.observability.genai.messages import (  # noqa: E501
     dashscope_response_to_output_messages,
     openai_chat_messages_to_input_messages,
 )
-from dashscope.finetune.reinforcement.component.observability.tracing import (
+from dashscope.finetune.reinforcement.component.observability.tracing import (  # noqa: E501
     is_tracing_enabled,
     log_trace_id,
 )
+
+# Idempotency sentinel on the patched class — owned by this module (cf.
+# ``trace_tool``).
+_DASHSCOPE_GENAI_PATCHED_ATTR = "_agentic_rl_genai_dashscope_patched"
 
 
 def _fill_llm_invocation_from_dashscope_kwargs(
     inv: Any,
     model: Any,
     prompt: Any,
-    history: Any,
+    _history: Any,
     messages: Any,
     kwargs: Dict[str, Any],
     provider: str,
@@ -35,10 +41,11 @@ def _fill_llm_invocation_from_dashscope_kwargs(
         inv.input_messages = openai_chat_messages_to_input_messages(messages)
     elif prompt is not None and prompt != "":
         inv.input_messages = openai_chat_messages_to_input_messages(
-            [{"role": "user", "content": prompt}]
+            [{"role": "user", "content": prompt}],
         )
-    # ``history`` (multi-turn context) is forwarded to the underlying call but not
-    # mapped to GenAI span attributes — DashScope treats it as part of prompt context.
+    # ``history`` (multi-turn context) is forwarded to the underlying call
+    # but not mapped to GenAI span attributes — DashScope treats it as part
+    # of prompt context.
     inv.temperature = kwargs.get("temperature")
     inv.top_p = kwargs.get("top_p")
     inv.max_tokens = kwargs.get("max_tokens")
@@ -65,10 +72,14 @@ def _apply_dashscope_response_to_invocation(
     usage = getattr(response, "usage", None)
     if usage is not None:
         inv.input_tokens = getattr(usage, "input_tokens", None) or getattr(
-            usage, "prompt_tokens", None
+            usage,
+            "prompt_tokens",
+            None,
         )
         inv.output_tokens = getattr(usage, "output_tokens", None) or getattr(
-            usage, "completion_tokens", None
+            usage,
+            "completion_tokens",
+            None,
         )
     inv.output_messages = dashscope_response_to_output_messages(response)
 
@@ -82,25 +93,28 @@ def instrument_dashscope_generation_call(
     """
     Attach a GenAI ``llm`` span to ``Generation.call`` (a class method).
 
-    Complements :func:`instrument_openai_chat_completions`: that function targets
-    OpenAI-compatible clients, while this one targets the DashScope native protocol.
-    ``stream=True`` calls are passed through transparently to avoid mis-spanning generators.
+    Complements :func:`instrument_openai_chat_completions`: that function
+    targets OpenAI-compatible clients, while this one targets the DashScope
+    native protocol. ``stream=True`` calls are passed through transparently
+    to avoid mis-spanning generators.
     """
     if not is_tracing_enabled():
         return generation_cls
     if not GENAI_AVAILABLE:
         logger.warning(
-            "GenAI tracing requested but loongsuite-util-genai is not installed. "
-            "pip install loongsuite-util-genai"
+            "GenAI tracing requested but loongsuite-util-genai is not "
+            "installed. pip install loongsuite-util-genai",
         )
         return generation_cls
+    # pylint: disable=protected-access
     if getattr(generation_cls, "_agentic_rl_genai_dashscope_patched", False):
         return generation_cls
 
     raw = generation_cls.__dict__.get("call")
     if raw is None or not isinstance(raw, classmethod):
         logger.warning(
-            "instrument_dashscope_generation_call: %r has no classmethod 'call'",
+            "instrument_dashscope_generation_call: %r has no classmethod "
+            "'call'",
             generation_cls,
         )
         return generation_cls
@@ -117,8 +131,9 @@ def instrument_dashscope_generation_call(
         messages: Any = None,
         **kwargs: Any,
     ) -> Any:
-        # Pass through without a span when tracing is off, the GenAI library is absent,
-        # or the call is a streaming request (spanning a generator would mis-attribute latency).
+        # Pass through without a span when tracing is off, the GenAI library
+        # is absent, or the call is a streaming request (spanning a
+        # generator would mis-attribute latency).
         if (
             not is_tracing_enabled()
             or not GENAI_AVAILABLE
@@ -136,7 +151,13 @@ def instrument_dashscope_generation_call(
         with h.llm() as inv:
             log_trace_id("llm")
             _fill_llm_invocation_from_dashscope_kwargs(
-                inv, model, prompt, history, messages, kwargs, provider
+                inv,
+                model,
+                prompt,
+                history,
+                messages,
+                kwargs,
+                provider,
             )
             try:
                 response = orig_fn(
@@ -149,7 +170,9 @@ def instrument_dashscope_generation_call(
                     **kwargs,
                 )
                 _apply_dashscope_response_to_invocation(
-                    inv, response, request_model=model
+                    inv,
+                    response,
+                    request_model=model,
                 )
                 # Set OK status on successful execution
                 if hasattr(inv, "span") and inv.span is not None:
@@ -162,5 +185,6 @@ def instrument_dashscope_generation_call(
                 raise
 
     generation_cls.call = classmethod(wrapped_call)  # type: ignore[assignment]
+    # pylint: disable=protected-access
     generation_cls._agentic_rl_genai_dashscope_patched = True
     return generation_cls

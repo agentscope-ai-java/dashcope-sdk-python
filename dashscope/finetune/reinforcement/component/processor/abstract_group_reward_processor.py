@@ -1,20 +1,21 @@
+# -*- coding: utf-8 -*-
 """
 component/processor/abstract_group_reward_processor.py
 
 Abstract base class for GroupReward business processors.
-Users should inherit this class and implement process() for custom group reward calculation logic.
+Users should inherit this class and implement process() for custom group
+reward calculation logic.
 """
 
 from abc import abstractmethod
-import asyncio
 
-from dashscope.finetune.reinforcement.component.data.group_reward_input import (
+from dashscope.finetune.reinforcement.component.data import (
     GroupRewardInput,
 )
-from dashscope.finetune.reinforcement.component.data.group_reward_output import (
+from dashscope.finetune.reinforcement.component.data import (
     GroupRewardOutput,
 )
-from dashscope.finetune.reinforcement.component.processor.abstract_processor import (
+from dashscope.finetune.reinforcement.component.processor.abstract_processor import (  # noqa: E501
     AbstractProcessor,
 )
 
@@ -23,8 +24,10 @@ class AbstractGroupRewardProcessor(AbstractProcessor):
     """
     Abstract base class for GroupReward business processors.
 
-    Users must implement process() to define custom group reward calculation logic.
-    Optionally override setup() to initialize workspace before the server starts.
+    Users must implement process() to define custom group reward
+    calculation logic. Optionally override setup() to initialize workspace
+    before the server
+    starts.
 
     Example:
         >>> class MyGroupRewardProcessor(AbstractGroupRewardProcessor):
@@ -32,11 +35,13 @@ class AbstractGroupRewardProcessor(AbstractProcessor):
         ...         # Load embedding models, initialize databases, etc.
         ...         self.embedding_model = load_embedding_model()
         ...
-        ...     def process(self, input: GroupRewardInput) -> GroupRewardOutput:
+        ...     def process(self, input: GroupRewardInput) ->
+        GroupRewardOutput:
         ...         # Custom group reward calculation
         ...         rewards = []
         ...         for agent_output in input.agent_outputs:
-        ...             score = self._compute_score(agent_output, input.ground_truth)
+        ...             score = self._compute_score(agent_output,
+        input.ground_truth)
         ...             rewards.append(Reward(reward_score=score))
         ...         return GroupRewardOutput(
         ...             reward=GroupReward(rewards=rewards),
@@ -55,7 +60,8 @@ class AbstractGroupRewardProcessor(AbstractProcessor):
         - Loading configuration files
         - Pre-computing static data
 
-        This method is called once during server startup, before any requests are processed.
+        This method is called once during server startup, before any
+        requests are processed.
         The default implementation does nothing.
 
         Raises:
@@ -71,6 +77,7 @@ class AbstractGroupRewardProcessor(AbstractProcessor):
             input_data: Parsed GroupRewardInput input object.
 
         Returns:
-            GroupRewardOutput object containing standardized results (rewards, status).
+            GroupRewardOutput object containing standardized results (
+            rewards, status).
         """
         raise NotImplementedError
