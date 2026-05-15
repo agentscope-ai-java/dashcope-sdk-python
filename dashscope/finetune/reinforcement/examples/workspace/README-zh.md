@@ -132,7 +132,7 @@ dashscope rl cancel "$JOB_ID"
 > 注：项目`workspace/`目录下，设置上传排除的子目录和文件，参考环境变量：FC_ZIP_EXCLUDE_PATTERNS
 >
 > 注：项目`workspace/`目录下的所有文件打包上传限制大小：200M；可以通过环境变量FC_OSS_FILE_SIZE_WARNING修改
-> 
+>
 > 注：如果要使用本地build的dashscope whl包（通过scripts/build.sh脚本生成），可以设置：
 > export FC_PYPI_LIB="dashscope-1.25.18-py3-none-any.whl"，
 > 并且放置在项目目录下workspace/；再把requirements.txt中dashscope依赖去掉。

@@ -96,7 +96,7 @@ FC_LAYER_QUERY_API = os.environ.get(  # GET
 # Function Compute Runtime
 # --------------------------
 FC_FILES_START = "start.sh"
-#FC_PYPI_LIB = os.environ.get("FC_PYPI_LIB", "dashscope")
+# FC_PYPI_LIB = os.environ.get("FC_PYPI_LIB", "dashscope")
 FC_PYPI_LIB = os.environ.get("FC_PYPI_LIB", "")
 FC_PYPI_REPO = os.environ.get(
     "FC_PYPI_REPO",
