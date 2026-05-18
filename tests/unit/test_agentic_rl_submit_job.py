@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import asyncio
+# pylint: disable=redefined-outer-name
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -187,7 +187,7 @@ class TestDataModelConstruction:
         assert runtime.max_capacity == 60
         assert runtime.memory_scale_threshold == 0.6
         assert runtime.concurrency_scale_threshold == 0.6
-        assert runtime.env == {}
+        assert not runtime.env
 
     def test_function_component_runtime_direct(self, reward_runtime):
         assert reward_runtime.cpu == 2
@@ -272,20 +272,23 @@ class TestHyperParametersAndResources:
 
 
 # ========================================================================== #
-#                     Workflow Tests (main_workflow)                           #
+#                     Workflow Tests (main_workflow)                         #
 # ========================================================================== #
 
 
 class TestMainWorkflow:
     @pytest.mark.asyncio
     async def test_main_workflow_success(
-        self, mock_success_run_result, mock_get_result
+        self,
+        mock_success_run_result,
+        mock_get_result,
     ):
         with patch(
             "dashscope.finetune.reinforcement.common.utils.set_api_key",
         ), patch.object(
             __import__(
-                "dashscope.finetune.agentic_rl", fromlist=["AgenticRL"]
+                "dashscope.finetune.agentic_rl",
+                fromlist=["AgenticRL"],
             ),
             "AgenticRL",
         ) as MockAgenticRL:
@@ -316,7 +319,7 @@ class TestMainWorkflow:
                         name="rollout-1",
                         timeout=600,
                         fcmodel=FunctionComponentModel(
-                            classpath="functions.rollout.rollout.CalcXRolloutProcessor",
+                            classpath="functions.rollout.rollout.CalcXRolloutProcessor",  # noqa: E501  # pylint: disable=line-too-long
                         ),
                         runtime=FunctionComponentRuntime(cpu=2),
                     ),
@@ -325,7 +328,7 @@ class TestMainWorkflow:
                         weight=1.0,
                         timeout=120,
                         fcmodel=FunctionComponentModel(
-                            classpath="functions.reward.reward.DemoRewardProcessor",
+                            classpath="functions.reward.reward.DemoRewardProcessor",  # noqa: E501  # pylint: disable=line-too-long
                         ),
                         runtime=FunctionComponentRuntime(cpu=2),
                     ),
@@ -347,13 +350,17 @@ class TestMainWorkflow:
         from dashscope.finetune.agentic_rl import AgenticRL
 
         with patch.object(
-            AgenticRL, "__init__", return_value=None
+            AgenticRL,
+            "__init__",
+            return_value=None,
         ), patch.object(
-            AgenticRL, "run", new_callable=AsyncMock
+            AgenticRL,
+            "run",
+            new_callable=AsyncMock,
         ) as mock_run:
             mock_run.return_value = mock_failure_run_result
 
-            #client = AgenticRL.__new__(AgenticRL)
+            # client = AgenticRL.__new__(AgenticRL)
             client = AgenticRL()
             result = await client.run(
                 job_name="agentic-rl",
@@ -376,7 +383,9 @@ class TestMainWorkflow:
         from dashscope.finetune.agentic_rl import AgenticRL
 
         with patch.object(
-            AgenticRL, "__init__", return_value=None
+            AgenticRL,
+            "__init__",
+            return_value=None,
         ), patch.object(
             AgenticRL,
             "run",
@@ -397,22 +406,27 @@ class TestMainWorkflow:
 
 
 # ========================================================================== #
-#                   Workflow Tests (main_workflow_yaml)                        #
+#                   Workflow Tests (main_workflow_yaml)                      #
 # ========================================================================== #
 
 
 class TestMainWorkflowYaml:
     @pytest.mark.asyncio
     async def test_yaml_workflow_success(
-        self, mock_success_run_result, mock_get_result
+        self,
+        mock_success_run_result,
+        mock_get_result,
     ):
         from dashscope.finetune.agentic_rl import AgenticRL
         from dashscope.finetune.reinforcement import TuningModel
 
         with patch.object(AgenticRL, "init") as mock_init, patch.object(
-            AgenticRL, "run", new_callable=AsyncMock
+            AgenticRL,
+            "run",
+            new_callable=AsyncMock,
         ) as mock_run, patch.object(
-            AgenticRL, "get"
+            AgenticRL,
+            "get",
         ) as mock_get:
             mock_init.return_value = None
             mock_run.return_value = mock_success_run_result
@@ -439,12 +453,15 @@ class TestMainWorkflowYaml:
 
     @pytest.mark.asyncio
     async def test_yaml_workflow_submit_failure(
-        self, mock_failure_run_result
+        self,
+        mock_failure_run_result,
     ):
         from dashscope.finetune.agentic_rl import AgenticRL
 
         with patch.object(AgenticRL, "init"), patch.object(
-            AgenticRL, "run", new_callable=AsyncMock
+            AgenticRL,
+            "run",
+            new_callable=AsyncMock,
         ) as mock_run:
             mock_run.return_value = mock_failure_run_result
 
@@ -507,8 +524,17 @@ class TestAgenticRLClient:
         with patch(
             "dashscope.finetune.agentic_rl.set_api_key",
         ) as mock_set_key:
-            client = AgenticRL()
+            _ = AgenticRL()
             mock_set_key.assert_called_once_with(None)
+
+    def test_init_with_api_key(self):
+        from dashscope.finetune.agentic_rl import AgenticRL
+
+        with patch(
+            "dashscope.finetune.agentic_rl.set_api_key",
+        ) as mock_set_key:
+            _ = AgenticRL(api_key="your_api_key_here")
+            mock_set_key.assert_called_once_with("your_api_key_here")
 
     def test_init_from_yaml(self):
         from dashscope.finetune.agentic_rl import AgenticRL
@@ -664,11 +690,6 @@ class TestSubmitJob:
                 return_value=True,
             )
 
-            mock_resp = {
-                "status_code": 200,
-                "output": {"job_id": "ft-job-123"},
-            }
-
     def test_submit_job_duplicate_function_names(self):
         from dashscope.finetune.agentic_rl import AgenticRL
         from dashscope.finetune.reinforcement.common.errors import (
@@ -762,7 +783,9 @@ class TestClassMethods:
             return_value=mock_result,
         ) as mock_logs:
             result = AgenticRL.logs(
-                job_id="ft-job-123", offset=1, lines=500
+                job_id="ft-job-123",
+                offset=1,
+                lines=500,
             )
             assert result.status_code == 200
             mock_logs.assert_called_once()

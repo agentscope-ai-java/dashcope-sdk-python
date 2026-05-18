@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import asyncio
+# pylint: disable=redefined-outer-name
 import copy
 from typing import Dict
 
@@ -36,19 +36,19 @@ from dashscope.finetune.reinforcement.component.func_decorator import (
     RewardProcessorMeta,
     SubRewardFunction,
 )
-from dashscope.finetune.reinforcement.component.parser.group_reward_parser import (
+from dashscope.finetune.reinforcement.component.parser.group_reward_parser import (  # noqa: E501  # pylint: disable=line-too-long
     GroupRewardRequestParser,
 )
-from dashscope.finetune.reinforcement.component.parser.reward_parser import (
+from dashscope.finetune.reinforcement.component.parser.reward_parser import (  # noqa: E501  # pylint: disable=line-too-long
     RewardRequestParser,
 )
-from dashscope.finetune.reinforcement.component.parser.rollout_parser import (
+from dashscope.finetune.reinforcement.component.parser.rollout_parser import (  # noqa: E501  # pylint: disable=line-too-long
     RolloutRequestParser,
 )
 
 
 # ========================================================================== #
-#                              Fixtures                                       #
+#                              Fixtures                                      #
 # ========================================================================== #
 
 
@@ -238,7 +238,7 @@ class TestRolloutDataModels:
                     "name": "calculator",
                     "parameters": {"type": "object"},
                 },
-            }
+            },
         ]
         ri = RolloutInput(
             messages=[{"role": "user", "content": "Calculate 2+2"}],
@@ -355,7 +355,7 @@ class TestGroupRewardDataModels:
                 rewards=[
                     Reward(reward_score=1.0),
                     Reward(reward_score=0.5),
-                ]
+                ],
             ),
             status=TaskStatus.SUCCESS,
         )
@@ -385,7 +385,7 @@ class TestGroupRewardDataModels:
 
 
 class TestParsers:
-    def test_rollout_parser(self, model_resource):
+    def test_rollout_parser(self):
         parser = RolloutRequestParser()
         raw = {
             "messages": [{"role": "user", "content": "Hello"}],
@@ -468,13 +468,13 @@ class TestParsers:
 
 
 # ========================================================================== #
-#                     Processor Tests (Demo Implementations)                   #
+#                     Processor Tests (Demo Implementations)                 #
 # ========================================================================== #
 
 
 class TestDemoRolloutProcessor:
     def test_setup(self):
-        from dashscope.finetune.reinforcement.component.demo.rollout_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.rollout_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRolloutProcessor,
         )
 
@@ -482,7 +482,7 @@ class TestDemoRolloutProcessor:
         processor.setup()
 
     def test_process(self, rollout_input):
-        from dashscope.finetune.reinforcement.component.demo.rollout_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.rollout_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRolloutProcessor,
         )
 
@@ -499,7 +499,7 @@ class TestDemoRolloutProcessor:
         )
 
     def test_process_echoes_last_user_message(self, model_resource):
-        from dashscope.finetune.reinforcement.component.demo.rollout_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.rollout_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRolloutProcessor,
         )
 
@@ -521,7 +521,7 @@ class TestDemoRolloutProcessor:
 
 class TestDemoRewardProcessor:
     def test_setup(self):
-        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRewardProcessor,
         )
 
@@ -529,7 +529,7 @@ class TestDemoRewardProcessor:
         processor.setup()
 
     def test_process_ground_truth_match(self):
-        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRewardProcessor,
         )
 
@@ -549,7 +549,7 @@ class TestDemoRewardProcessor:
         assert result.reward.reward_score == 1.0
 
     def test_process_ground_truth_no_match(self):
-        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRewardProcessor,
         )
 
@@ -567,7 +567,7 @@ class TestDemoRewardProcessor:
         assert result.reward.reward_score == 0.5
 
     def test_process_no_ground_truth(self):
-        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRewardProcessor,
         )
 
@@ -583,7 +583,7 @@ class TestDemoRewardProcessor:
         assert result.reward.reward_score == 0.0
 
     def test_process_empty_messages(self):
-        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoRewardProcessor,
         )
 
@@ -598,7 +598,7 @@ class TestDemoRewardProcessor:
 
 class TestDemoGroupRewardProcessor:
     def test_setup(self):
-        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoGroupRewardProcessor,
         )
 
@@ -606,7 +606,7 @@ class TestDemoGroupRewardProcessor:
         processor.setup()
 
     def test_process_mixed_results(self, group_reward_input):
-        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoGroupRewardProcessor,
         )
 
@@ -619,7 +619,7 @@ class TestDemoGroupRewardProcessor:
         assert result.reward.rewards[1].reward_score == 0.5
 
     def test_process_empty_outputs(self, request_metadata):
-        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoGroupRewardProcessor,
         )
 
@@ -633,7 +633,7 @@ class TestDemoGroupRewardProcessor:
         assert len(result.reward.rewards) == 0
 
     def test_process_all_correct(self, request_metadata):
-        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (
+        from dashscope.finetune.reinforcement.component.demo.group_reward_processor_demo import (  # noqa: E501  # pylint: disable=line-too-long
             DemoGroupRewardProcessor,
         )
 
@@ -655,13 +655,14 @@ class TestDemoGroupRewardProcessor:
 
 
 # ========================================================================== #
-#                    Custom Processor Implementation Tests                     #
+#                    Custom Processor Implementation Tests                   #
 # ========================================================================== #
 
 
 class TestCustomRolloutProcessor:
     def test_cannot_instantiate_abstract(self):
         with pytest.raises(TypeError):
+            # pylint: disable=abstract-class-instantiated
             AbstractRolloutProcessor()
 
     @pytest.mark.asyncio
@@ -670,7 +671,7 @@ class TestCustomRolloutProcessor:
             async def process(self, input_data: RolloutInput) -> RolloutOutput:
                 messages = list(input_data.messages)
                 messages.append(
-                    {"role": "assistant", "content": "custom response"}
+                    {"role": "assistant", "content": "custom response"},
                 )
                 return RolloutOutput(
                     agent_output=AgentOutput(messages=messages),
@@ -704,16 +705,13 @@ class TestCustomRolloutProcessor:
 class TestCustomRewardProcessor:
     def test_cannot_instantiate_abstract(self):
         with pytest.raises(TypeError):
+            # pylint: disable=abstract-class-instantiated
             AbstractRewardProcessor()
 
     def test_custom_reward_processor(self, reward_input):
         class MyRewardProcessor(AbstractRewardProcessor):
             def process(self, input_data: RewardInput) -> RewardOutput:
-                score = (
-                    1.0
-                    if input_data.ground_truth is not None
-                    else 0.0
-                )
+                score = 1.0 if input_data.ground_truth is not None else 0.0
                 return RewardOutput(
                     reward=Reward(reward_score=score),
                     status=TaskStatus.SUCCESS,
@@ -740,13 +738,15 @@ class TestCustomRewardProcessor:
 class TestCustomGroupRewardProcessor:
     def test_cannot_instantiate_abstract(self):
         with pytest.raises(TypeError):
+            # pylint: disable=abstract-class-instantiated
             AbstractGroupRewardProcessor()
 
     @pytest.mark.asyncio
     async def test_custom_group_reward_processor(self, group_reward_input):
         class MyGroupRewardProcessor(AbstractGroupRewardProcessor):
             async def process(
-                self, input_data: GroupRewardInput
+                self,
+                input_data: GroupRewardInput,
             ) -> GroupRewardOutput:
                 rewards = [
                     Reward(reward_score=float(i))
@@ -771,7 +771,7 @@ class TestCustomGroupRewardProcessor:
 
 class TestSubRewardFunction:
     def test_creation(self):
-        def dummy_func(input_data):
+        def dummy_func():
             return RewardOutput(
                 reward=Reward(reward_score=1.0),
                 status=TaskStatus.SUCCESS,
@@ -783,7 +783,7 @@ class TestSubRewardFunction:
         assert sub.score == 0.0
 
     def test_deepcopy_resets_state(self):
-        def dummy_func(input_data):
+        def dummy_func():
             pass
 
         sub = SubRewardFunction(name="test", func=dummy_func, weight=0.7)
@@ -800,14 +800,14 @@ class TestSubRewardFunction:
 
 class TestAggregateFunction:
     def test_creation(self):
-        def agg_func(sub_rewards):
+        def agg_func():
             pass
 
         agg = AggregateFunction(func=agg_func)
         assert agg.func is agg_func
 
     def test_deepcopy(self):
-        def agg_func(sub_rewards):
+        def agg_func():
             pass
 
         agg = AggregateFunction(func=agg_func)
@@ -825,7 +825,9 @@ class TestRewardProcessorMeta:
     def test_deepcopy(self):
         meta = RewardProcessorMeta(processor_id="test")
         meta.sub_functions["sub1"] = SubRewardFunction(
-            name="sub1", func=lambda x: x, weight=0.5
+            name="sub1",
+            func=lambda x: x,
+            weight=0.5,
         )
         copied = copy.deepcopy(meta)
         assert copied.processor_id == "test"
@@ -844,16 +846,22 @@ class TestRewardFuncDecorator:
         @reward_func("safety")
         class SafetyProcessor(AbstractRewardProcessor):
             @sub_reward_func("toxicity", sub_weight=0.7)
-            def toxicity(self, input_data: RewardInput) -> RewardOutput:
+            def toxicity(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.8),
                     status=TaskStatus.SUCCESS,
                 )
 
             @sub_reward_func("refusal", sub_weight=0.3)
-            def refusal(self, input_data: RewardInput) -> RewardOutput:
+            def refusal(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.6),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
@@ -866,16 +874,22 @@ class TestRewardFuncDecorator:
         @reward_func("quality")
         class QualityProcessor(AbstractRewardProcessor):
             @sub_reward_func("accuracy", sub_weight=0.6)
-            def accuracy(self, input_data: RewardInput) -> RewardOutput:
+            def accuracy(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=1.0),
                     status=TaskStatus.SUCCESS,
                 )
 
             @sub_reward_func("fluency", sub_weight=0.4)
-            def fluency(self, input_data: RewardInput) -> RewardOutput:
+            def fluency(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.5),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
@@ -895,9 +909,15 @@ class TestRewardFuncDecorator:
         @reward_func("async-test")
         class AsyncProcessor(AbstractRewardProcessor):
             @sub_reward_func("sub1", sub_weight=1.0)
-            async def sub1(self, input_data: RewardInput) -> RewardOutput:
+            async def sub1(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.9),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
@@ -915,14 +935,14 @@ class TestRewardFuncDecorator:
         @reward_func("custom-agg")
         class CustomAggProcessor(AbstractRewardProcessor):
             @sub_reward_func("sub1", sub_weight=0.5)
-            def sub1(self, input_data: RewardInput) -> RewardOutput:
+            def sub1(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.8),
                     status=TaskStatus.SUCCESS,
                 )
 
             @sub_reward_func("sub2", sub_weight=0.5)
-            def sub2(self, input_data: RewardInput) -> RewardOutput:
+            def sub2(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.6),
                     status=TaskStatus.SUCCESS,
@@ -930,7 +950,8 @@ class TestRewardFuncDecorator:
 
             @aggregate_func
             def aggregate(
-                self, sub_rewards: Dict[str, RewardOutput]
+                self,
+                sub_rewards: Dict[str, RewardOutput],
             ) -> RewardOutput:
                 scores = self.get_scores(sub_rewards)
                 max_score = max(scores.values())
@@ -939,6 +960,7 @@ class TestRewardFuncDecorator:
                     status=TaskStatus.SUCCESS,
                 )
 
+        # pylint: disable=abstract-class-instantiated
         processor = CustomAggProcessor()
         ri = RewardInput(
             agent_output=AgentOutput(
@@ -957,9 +979,15 @@ class TestRewardFuncDecorator:
                 raise RuntimeError("Computation failed")
 
             @sub_reward_func("working", sub_weight=0.5)
-            def working(self, input_data: RewardInput) -> RewardOutput:
+            def working(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=1.0),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
@@ -978,9 +1006,15 @@ class TestRewardFuncDecorator:
         @reward_func("default-name")
         class DefaultNameProcessor(AbstractRewardProcessor):
             @sub_reward_func(sub_weight=1.0)
-            def my_metric(self, input_data: RewardInput) -> RewardOutput:
+            def my_metric(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.5),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
@@ -991,14 +1025,20 @@ class TestRewardFuncDecorator:
         @reward_func("weights-test")
         class WeightsProcessor(AbstractRewardProcessor):
             @sub_reward_func("a", sub_weight=0.3)
-            def metric_a(self, input_data: RewardInput) -> RewardOutput:
+            def metric_a(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
             @sub_reward_func("b", sub_weight=0.7)
-            def metric_b(self, input_data: RewardInput) -> RewardOutput:
+            def metric_b(self) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
@@ -1013,7 +1053,13 @@ class TestRewardFuncDecorator:
         @reward_func("scores-test")
         class ScoresProcessor(AbstractRewardProcessor):
             @sub_reward_func("a", sub_weight=0.5)
-            def metric_a(self, input_data: RewardInput) -> RewardOutput:
+            def metric_a(self) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
@@ -1033,14 +1079,20 @@ class TestRewardFuncDecorator:
         @reward_func("total-test")
         class TotalProcessor(AbstractRewardProcessor):
             @sub_reward_func("a", sub_weight=0.6)
-            def metric_a(self, input_data: RewardInput) -> RewardOutput:
+            def metric_a(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
             @sub_reward_func("b", sub_weight=0.4)
-            def metric_b(self, input_data: RewardInput) -> RewardOutput:
+            def metric_b(self) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
@@ -1065,7 +1117,13 @@ class TestRewardFuncDecorator:
         @reward_func("unknown-test")
         class UnknownProcessor(AbstractRewardProcessor):
             @sub_reward_func("a", sub_weight=1.0)
-            def metric_a(self, input_data: RewardInput) -> RewardOutput:
+            def metric_a(self) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
@@ -1085,7 +1143,13 @@ class TestRewardFuncDecorator:
         @reward_func("metrics-test")
         class MetricsProcessor(AbstractRewardProcessor):
             @sub_reward_func("a", sub_weight=1.0)
-            def metric_a(self, input_data: RewardInput) -> RewardOutput:
+            def metric_a(self) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
@@ -1110,7 +1174,7 @@ class TestRewardFuncDecorator:
         @reward_func("async-agg")
         class AsyncAggProcessor(AbstractRewardProcessor):
             @sub_reward_func("sub1", sub_weight=1.0)
-            def sub1(self, input_data: RewardInput) -> RewardOutput:
+            def sub1(self) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.7),
                     status=TaskStatus.SUCCESS,
@@ -1118,13 +1182,20 @@ class TestRewardFuncDecorator:
 
             @aggregate_func
             async def aggregate(
-                self, sub_rewards: Dict[str, RewardOutput]
+                self,
+                sub_rewards: Dict[str, RewardOutput],
             ) -> RewardOutput:
                 total = sum(
                     r.reward.reward_score for r in sub_rewards.values()
                 )
                 return RewardOutput(
                     reward=Reward(reward_score=total * 2),
+                    status=TaskStatus.SUCCESS,
+                )
+
+            def process(self, input_data: RewardInput) -> RewardOutput:
+                return RewardOutput(
+                    reward=Reward(reward_score=0.0),
                     status=TaskStatus.SUCCESS,
                 )
 
