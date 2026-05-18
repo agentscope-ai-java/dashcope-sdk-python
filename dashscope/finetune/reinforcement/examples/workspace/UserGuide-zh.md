@@ -20,7 +20,7 @@ SDK 包含两个核心模块：
 
 ### 2.1 通过 PyPI 安装
 ```bash
-pip install dashscope>=1.25.18 # 如果dashscope版本未发布，可以通过线下获取whl包来安装
+pip install dashscope>=1.25.19
 ```
 
 ### 2.2 从源码安装（开发环境）
@@ -407,7 +407,7 @@ from dashscope.finetune.agentic_rl import AgenticRL, FunctionType
 # 测试 Rollout
 result = await AgenticRL.test_functions(
     instance_id=rollout_iids[0],
-    type=FunctionType.ROLLOUT,
+    functype=FunctionType.ROLLOUT,
     input_data="resouces/rollout_input.json" # JSON 文件路径
 )
 
@@ -421,7 +421,7 @@ reward_input = {
 }
 result = await AgenticRL.test_functions(
     instance_id=reward_iids[0],
-    type=FunctionType.REWARD,
+    functype=FunctionType.REWARD,
     input_data=reward_input
 )
 ```
@@ -484,7 +484,7 @@ reward_runtimes = [
      "capacity": 6}
 ]
 functions=[
-    AgenticRLFunctionComponent(
+    RolloutFunctionComponent(
         type=FunctionType.ROLLOUT,
         name="rollout-1",
         fcmodel=FunctionComponentModel(
@@ -498,10 +498,22 @@ functions=[
             classpath="functions.reward.reward.DemoRewardProcessor"),
         runtime=FunctionComponentRuntime(**reward_runtimes[0])),
 ]
+training_datasets=[
+    TrainingDataset(
+        data_source_type=DataSourceType.FILE_ID,
+        file_name="./data/calc_train_min.jsonl",
+    ),
+]
+validation_datasets=[
+    ValidationDataset(
+        data_source_type=DataSourceType.FILE_ID,
+        file_name="./data/calc_validation_min.jsonl",
+    ),
+]
 job = await rl.run(
     model="qwen3.5-9b",
-    training_files=["./data/calc_train_min.jsonl"],
-    validation_files=["./data/calc_validation_min.jsonl"],
+    training_datasets=training_datasets,
+    validation_datasets=validation_datasets,
     functions=functions,
     hyper_parameters={'batch_size': '128'}
 )

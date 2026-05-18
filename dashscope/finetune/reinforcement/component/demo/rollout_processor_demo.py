@@ -85,7 +85,7 @@ class DemoRolloutProcessor(AbstractRolloutProcessor):
 
         result = RolloutOutput(
             agent_output=AgentOutput(
-                message=messages,
+                messages=messages,
                 rollout_extra=input_data.rollout_extra,
                 rollout_metrics={},
             ),

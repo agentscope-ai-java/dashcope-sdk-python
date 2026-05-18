@@ -1,5 +1,5 @@
 # base (Must)
-dashscope>=1.25.18
+dashscope>=1.25.19
 
 # framework
 fastapi==0.136.0

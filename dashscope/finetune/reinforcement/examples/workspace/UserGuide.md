@@ -21,7 +21,7 @@ The SDK consists of two core modules:
 
 ### 2.1 Install via PyPI
 ```bash
-pip install dashscope>=1.25.18
+pip install dashscope>=1.25.19
 ```
 
 ### 2.2 Install from Source (For Development)
@@ -395,7 +395,7 @@ from dashscope.finetune.agentic_rl import AgenticRL, FunctionType
 # Test Rollout
 result = await AgenticRL.test_functions(
     instance_id=rollout_iids[0],
-    type=FunctionType.ROLLOUT,
+    functype=FunctionType.ROLLOUT,
     input_data="resouces/rollout_input.json" # path to JSON file
 )
 
@@ -409,7 +409,7 @@ reward_input = {
 }
 result = await AgenticRL.test_functions(
     instance_id=reward_iids[0],
-    type=FunctionType.REWARD,
+    functype=FunctionType.REWARD,
     input_data=reward_input
 )
 ```
@@ -473,24 +473,36 @@ reward_runtimes = [
      "capacity": 6}
 ]
 functions=[
-    AgenticRLFunctionComponent(
+    RolloutFunctionComponent(
         type=FunctionType.ROLLOUT,
         name="rollout-1",
         fcmodel=FunctionComponentModel(
-            classpath="functions.rollout.rollout2.DemoRolloutProcessor"),
+            classpath="functions.rollout.rollout_only.DemoRolloutProcessor"),
         runtime=FunctionComponentRuntime(**rollout_runtime)),
     AgenticRLFunctionComponent(
         type=FunctionType.REWARD,
         name="reward-1",
-        weight=1.1,
+        weight=1.0,
         fcmodel=FunctionComponentModel(
             classpath="functions.reward.reward.DemoRewardProcessor"),
         runtime=FunctionComponentRuntime(**reward_runtimes[0])),
 ]
+training_datasets=[
+    TrainingDataset(
+        data_source_type=DataSourceType.FILE_ID,
+        file_name="./data/calc_train_min.jsonl",
+    ),
+]
+validation_datasets=[
+    ValidationDataset(
+        data_source_type=DataSourceType.FILE_ID,
+        file_name="./data/calc_validation_min.jsonl",
+    ),
+]
 job = await rl.run(
-    model="qwen3-32b",
-    training_files=["./data/train.jsonl"],
-    validation_files=["./data/validation.jsonl"],
+    model="qwen3.5-9b",
+    training_datasets=training_datasets,
+    validation_datasets=validation_datasets,
     functions=functions,
     hyper_parameters={'batch_size': '128'}
 )

@@ -80,16 +80,16 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
             score = 0.0
 
             # Check if ground_truth is in messages
-            if input_data.ground_truth is not None and agent_output.message:
+            if input_data.ground_truth is not None and agent_output.messages:
                 gt_str = str(input_data.ground_truth)
-                for msg in agent_output.message:
+                for msg in agent_output.messages:
                     if (
                         isinstance(msg.get("content"), str)
                         and gt_str in msg["content"]
                     ):
                         score = 1.0
                         break
-                if score == 0.0 and len(agent_output.message) > 0:
+                if score == 0.0 and len(agent_output.messages) > 0:
                     score = 0.5
 
             rewards.append(

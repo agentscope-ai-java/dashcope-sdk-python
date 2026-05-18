@@ -65,25 +65,24 @@ class DemoRewardProcessor(AbstractRewardProcessor):
             RewardOutput object containing standardized reward calculation
         """
         logger.info(
-            f"[DemoRewardProcessor] computing reward for rollout_id"
-            f"={input_data.rollout_id}",
+            "[DemoRewardProcessor] computing reward for rollout_id",
         )
 
         score = 0.0
 
         if (
             input_data.ground_truth is not None
-            and input_data.agent_output.message
+            and input_data.agent_output.messages
         ):
             gt_str = str(input_data.ground_truth)
-            for msg in input_data.agent_output.message:
+            for msg in input_data.agent_output.messages:
                 if (
                     isinstance(msg.get("content"), str)
                     and gt_str in msg["content"]
                 ):
                     score = 1.0
                     break
-            if score == 0.0 and len(input_data.agent_output.message) > 0:
+            if score == 0.0 and len(input_data.agent_output.messages) > 0:
                 score = 0.5
 
         result = RewardOutput(

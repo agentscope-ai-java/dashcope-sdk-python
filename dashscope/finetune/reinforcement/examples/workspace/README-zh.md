@@ -3,7 +3,7 @@
 ## 1. 安装 SDK
 
 ```bash
-pip install dashscope>=1.25.18
+pip install dashscope>=1.25.19
 ```
 
 ## 2. 环境配置
@@ -24,7 +24,7 @@ export LOG_LEVEL="info"
 
 ```requirements.txt
 # 基础（必须）
-dashscope>=1.25.18
+dashscope>=1.25.19
 
 # 框架依赖
 fastapi==0.136.0
@@ -134,5 +134,5 @@ dashscope rl cancel "$JOB_ID"
 > 注：项目`workspace/`目录下的所有文件打包上传限制大小：200M；可以通过环境变量FC_OSS_FILE_SIZE_WARNING修改
 >
 > 注：如果要使用本地build的dashscope whl包（通过scripts/build.sh脚本生成），可以设置：
-> export FC_PYPI_LIB="dashscope-1.25.18-py3-none-any.whl"，
+> export FC_PYPI_LIB="dashscope-1.25.19-py3-none-any.whl"，
 > 并且放置在项目目录下workspace/；再把requirements.txt中dashscope依赖去掉。

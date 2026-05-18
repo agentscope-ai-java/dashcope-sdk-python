@@ -3,7 +3,7 @@
 ## 1. Install SDK
 
 ```bash
-pip install dashscope>=1.25.18
+pip install dashscope>=1.25.19
 ```
 
 ## 2. Environment Configuration
@@ -24,7 +24,7 @@ Create a `requirements.txt` file with the following core dependencies:
 
 ```requirements.txt
 # Base (Must)
-dashscope>=1.25.18
+dashscope>=1.25.19
 
 # Framework dependencies
 fastapi==0.136.0
@@ -139,5 +139,5 @@ dashscope rl cancel "$JOB_ID"
 > this can be modified via the environment variable `FC_OSS_FILE_SIZE_WARNING`
 >
 > Note: If you want to use a locally built dashscope whl package (generated via the scripts/build.sh script), you can set:
-> export FC_PYPI_LIB="dashscope-1.25.18-py3-none-any.whl"
+> export FC_PYPI_LIB="dashscope-1.25.19-py3-none-any.whl"
 > and place it in the workspace/workspace/directory under the project root. Also remove the dashscope dependency fromrequirements.txt`.
