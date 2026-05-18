@@ -151,7 +151,7 @@ class Request:
         instruction=None,
         language_hints: list = None,
     ):
-        self.task_id = self.genUid()
+        self.task_id = self.gen_uid()
         self.apikey = apikey
         self.voice = voice
         self.model = model
@@ -166,11 +166,11 @@ class Request:
         self.instruction = instruction
         self.language_hints = language_hints
 
-    def genUid(self):
+    def gen_uid(self):
         # 生成随机UUID
         return uuid.uuid4().hex
 
-    def getWebsocketHeaders(self, headers, workspace):
+    def get_websocket_headers(self, headers, workspace):
         ua = get_user_agent()
         self.headers = {
             "user-agent": ua,
@@ -185,7 +185,7 @@ class Request:
             }
         return self.headers
 
-    def getStartRequest(self, additional_params=None):
+    def get_start_request(self, additional_params=None):
         cmd = {
             HEADER: {
                 ACTION_KEY: ActionType.START,
@@ -223,7 +223,7 @@ class Request:
             ] = self.language_hints
         return json.dumps(cmd)
 
-    def getContinueRequest(self, text):
+    def get_continue_request(self, text):
         cmd = {
             HEADER: {
                 ACTION_KEY: ActionType.CONTINUE,
@@ -242,7 +242,7 @@ class Request:
         }
         return json.dumps(cmd)
 
-    def getFinishRequest(self):
+    def get_finish_request(self):
         cmd = {
             HEADER: {
                 ACTION_KEY: ActionType.FINISHED,
@@ -251,6 +251,25 @@ class Request:
             },
             "payload": {
                 "input": {},
+            },
+        }
+        return json.dumps(cmd)
+
+    def get_flush_request(self):
+        cmd = {
+            HEADER: {
+                ACTION_KEY: ActionType.CONTINUE,  # CONTINUE task
+                TASK_ID: self.task_id,
+                "streaming": WebsocketStreamingMode.DUPLEX,
+            },
+            "payload": {
+                "model": self.model,
+                "task_group": "audio",
+                "task": "tts",
+                "function": "SpeechSynthesizer",
+                "input": {
+                    "flush": True,
+                },
             },
         }
         return json.dumps(cmd)
@@ -373,7 +392,7 @@ class SpeechSynthesizer:
         """
         self.ws = websocket.WebSocketApp(
             self.url,
-            header=self.request.getWebsocketHeaders(
+            header=self.request.get_websocket_headers(
                 headers=self.headers,
                 workspace=self.workspace,
             ),
@@ -525,7 +544,7 @@ class SpeechSynthesizer:
         if self.ws is None:
             self.__connect(5)
         # 发送run-task指令
-        request = self.request.getStartRequest(self.additional_params)
+        request = self.request.get_start_request(self.additional_params)
         self.__send_str(request)
         if not self.start_event.wait(10):
             raise TimeoutError("start speech synthesizer failed within 5s.")
@@ -539,13 +558,14 @@ class SpeechSynthesizer:
 
         if self._stopped.is_set():
             raise InvalidTask("speech synthesizer task has stopped.")
-        request = self.request.getContinueRequest(text)
+        request = self.request.get_continue_request(text)
         self.__send_str(request)
 
     # pylint: disable=useless-return
     def streaming_call(self, text: str):
         """
-        Streaming input mode: You can call the stream_call function multiple times to send text.  # noqa: E501  # pylint: disable=line-too-long
+        Streaming input mode:
+        You can call the streaming_call function multiple times to send text.
         A session will be created on the first call.
         The session ends after calling streaming_complete.
         Parameters:
@@ -557,6 +577,19 @@ class SpeechSynthesizer:
             self._is_first = False
             self.__start_stream()
         self.__submit_text(text)
+        return None
+
+    def streaming_flush(self):
+        """
+        send tts flush request.
+        """
+        if not self._is_started:
+            raise InvalidTask("speech synthesizer has not been started.")
+
+        if self._stopped.is_set():
+            raise InvalidTask("speech synthesizer task has stopped.")
+        request = self.request.get_flush_request()
+        self.__send_str(request)
         return None
 
     def streaming_complete(self, complete_timeout_millis=600000):
@@ -575,7 +608,7 @@ class SpeechSynthesizer:
             raise InvalidTask("speech synthesizer has not been started.")
         if self._stopped.is_set():
             raise InvalidTask("speech synthesizer task has stopped.")
-        request = self.request.getFinishRequest()
+        request = self.request.get_finish_request()
         self.__send_str(request)
         if complete_timeout_millis is not None and complete_timeout_millis > 0:
             if not self.complete_event.wait(
@@ -623,7 +656,7 @@ class SpeechSynthesizer:
             raise InvalidTask("speech synthesizer has not been started.")
         if self._stopped.is_set():
             raise InvalidTask("speech synthesizer task has stopped.")
-        request = self.request.getFinishRequest()
+        request = self.request.get_finish_request()
         self.__send_str(request)
         thread = threading.Thread(
             target=self.__waiting_for_complete,
@@ -641,7 +674,7 @@ class SpeechSynthesizer:
             raise InvalidTask("speech synthesizer has not been started.")
         if self._stopped.is_set():
             return
-        request = self.request.getFinishRequest()
+        request = self.request.get_finish_request()
         self.__send_str(request)
         self.ws.close()
         self.start_event.set()
