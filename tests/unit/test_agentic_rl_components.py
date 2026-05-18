@@ -873,15 +873,23 @@ class TestRewardFuncDecorator:
     async def test_decorator_process_weighted_sum(self):
         @reward_func("quality")
         class QualityProcessor(AbstractRewardProcessor):
+            # pylint: disable=unused-argument
             @sub_reward_func("accuracy", sub_weight=0.6)
-            def accuracy(self) -> RewardOutput:
+            def accuracy(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=1.0),
                     status=TaskStatus.SUCCESS,
                 )
 
+            # pylint: disable=unused-argument
             @sub_reward_func("fluency", sub_weight=0.4)
-            def fluency(self) -> RewardOutput:
+            def fluency(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.5),
                     status=TaskStatus.SUCCESS,
@@ -908,8 +916,12 @@ class TestRewardFuncDecorator:
     async def test_decorator_with_async_sub_funcs(self):
         @reward_func("async-test")
         class AsyncProcessor(AbstractRewardProcessor):
+            # pylint: disable=unused-argument
             @sub_reward_func("sub1", sub_weight=1.0)
-            async def sub1(self) -> RewardOutput:
+            async def sub1(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.9),
                     status=TaskStatus.SUCCESS,
@@ -934,15 +946,23 @@ class TestRewardFuncDecorator:
     async def test_decorator_with_custom_aggregate(self):
         @reward_func("custom-agg")
         class CustomAggProcessor(AbstractRewardProcessor):
+            # pylint: disable=unused-argument
             @sub_reward_func("sub1", sub_weight=0.5)
-            def sub1(self) -> RewardOutput:
+            def sub1(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.8),
                     status=TaskStatus.SUCCESS,
                 )
 
+            # pylint: disable=unused-argument
             @sub_reward_func("sub2", sub_weight=0.5)
-            def sub2(self) -> RewardOutput:
+            def sub2(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.6),
                     status=TaskStatus.SUCCESS,
@@ -974,12 +994,20 @@ class TestRewardFuncDecorator:
     async def test_decorator_sub_func_error_handling(self):
         @reward_func("error-test")
         class ErrorProcessor(AbstractRewardProcessor):
+            # pylint: disable=unused-argument
             @sub_reward_func("failing", sub_weight=0.5)
-            def failing(self, input_data: RewardInput) -> RewardOutput:
+            def failing(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 raise RuntimeError("Computation failed")
 
+            # pylint: disable=unused-argument
             @sub_reward_func("working", sub_weight=0.5)
-            def working(self) -> RewardOutput:
+            def working(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=1.0),
                     status=TaskStatus.SUCCESS,
@@ -1173,8 +1201,12 @@ class TestRewardFuncDecorator:
     async def test_decorator_with_async_aggregate(self):
         @reward_func("async-agg")
         class AsyncAggProcessor(AbstractRewardProcessor):
+            # pylint: disable=unused-argument
             @sub_reward_func("sub1", sub_weight=1.0)
-            def sub1(self) -> RewardOutput:
+            def sub1(
+                self,
+                input_data: RewardInput,
+            ) -> RewardOutput:
                 return RewardOutput(
                     reward=Reward(reward_score=0.7),
                     status=TaskStatus.SUCCESS,
