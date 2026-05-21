@@ -10,8 +10,8 @@ import asyncio
 
 # Third-party Libraries
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Optional, Union, Tuple
-from typing_extensions import Self
+from typing import Any, Dict, List, Optional, Union, Tuple
+from typing_extensions import Self, Annotated
 from pydantic import (
     BaseModel,
     Discriminator,
