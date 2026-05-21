@@ -76,12 +76,11 @@ python submit_job.py
 ```
 
 ## 5. 使用CLI执行任务
+示例代码：cli.sh
 
 ```bash
 dashscope rl --help  # 查看完整命令帮助
-```
 
-```bash
  Usage: dashscope [OPTIONS] COMMAND [ARGS]...
 
  🚀 Agentic RL Fine-Tuning CLI
@@ -100,22 +99,6 @@ dashscope rl --help  # 查看完整命令帮助
 │ delete              🗑️ Delete a job record (releases metadata)                                                                                                                                                  │
 │ logs                📜 Fetch job execution logs (supports pagination)                                                                                                                                           │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
-dashscope rl register_functions \
-  --rollout-classpaths "functions.rollout.rollout_only.DemoRolloutProcessor" \
-  --no-lazy-load \
-  --output-format json
-
-ROLLOUT_INSTANCE_ID="ro-ins-****"
-dashscope rl test_functions "$ROLLOUT_INSTANCE_ID" \
-  --type rollout \
-  --input ./resources/rollout_input.json
-
-dashscope rl run -c job.yaml -o json
-
-JOB_ID="ft-****"
-dashscope rl get "$JOB_ID" -o json
-dashscope rl cancel "$JOB_ID"
 ```
 
 ## 最佳实践提示

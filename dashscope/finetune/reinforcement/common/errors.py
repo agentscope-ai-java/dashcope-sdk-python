@@ -16,6 +16,13 @@ class AgenticRLError(Exception):
         self.timestamp = datetime.now().isoformat()
         self.message = message
 
+    @property
+    def root_cause(self) -> Exception:
+        root = self
+        while root.__cause__:
+            root = root.__cause__
+        return root
+
     def __str__(self):
         return f"[{self.error_code}] {self.message} (at {self.timestamp})"
 

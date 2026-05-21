@@ -190,7 +190,8 @@ async def main_workflow():
         logger.info("All tests workflows completed successfully")
 
     except Exception as e:
-        logger.error(f"Main execution flow terminated: {e}")
+        root = e.root_cause if hasattr(e, "root_cause") else e
+        logger.error(f"Main execution flow terminated: {root}")
 
 
 async def main_workflow_yaml():
@@ -223,11 +224,12 @@ async def main_workflow_yaml():
         logger.info(f"agentic rl get: {job_id=}, {status=}, {result=}")
 
     except Exception as e:
-        logger.error(f"Main execution flow terminated: {e}")
+        root = e.root_cause if hasattr(e, "root_cause") else e
+        logger.error(f"Main execution flow terminated: {root}")
 
 
 if __name__ == "__main__":
     import asyncio
 
     asyncio.run(main_workflow())
-    # asyncio.run(main_workflow_yaml())
+    asyncio.run(main_workflow_yaml())

@@ -5,7 +5,8 @@ import pytest
 from dashscope.finetune.reinforcement import (
     AgenticRLTuning,
     TuningModel,
-    AgenticRLFunctionComponent,
+    RolloutFunctionComponent,
+    RewardFunctionComponent,
     FunctionType,
     TrainingType,
     DataSourceType,
@@ -50,7 +51,7 @@ def sample_tuning_model():
 @pytest.fixture
 def sample_function_components():
     return [
-        AgenticRLFunctionComponent(
+        RolloutFunctionComponent(
             type=FunctionType.ROLLOUT,
             fcmodel=FunctionComponentModel(
                 zipdir="./",
@@ -63,7 +64,7 @@ def sample_function_components():
                 concurrency=10,
             ),
         ),
-        AgenticRLFunctionComponent(
+        RewardFunctionComponent(
             type=FunctionType.REWARD,
             fcmodel=FunctionComponentModel(
                 zipdir="./",
@@ -149,18 +150,26 @@ class TestAgenticRLTuning:
     @pytest.mark.asyncio
     async def test_register_functions_success(self, agentic_rl_tuning):
         """Test successful function component registration"""
-        # Create mocks for each component
+        # Create mocks for each component (bypass Pydantic __setattr__)
         for fc in agentic_rl_tuning.tuning.functions:
-            fc.register = AsyncMock(
-                return_value=MagicMock(
-                    status=MagicMock(success=True),
-                    output={"entity_id": f"entity-{fc.type}"},
+            object.__setattr__(
+                fc,
+                "register",
+                AsyncMock(
+                    return_value=MagicMock(
+                        status=MagicMock(success=True),
+                        output={"entity_id": f"entity-{fc.type}"},
+                    ),
                 ),
             )
-            fc.load = AsyncMock(
-                return_value=MagicMock(
-                    status=MagicMock(success=True),
-                    output={"instance_id": f"instance-{fc.type}"},
+            object.__setattr__(
+                fc,
+                "load",
+                AsyncMock(
+                    return_value=MagicMock(
+                        status=MagicMock(success=True),
+                        output={"instance_id": f"instance-{fc.type}"},
+                    ),
                 ),
             )
 
@@ -195,9 +204,11 @@ class TestAgenticRLTuning:
     @pytest.mark.asyncio
     async def test_register_functions_failure(self, agentic_rl_tuning):
         """Test function component registration failure"""
-        # Mock registration process with patch.object
-        with patch.object(
-            agentic_rl_tuning.tuning.functions[0],
+        fc0 = agentic_rl_tuning.tuning.functions[0]
+        fc1 = agentic_rl_tuning.tuning.functions[1]
+
+        object.__setattr__(
+            fc0,
             "register",
             AsyncMock(
                 return_value=MagicMock(
@@ -207,8 +218,9 @@ class TestAgenticRLTuning:
                     ),
                 ),
             ),
-        ), patch.object(
-            agentic_rl_tuning.tuning.functions[1],
+        )
+        object.__setattr__(
+            fc1,
             "register",
             AsyncMock(
                 return_value=MagicMock(
@@ -216,22 +228,23 @@ class TestAgenticRLTuning:
                     output={"entity_id": "entity-reward"},
                 ),
             ),
-        ), patch.object(
-            agentic_rl_tuning.tuning.functions[1],
+        )
+        object.__setattr__(
+            fc1,
             "load",
             AsyncMock(
                 return_value=MagicMock(
                     status=MagicMock(success=False, message="Load failed"),
                 ),
             ),
-        ):
-            # Call and verify exception
-            with pytest.raises(RegistrationError) as exc_info:
-                await agentic_rl_tuning.tuning.register_functions()
+        )
 
-            assert "Function component registration error" in str(
-                exc_info.value,
-            )
+        with pytest.raises(RegistrationError) as exc_info:
+            await agentic_rl_tuning.tuning.register_functions()
+
+        assert "Function component registration failed" in str(
+            exc_info.value,
+        )
 
     # pylint: disable=redefined-outer-name
     @pytest.mark.asyncio
@@ -275,7 +288,7 @@ class TestAgenticRLTuning:
             with pytest.raises(OSSUploadError) as exc_info:
                 await agentic_rl_tuning.tuning.upload_datasets()
 
-            assert "Critical failure in dataset registration process" in str(
+            assert "Dataset registration failed" in str(
                 exc_info.value,
             )
 

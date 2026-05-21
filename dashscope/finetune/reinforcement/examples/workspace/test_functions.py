@@ -58,7 +58,8 @@ async def main_functions():
             AgenticRLFunctionComponent(
                 type=FunctionType.ROLLOUT,
                 fcmodel=FunctionComponentModel(
-                    classpath="functions.rollout.rollout_only.DemoRolloutProcessor",  # noqa: E501
+                    classpath="functions.rollout.rollout_only"
+                    ".DemoRolloutProcessor",  # noqa: E501
                 ),
             ),
             # reward
@@ -210,7 +211,8 @@ async def main_functions():
         logger.info("All tests functions completed successfully")
 
     except Exception as e:
-        logger.error(f"Main execution flow terminated: {e}")
+        root = e.root_cause if hasattr(e, "root_cause") else e
+        logger.error(f"Main execution flow terminated: {root}")
 
 
 if __name__ == "__main__":

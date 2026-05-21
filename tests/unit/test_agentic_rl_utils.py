@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
+import asyncio
 import os
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock, MagicMock
+import aiohttp
 import pytest
 from pydantic import BaseModel
 
 from dashscope.finetune.reinforcement import FunctionType
 from dashscope.finetune.reinforcement import InputError, ConfigurationError
+from dashscope.finetune.reinforcement.common.errors import (
+    RuntimeErrorWithCode,
+)
 from dashscope.finetune.reinforcement.common.utils import (
+    async_http_request,
     generate_agentic_script,
     create_deployment_files,
     get_filepath_classname,
@@ -254,3 +260,98 @@ class TestAgenticRLUtils:
         with patch("os.environ", {}):
             with pytest.raises(ConfigurationError):
                 set_api_key(None)
+
+
+def _mock_session(side_effect):
+    """Create a mock aiohttp.ClientSession that raises side_effect
+    on any HTTP method (get/post)."""
+    mock_resp_ctx = AsyncMock()
+    mock_resp_ctx.__aenter__ = AsyncMock(side_effect=side_effect)
+    mock_resp_ctx.__aexit__ = AsyncMock(return_value=False)
+
+    mock_session = MagicMock()
+    mock_session.get = MagicMock(return_value=mock_resp_ctx)
+    mock_session.post = MagicMock(return_value=mock_resp_ctx)
+
+    mock_ctx = AsyncMock()
+    mock_ctx.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_ctx.__aexit__ = AsyncMock(return_value=False)
+    return mock_ctx
+
+
+class TestAsyncHttpRequestRootCause:
+    """Verify async_http_request raises exceptions (not return dicts)
+    so that root cause is preserved in __cause__ chain."""
+
+    @pytest.mark.asyncio
+    async def test_client_error_raises_with_root_cause(self):
+        """ClientConnectionError should be preserved as __cause__."""
+        original = aiohttp.ClientConnectionError(
+            "Cannot write to transport",
+        )
+
+        with patch(
+            "dashscope.finetune.reinforcement.common.utils.aiohttp"
+            ".ClientSession",
+            return_value=_mock_session(original),
+        ):
+            with pytest.raises(RuntimeErrorWithCode) as exc_info:
+                await async_http_request(
+                    method="POST",
+                    url="https://example.com/api",
+                    data={"key": "value"},
+                    timeout=5,
+                    retry_times=1,
+                )
+
+            assert exc_info.value.error_code == 4002
+            root = exc_info.value.__cause__
+            assert isinstance(root, aiohttp.ClientConnectionError)
+            assert "Cannot write to transport" in str(root)
+
+    @pytest.mark.asyncio
+    async def test_timeout_raises_with_root_cause(self):
+        """TimeoutError should be preserved as __cause__."""
+        with patch(
+            "dashscope.finetune.reinforcement.common.utils.aiohttp"
+            ".ClientSession",
+            return_value=_mock_session(asyncio.TimeoutError()),
+        ):
+            with pytest.raises(RuntimeErrorWithCode) as exc_info:
+                await async_http_request(
+                    method="POST",
+                    url="https://example.com/api",
+                    data={"key": "value"},
+                    timeout=5,
+                    retry_times=1,
+                )
+
+            assert exc_info.value.error_code == 4003
+            assert isinstance(
+                exc_info.value.__cause__,
+                asyncio.TimeoutError,
+            )
+
+    @pytest.mark.asyncio
+    async def test_root_cause_walkable(self):
+        """Root cause should be reachable by walking __cause__ chain."""
+        original = aiohttp.ClientConnectionError("connection reset")
+
+        with patch(
+            "dashscope.finetune.reinforcement.common.utils.aiohttp"
+            ".ClientSession",
+            return_value=_mock_session(original),
+        ):
+            with pytest.raises(RuntimeErrorWithCode) as exc_info:
+                await async_http_request(
+                    method="GET",
+                    url="https://example.com/api",
+                    timeout=5,
+                    retry_times=1,
+                )
+
+            root = exc_info.value
+            while root.__cause__:
+                root = root.__cause__
+            assert isinstance(root, aiohttp.ClientConnectionError)
+            assert "connection reset" in str(root)

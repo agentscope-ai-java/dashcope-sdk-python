@@ -3,15 +3,23 @@ from __future__ import annotations
 
 # Standard Library
 import os
+import re
 import shutil
 import tempfile
 import asyncio
 
 # Third-party Libraries
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Annotated, Any, Dict, List, Optional, Union, Tuple
 from typing_extensions import Self
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    Discriminator,
+    Field,
+    ConfigDict,
+    Tag,
+    field_validator,
+)
 import yaml
 
 # Local Application
@@ -81,12 +89,16 @@ from dashscope.finetune.reinforcement.common.errors import (
 
 
 class MountStorage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     region: Optional[str] = None
     bucket: Optional[str] = None
     file_path: Optional[str] = None
 
 
 class Dataset(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: DatasetsType = DatasetsType.TRAINING
 
     data_source_type: Optional[DataSourceType] = DataSourceType.FILE_ID
@@ -108,10 +120,9 @@ class Dataset(BaseModel):
                     self.file_id = file_id[0]
 
             except Exception as e:
-                logger.error(f"Dataset upload failed: {str(e)}", exc_info=True)
                 raise OSSUploadError(
-                    f"Failed to upload datasets: {str(e)}",
-                    error_code=1100,
+                    "Failed to upload datasets",
+                    error_code=2061,
                 ) from e
 
         return self.file_id
@@ -154,10 +165,9 @@ class Datasets(BaseModel):
                 )
 
         except Exception as e:
-            logger.error(f"Dataset upload failed: {str(e)}", exc_info=True)
             raise OSSUploadError(
-                f"Failed to upload datasets: {str(e)}",
-                error_code=1100,
+                "Failed to upload datasets",
+                error_code=2062,
             ) from e
 
         return uploaded_training_ids, uploaded_validation_ids
@@ -172,10 +182,14 @@ class ValidationDataset(Dataset):
 
 
 class FoundationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str = None
 
 
 class Training(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     type: TrainingType = TrainingType.TRAINING_TYPE
     hyper_parameters: Dict[str, Any] = None
     resources: Dict[str, Any] = None
@@ -202,13 +216,9 @@ class Models(BaseModel):
             data.update(kwargs)
             return cls(**data)
         except Exception as e:
-            logger.error(
-                f"Failed to create instance from dict: {str(e)}",
-                exc_info=True,
-            )
             raise IOErrorWithCode(
-                f"Failed to load from dict: {str(e)}",
-                error_code=1001,
+                "Failed to load from dict",
+                error_code=1002,
             ) from e
 
     @classmethod
@@ -221,10 +231,9 @@ class Models(BaseModel):
                 d.update(kwargs)
             logger.info(f"Loaded from YAML: {file_path}")
         except Exception as e:
-            logger.error(f"YAML load failed: {str(e)}", exc_info=True)
             raise IOErrorWithCode(
-                f"Failed to load YAML file: {str(e)}",
-                error_code=1000,
+                f"Failed to load YAML file: {file_path}",
+                error_code=1001,
                 path=file_path,
             ) from e
 
@@ -259,15 +268,16 @@ class Models(BaseModel):
                     sort_keys=False,
                 )
         except Exception as e:
-            logger.error(f"YAML save failed: {str(e)}", exc_info=True)
             raise IOErrorWithCode(
-                f"Failed to write file: {str(e)}",
-                error_code=1001,
+                "Failed to write file",
+                error_code=1003,
             ) from e
 
 
 class FunctionComponentModel(BaseModel):
     """Model representing function component configuration and operations."""
+
+    model_config = ConfigDict(extra="forbid")
 
     zipdir: str = Field(
         default="./",
@@ -329,7 +339,7 @@ class FunctionComponentModel(BaseModel):
             if not self.oss_signed_url:
                 raise OSSConnectionError(
                     f"Empty OSS URL received: {result}",
-                    error_code=2000,
+                    error_code=2001,
                 )
 
             logger.debug(
@@ -339,13 +349,9 @@ class FunctionComponentModel(BaseModel):
             return self.oss_signed_url
 
         except Exception as e:
-            logger.error(
-                f"OSS connection failed | ID: {self.oss_id}, Error: {str(e)}",
-                exc_info=True,
-            )
             raise OSSConnectionError(
-                f"Failed to obtain OSS URL: {str(e)}",
-                error_code=2001,
+                "Failed to obtain OSS URL",
+                error_code=2002,
             ) from e
 
     async def create_layer(
@@ -390,8 +396,8 @@ class FunctionComponentModel(BaseModel):
 
         except Exception as e:
             raise FunctionLayerError(
-                f"Function layer create failed: {str(e)}",
-                error_code=2102,
+                "Function layer create failed",
+                error_code=2013,
             ) from e
 
         return layer_code
@@ -435,12 +441,8 @@ class FunctionComponentModel(BaseModel):
                 self.clean_temp_files(tmp.name)
 
         except Exception as e:
-            logger.error(
-                f"OSS upload failed | URL: {url}, Error: {str(e)}",
-                exc_info=True,
-            )
             raise OSSUploadError(
-                f"Package upload failed: {str(e)}",
+                "Package upload failed",
                 error_code=2003,
                 endpoint=url or "",
             ) from e
@@ -478,16 +480,15 @@ class FunctionComponentModel(BaseModel):
             if status != "SUCCESS":
                 raise FunctionLayerError(
                     f"Function layer create failed: {status}",
-                    error_code=2103,
+                    error_code=2014,
                 )
 
             return status
 
         except Exception as e:
-            logger.error(
+            logger.warning(
                 f"Load function layer failed | layer_code: {layer_code}, "
                 f"Error: {str(e)}",
-                exc_info=True,
             )
 
         return "SUCCESS"
@@ -515,6 +516,8 @@ class FunctionComponentModel(BaseModel):
 
 class FunctionComponentRuntime(BaseModel):
     """Runtime configuration for a function component"""
+
+    model_config = ConfigDict(extra="forbid")
 
     layer_code: Optional[str] = None
     """Code of function layer"""
@@ -630,7 +633,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
         description="Authentication token for instance access",
     )
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
     # pylint: disable=too-many-branches
     async def register(
@@ -665,32 +668,28 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 self.runtime.layer_code = await self.fcmodel.create_layer()
 
         except FunctionLayerError as e:
-            logger.error(
-                f"Function layer create failed | URL:"
-                f" {self.fcmodel.oss_signed_url}, Error: {str(e)}",
-                exc_info=True,
-            )
+            root = e
+            while root.__cause__:
+                root = root.__cause__
             return ResponseFC(
                 status=Status(
                     task=StatusType.FAILED,
                     name="DeploymentError",
                     code=524,
-                    message=f"Function layer deployment failed: {str(e)}",
+                    message=f"Function layer deployment failed: {root}",
                 ),
                 output={},
             )
         except Exception as e:
-            logger.error(
-                f"Registration failed | Type: {self.type.name}, "
-                f"OSS: {self.fcmodel.oss_id}, Error: {str(e)}",
-                exc_info=True,
-            )
+            root = e
+            while root.__cause__:
+                root = root.__cause__
             return ResponseFC(
                 status=Status(
                     task=StatusType.FAILED,
                     name="DeploymentError",
                     code=525,
-                    message=f"Function deployment failed: {str(e)}",
+                    message=f"Function deployment failed: {root}",
                 ),
                 output={},
             )
@@ -713,7 +712,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             else:
                 raise RegistrationError(
                     f"Not exist type: {self.type.name}",
-                    error_code=2100,
+                    error_code=2011,
                 )
 
             result = await client_fc(
@@ -727,7 +726,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if not self.entity_id:
                 raise RegistrationError(
                     f"Empty entity ID received: {result}",
-                    error_code=2101,
+                    error_code=2012,
                 )
 
             logger.info(
@@ -747,18 +746,15 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             )
 
         except Exception as e:
-            logger.error(
-                f"Registration failed | Type: {self.type.name}, "
-                f"Request: {request.model_dump()}, Error: {str(e)}",
-                exc_info=True,
-            )
-
+            root = e
+            while root.__cause__:
+                root = root.__cause__
             return ResponseFC(
                 status=Status(
                     task=StatusType.FAILED,
                     name="DeploymentError",
                     code=521,
-                    message=f"Full deployment failed: {str(e)}",
+                    message=f"Full deployment failed: {root}",
                 ),
                 output={},
             )
@@ -776,14 +772,14 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if not target_entity_id:
                 raise ValueErrorWithCode(
                     "No valid registration ID provided",
-                    error_code=2200,
+                    error_code=2021,
                 )
 
             if FC_LAYER_USED:
                 if self.runtime.layer_code is None:
                     raise ValueErrorWithCode(
                         "layer_code is required when FC_LAYER_USED is enabled",
-                        error_code=2205,
+                        error_code=2022,
                     )
                 await self.fcmodel.get_layer(
                     layer_code=self.runtime.layer_code,
@@ -804,7 +800,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if not self.instance_id:
                 raise FunctionLoadError(
                     f"Empty instance ID received: {result}",
-                    error_code=2201,
+                    error_code=2023,
                 )
 
             self.instance_url = result.get("output", {}).get("trigger_url", "")
@@ -815,7 +811,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if (not self.instance_url) or (not self.instance_token):
                 raise FunctionLoadError(
                     "Missing instance URL or token",
-                    error_code=2202,
+                    error_code=2024,
                 )
 
             logger.info(
@@ -827,11 +823,10 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             )
 
         except Exception as e:
-            logger.error(
+            logger.debug(
                 f"Instance initialization failed | EntityID:"
                 f" {target_entity_id}, "
                 f"Error: {str(e)}",
-                exc_info=True,
             )
             return ResponseFC(
                 status=Status(
@@ -849,7 +844,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 if not self.instance_url.startswith(("http://", "https://")):
                     raise ValueErrorWithCode(
                         "Invalid instance URL format",
-                        error_code=2203,
+                        error_code=2025,
                     )
 
                 url = f"{self.instance_url.rstrip('/')}/health"
@@ -863,7 +858,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 if status != StatusType.HEALTH:
                     raise InstanceWarmupError(
                         f"Health check failed: {result}",
-                        error_code=2204,
+                        error_code=2026,
                         instance_url=url,
                     )
 
@@ -873,10 +868,9 @@ class AgenticRLFunctionComponent(Models, BaseModel):
                 )
 
             except Exception as e:
-                logger.error(
+                logger.debug(
                     f"Warmup failed | InstanceID: {self.instance_id}, "
                     f"Error: {str(e)}",
-                    exc_info=True,
                 )
                 return ResponseFC(
                     status=Status(
@@ -909,7 +903,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if not instance_id:
                 raise InputError(
                     "No instance ID available for query",
-                    error_code=2300,
+                    error_code=2031,
                 )
 
             url = f"{FC_QUERY_API}/{instance_id}"
@@ -918,7 +912,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if status == -1:
                 raise InstanceQueryError(
                     f"Invalid status received: {result}",
-                    error_code=2301,
+                    error_code=2032,
                 )
 
             logger.debug(
@@ -927,10 +921,9 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             )
 
         except Exception as e:
-            logger.error(
+            logger.debug(
                 f"Status query failed | InstanceID: {instance_id}, "
                 f"Error: {str(e)}",
-                exc_info=True,
             )
             return ResponseFC(
                 status=Status(
@@ -966,13 +959,13 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if instance_id is None:
                 raise ValueErrorWithCode(
                     "instance_id is required for verification",
-                    error_code=2404,
+                    error_code=2041,
                 )
             result = await cls.query(instance_id)
             if result.status.task != StatusType.SUCCEEDED:
                 raise InstanceQueryError(
                     "Status query failed",
-                    error_code=2400,
+                    error_code=2042,
                 )
             instance_url = instance_url or result.output.get("output", {}).get(
                 "trigger_url",
@@ -985,7 +978,7 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             if (not instance_url) or (not instance_token):
                 raise OutputError(
                     "No instance url/token provided",
-                    error_code=2401,
+                    error_code=2043,
                 )
 
             input_data_dict = input_data.model_dump(
@@ -1017,21 +1010,34 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             else:
                 raise ValidationError(
                     "Unsupported input type",
-                    error_code=2402,
+                    error_code=2044,
                 )
 
         except Exception as e:
-            logger.error(
-                f"Validation failed | Instance: {instance_id}, "
-                f"Error: {str(e)}",
-                exc_info=True,
-            )
             raise ValidationError(
-                f"Function verification failed: {str(e)}",
-                error_code=2403,
+                "Function verification failed",
+                error_code=2045,
             ) from e
 
         try:
+            resp_status = response.get("status", {})
+            if isinstance(resp_status, dict):
+                status_code = resp_status.get("code", 200)
+                if status_code != 200:
+                    error_msg = resp_status.get("message", "Unknown error")
+                    fc_message = response.get("Message", "")
+                    if fc_message:
+                        match = re.search(
+                            r"(\w+(?:Error|Exception|Warning): .+)",
+                            fc_message,
+                        )
+                        if match:
+                            error_msg = match.group(1)
+                    raise ValidationError(
+                        error_msg,
+                        error_code=2046,
+                    )
+
             validated = validator.model_validate(response)
 
             logger.info(
@@ -1043,15 +1049,9 @@ class AgenticRLFunctionComponent(Models, BaseModel):
             return validated.model_dump()
 
         except Exception as e:
-            logger.error(
-                f"Validation failed | Instance: {instance_id}, "
-                f"Error: {str(e)}",
-                exc_info=True,
-            )
             raise ValidationError(
-                f"Function verification failed: "
-                f"{str(e)}, response: {response}",
-                error_code=2404,
+                "Function output validation failed",
+                error_code=2047,
             ) from e
 
 
@@ -1103,12 +1103,64 @@ class RewardFunctionComponent(AgenticRLFunctionComponent):
         return result
 
 
+class GroupRewardFunctionComponent(AgenticRLFunctionComponent):
+    """Group reward function component with type fixed as GROUP_REWARD."""
+
+    type: FunctionType = Field(
+        default=FunctionType.GROUP_REWARD,
+        description="Type of function component",
+    )
+    weight: Optional[float] = Field(
+        default=None,
+        description="Function weight",
+    )
+    reward_metric_weight: Optional[Dict[str, float]] = Field(
+        default=None,
+        description="Reward metric weight mapping",
+    )
+
+    async def register(
+        self,
+        oss_id: Optional[str] = None,
+        oss_url: Optional[str] = None,
+    ) -> ResponseFC:
+        if not self.reward_metric_weight:
+            self.reward_metric_weight = self.fcmodel.get_sub_function_weights()
+        result = await super().register(oss_id=oss_id, oss_url=oss_url)
+        return result
+
+
+_FUNCTYPE_CLASS_MAP = {
+    FunctionType.ROLLOUT: RolloutFunctionComponent,
+    FunctionType.REWARD: RewardFunctionComponent,
+    FunctionType.GROUP_REWARD: GroupRewardFunctionComponent,
+}
+
+
+def _fc_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        return v.get("type", "rollout")
+    return getattr(v, "type", "rollout").value
+
+
+FunctionComponentUnion = Annotated[
+    Union[
+        Annotated[RolloutFunctionComponent, Tag("rollout")],
+        Annotated[RewardFunctionComponent, Tag("reward")],
+        Annotated[GroupRewardFunctionComponent, Tag("group_reward")],
+    ],
+    Discriminator(_fc_discriminator),
+]
+
+
 class TuningModel(Models, BaseModel):
     """Core configuration model for managing model tuning tasks."""
 
+    model_config = ConfigDict(extra="forbid")
+
     name: str = Field(default="agentic-rl", min_length=1, max_length=256)
     model: FoundationModel = FoundationModel()
-    functions: List[AgenticRLFunctionComponent] = Field(default_factory=list)
+    functions: List[FunctionComponentUnion] = Field(default_factory=list)
     datasets: List[Dataset] = Field(default_factory=list)
     training: Training = Training()
     observability: Optional[Observability] = Observability()
@@ -1145,7 +1197,7 @@ class TuningModel(Models, BaseModel):
                         if not entity_id:
                             raise RegistrationError(
                                 "Empty entity ID after registration",
-                                error_code=2500,
+                                error_code=2051,
                             )
                         logger.debug(
                             f"Registered new function component: "
@@ -1153,8 +1205,8 @@ class TuningModel(Models, BaseModel):
                         )
                     else:
                         raise RegistrationError(
-                            f"Registration failed: {reg_result}",
-                            error_code=2501,
+                            reg_result.status.message,
+                            error_code=2052,
                         )
 
                 if fc.type == FunctionType.ROLLOUT:
@@ -1171,7 +1223,7 @@ class TuningModel(Models, BaseModel):
                         if not instance_id:
                             raise FunctionLoadError(
                                 "Empty instance ID after load",
-                                error_code=2502,
+                                error_code=2053,
                             )
                         logger.debug(
                             f"Loaded function component instance: "
@@ -1187,17 +1239,13 @@ class TuningModel(Models, BaseModel):
                     else:
                         raise FunctionLoadError(
                             f"Load failed: {load_result}",
-                            error_code=2503,
+                            error_code=2054,
                         )
 
         except Exception as e:
-            logger.error(
-                f"Function component registration failed: {e}",
-                exc_info=True,
-            )
             raise RegistrationError(
-                "Function component registration error",
-                error_code=2504,
+                "Function component registration failed",
+                error_code=2055,
             ) from e
 
         return (
@@ -1252,14 +1300,9 @@ class TuningModel(Models, BaseModel):
             )
 
         except Exception as e:
-            logger.error(
-                "Unexpected error during dataset registration",
-                exc_info=True,
-                stack_info=True,
-            )
             raise OSSUploadError(
-                "Critical failure in dataset registration process",
-                error_code=2600,
+                "Dataset registration failed",
+                error_code=2063,
             ) from e
 
         return uploaded_training_ids, uploaded_validation_ids
@@ -1439,13 +1482,15 @@ class TuningModel(Models, BaseModel):
             )
             return []
 
+        cls = _FUNCTYPE_CLASS_MAP.get(functype, AgenticRLFunctionComponent)
+
         if (
             len_entity_ids > 0
         ):  # Prefer entity_ids over classpaths when available
             assert entity_ids is not None
             for i in range(len_entity_ids):
                 self.functions.append(
-                    AgenticRLFunctionComponent(
+                    cls(
                         type=functype,
                         entity_id=entity_ids[i],
                         runtime=(
@@ -1474,7 +1519,7 @@ class TuningModel(Models, BaseModel):
             assert classpaths is not None
             for i in range(len_classpaths):
                 self.functions.append(
-                    AgenticRLFunctionComponent(
+                    cls(
                         type=functype,
                         fcmodel=FunctionComponentModel(
                             zipdir=workspace_dir,

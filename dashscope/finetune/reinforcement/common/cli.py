@@ -12,13 +12,11 @@ from typing import Optional, List, Dict, Any
 import typer
 import yaml
 from rich.console import Console
-from rich.json import JSON
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from dashscope.finetune.agentic_rl import AgenticRL
 from dashscope.finetune.reinforcement import (
-    logger,
     serialize_for_output,
     FunctionType,
 )
@@ -33,6 +31,14 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 console = Console()
+err_console = Console(stderr=True)
+
+
+def _root_cause(e: Exception) -> Exception:
+    root = e
+    while root.__cause__:
+        root = root.__cause__
+    return root
 
 
 # ================= Configuration & Utility Functions =================
@@ -44,7 +50,7 @@ def format_output(data: Any, fmt: str = "table") -> None:
         data = data.__dict__
 
     if fmt == "json":
-        console.print(JSON.from_data(data))
+        print(json.dumps(data, indent=2, ensure_ascii=False))
     elif fmt == "yaml":
         console.print(
             yaml.dump(data, default_flow_style=False, allow_unicode=True),
@@ -107,7 +113,7 @@ async def _register_fc_async(
         and not reward_classpaths
         and not group_reward_classpaths
     ):
-        console.print(
+        err_console.print(
             "[red]❌ At least one of rollout_classpaths or reward_classpaths "
             "or group_reward_classpaths must be provided[/red]",
         )
@@ -155,8 +161,8 @@ async def _register_fc_async(
         }
 
     except Exception as e:
-        console.print(f"[red]❌ FC registration failed: {str(e)}[/red]")
-        logger.error("FC registration error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ FC registration failed: {root}[/red]")
         raise typer.Exit(1)
 
 
@@ -199,24 +205,18 @@ def register_fc(
     - rollout_classpath
     - reward_classpaths
     """
-    try:
-        result = asyncio.run(
-            _register_fc_async(
-                rollout_classpaths=rollout_classpaths or [],
-                reward_classpaths=reward_classpaths or [],
-                group_reward_classpaths=group_reward_classpaths or [],
-                workspace_dir=workspace_dir,
-                lazy_load=lazy_load,
-                api_key=api_key,
-            ),
-        )
+    result = asyncio.run(
+        _register_fc_async(
+            rollout_classpaths=rollout_classpaths or [],
+            reward_classpaths=reward_classpaths or [],
+            group_reward_classpaths=group_reward_classpaths or [],
+            workspace_dir=workspace_dir,
+            lazy_load=lazy_load,
+            api_key=api_key,
+        ),
+    )
 
-        format_output(result, fmt=output_format)
-
-    except Exception as e:
-        console.print(f"[red]❌ FC registration failed: {str(e)}[/red]")
-        logger.error("FC registration error", exc_info=True)
-        raise typer.Exit(1)
+    format_output(result, fmt=output_format)
 
 
 async def _test_fc_async(
@@ -236,8 +236,8 @@ async def _test_fc_async(
         return result
 
     except Exception as e:
-        console.print(f"[red]❌ Function test failed: {str(e)}[/red]")
-        logger.error("Function test error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ Function test failed: {root}[/red]")
         raise typer.Exit(1)
 
 
@@ -274,22 +274,17 @@ def test_fc(
 ):
     """🧪 Test a registered Rollout/Reward function instance with custom
     input data."""
-    try:
-        input_dict = load_json_input(input_data)
-        result = asyncio.run(
-            _test_fc_async(
-                instance_id=instance_id,
-                func_type=func_type,
-                input_data=input_dict,
-                api_key=api_key,
-            ),
-        )
+    input_dict = load_json_input(input_data)
+    result = asyncio.run(
+        _test_fc_async(
+            instance_id=instance_id,
+            func_type=func_type,
+            input_data=input_dict,
+            api_key=api_key,
+        ),
+    )
 
-        format_output(result, fmt=output_format)
-    except Exception as e:
-        console.print(f"[red]❌ Function test failed: {str(e)}[/red]")
-        logger.error("Function test error", exc_info=True)
-        raise typer.Exit(1)
+    format_output(result, fmt=output_format)
 
 
 async def _upload_data_async(
@@ -311,8 +306,8 @@ async def _upload_data_async(
         }
 
     except Exception as e:
-        console.print(f"[red]❌ Dataset upload failed: {str(e)}[/red]")
-        logger.error("Dataset upload error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ Dataset upload failed: {root}[/red]")
         raise typer.Exit(1)
 
 
@@ -341,20 +336,15 @@ def upload_data(
 ):
     """📦 Upload training/validation datasets to the platform, returns file
     IDs"""
-    try:
-        result = asyncio.run(
-            _upload_data_async(
-                training_files=training_files,
-                validation_files=validation_files,
-                api_key=api_key,
-            ),
-        )
+    result = asyncio.run(
+        _upload_data_async(
+            training_files=training_files,
+            validation_files=validation_files,
+            api_key=api_key,
+        ),
+    )
 
-        format_output(result, fmt=output_format)
-    except Exception as e:
-        console.print(f"[red]❌ Dataset upload failed: {str(e)}[/red]")
-        logger.error("Dataset upload error", exc_info=True)
-        raise typer.Exit(1)
+    format_output(result, fmt=output_format)
 
 
 async def _run_workflow_async(
@@ -383,8 +373,7 @@ async def _run_workflow_async(
         result = await client.run()
         return result
     except Exception as e:
-        logger.error("Workflow execution error", exc_info=True)
-        raise RuntimeError(f"Workflow execution failed: {str(e)}") from e
+        raise RuntimeError("Workflow execution failed") from e
 
 
 @app.command()
@@ -443,7 +432,7 @@ def run(
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console,
+            console=err_console,
             transient=True,
         ) as progress:
             task = progress.add_task(
@@ -472,25 +461,26 @@ def run(
                 task,
                 description="[green]✅ Job submitted successfully![/green]",
             )
-            format_output(
-                {
-                    "job_id": result.output.job_id,
-                    "status": result.output.status,
-                    "message": getattr(result, "message", ""),
-                },
-                fmt=output_format,
-            )
 
-    except ValueError as ve:
-        console.print(f"[red]❌ Validation error: {str(ve)}[/red]")
+        format_output(
+            {
+                "job_id": result.output.job_id,
+                "status": result.output.status,
+                "message": getattr(result, "message", ""),
+            },
+            fmt=output_format,
+        )
+
+    except (ValueError, Exception) as e:
+        root = _root_cause(e)
+        label = (
+            "Validation error"
+            if isinstance(e, ValueError)
+            else "Workflow execution failed"
+        )
+        err_console.print(f"[red]❌ {label}: {root}[/red]")
         if verbose:
-            console.print_exception()
-        raise typer.Exit(1)
-    except Exception as e:
-        console.print(f"[red]❌ Workflow execution failed: {str(e)}[/red]")
-        if verbose:
-            console.print_exception()
-        logger.error("Workflow execution error", exc_info=True)
+            err_console.print_exception()
         raise typer.Exit(1)
 
 
@@ -524,8 +514,8 @@ def get(
             fmt=output_format,
         )
     except Exception as e:
-        console.print(f"[red]❌ Query failed: {str(e)}[/red]")
-        logger.error("Status query error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ Query failed: {root}[/red]")
         raise typer.Exit(1)
 
 
@@ -549,10 +539,12 @@ def cancel(
                 f"API returned status {result.status_code}: {result.message}",
             )
 
-        console.print(f"[green]✅ Job {job_id} canceled successfully[/green]")
+        err_console.print(
+            f"[green]✅ Job {job_id} canceled successfully[/green]",
+        )
     except Exception as e:
-        console.print(f"[red]❌ Cancellation failed: {str(e)}[/red]")
-        logger.error("Cancel job error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ Cancellation failed: {root}[/red]")
         raise typer.Exit(1)
 
 
@@ -589,8 +581,8 @@ def logs(
             fmt=output_format,
         )
     except Exception as e:
-        console.print(f"[red]❌ Log retrieval failed: {str(e)}[/red]")
-        logger.error("Log retrieval error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ Log retrieval failed: {root}[/red]")
         raise typer.Exit(1)
 
 
@@ -625,8 +617,8 @@ def list_jobs(
         )
         format_output(output_data, fmt=output_format)
     except Exception as e:
-        console.print(f"[red]❌ List query failed: {str(e)}[/red]")
-        logger.error("List jobs error", exc_info=True)
+        root = _root_cause(e)
+        err_console.print(f"[red]❌ List query failed: {root}[/red]")
         raise typer.Exit(1)
 
 

@@ -20,7 +20,7 @@ def setup_logger():
     }
     _logger.setLevel(level_map.get(LOG_LEVEL, logging.INFO))
 
-    handler = logging.StreamHandler(sys.stdout)
+    handler = logging.StreamHandler(sys.stderr)
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
