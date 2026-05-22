@@ -91,6 +91,7 @@ class DashScopeAPIResponse(DictMixin):
     message: str
     output: Any
     usage: Any
+    headers: dict
 
     def __init__(
         self,
@@ -100,6 +101,7 @@ class DashScopeAPIResponse(DictMixin):
         message: str = "",
         output: Any = None,
         usage: Any = None,
+        headers: dict = None,
         **kwargs,
     ):
         super().__init__(
@@ -109,8 +111,31 @@ class DashScopeAPIResponse(DictMixin):
             message=message,
             output=output,
             usage=usage,
+            headers=headers,
             **kwargs,
         )
+
+    def __repr__(self):
+        data = {
+            "status_code": self.status_code,
+            "request_id": self.request_id,
+            "code": self.code,
+            "message": self.message,
+            "output": self.output,
+            "usage": self.usage,
+        }
+        return f"{type(self).__name__}({data})"
+
+    def __str__(self):
+        data = {
+            "status_code": self.status_code,
+            "request_id": self.request_id,
+            "code": self.code,
+            "message": self.message,
+            "output": self.output,
+            "usage": self.usage,
+        }
+        return json.dumps(data, ensure_ascii=False)
 
 
 class Role:
@@ -235,6 +260,7 @@ class GenerationUsage(DictMixin):
 class GenerationResponse(DashScopeAPIResponse):
     output: GenerationOutput
     usage: GenerationUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -250,6 +276,7 @@ class GenerationResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=GenerationOutput(**api_response.output),
                 usage=GenerationUsage(**usage),
+                headers=api_response.headers,
             )
         else:
             return GenerationResponse(
@@ -257,6 +284,7 @@ class GenerationResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -316,6 +344,7 @@ class MultiModalConversationUsage(DictMixin):
 class MultiModalConversationResponse(DashScopeAPIResponse):
     output: MultiModalConversationOutput
     usage: MultiModalConversationUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -331,6 +360,7 @@ class MultiModalConversationResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=MultiModalConversationOutput(**api_response.output),
                 usage=MultiModalConversationUsage(**usage),
+                headers=api_response.headers,
             )
         else:
             return MultiModalConversationResponse(
@@ -338,6 +368,7 @@ class MultiModalConversationResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -365,6 +396,7 @@ class TranscriptionUsage(DictMixin):
 class TranscriptionResponse(DashScopeAPIResponse):
     output: TranscriptionOutput
     usage: TranscriptionUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -383,6 +415,7 @@ class TranscriptionResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=output,
                 usage=usage,
+                headers=api_response.headers,
             )
 
         else:
@@ -391,6 +424,7 @@ class TranscriptionResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -414,6 +448,7 @@ class RecognitionUsage(DictMixin):
 class RecognitionResponse(DashScopeAPIResponse):
     output: RecognitionOutput
     usage: RecognitionUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -433,6 +468,7 @@ class RecognitionResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=output,
                 usage=usage,
+                headers=api_response.headers,
             )
 
         else:
@@ -441,6 +477,7 @@ class RecognitionResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
     @staticmethod
@@ -478,6 +515,7 @@ class SpeechSynthesisUsage(DictMixin):
 class SpeechSynthesisResponse(DashScopeAPIResponse):
     output: SpeechSynthesisOutput
     usage: SpeechSynthesisUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -496,6 +534,7 @@ class SpeechSynthesisResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=output,
                 usage=usage,
+                headers=api_response.headers,
             )
 
         else:
@@ -504,6 +543,7 @@ class SpeechSynthesisResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -597,6 +637,7 @@ class VideoSynthesisUsage(DictMixin):
 class ImageSynthesisResponse(DashScopeAPIResponse):
     output: ImageSynthesisOutput
     usage: ImageSynthesisUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -615,6 +656,7 @@ class ImageSynthesisResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=output,
                 usage=usage,
+                headers=api_response.headers,
             )
 
         else:
@@ -623,6 +665,7 @@ class ImageSynthesisResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -630,6 +673,7 @@ class ImageSynthesisResponse(DashScopeAPIResponse):
 class VideoSynthesisResponse(DashScopeAPIResponse):
     output: VideoSynthesisOutput
     usage: VideoSynthesisUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -648,6 +692,7 @@ class VideoSynthesisResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=output,
                 usage=usage,
+                headers=api_response.headers,
             )
 
         else:
@@ -656,6 +701,7 @@ class VideoSynthesisResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -705,6 +751,7 @@ class ReRankUsage(DictMixin):
 class ReRankResponse(DashScopeAPIResponse):
     output: ReRankOutput
     usage: GenerationUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -720,6 +767,7 @@ class ReRankResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=ReRankOutput(**api_response.output),
                 usage=ReRankUsage(**usage),
+                headers=api_response.headers,
             )
         else:
             return ReRankResponse(
@@ -727,6 +775,7 @@ class ReRankResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -777,6 +826,7 @@ class TextToSpeechOutput(DictMixin):
 class TextToSpeechResponse(DashScopeAPIResponse):
     output: TextToSpeechOutput
     usage: MultiModalConversationUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -792,6 +842,7 @@ class TextToSpeechResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=TextToSpeechOutput(**api_response.output),
                 usage=MultiModalConversationUsage(**usage),
+                headers=api_response.headers,
             )
         else:
             return TextToSpeechResponse(
@@ -799,6 +850,7 @@ class TextToSpeechResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )
 
 
@@ -858,6 +910,7 @@ class ImageGenerationUsage(DictMixin):
 class ImageGenerationResponse(DashScopeAPIResponse):
     output: ImageGenerationOutput
     usage: ImageGenerationUsage
+    headers: dict
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -873,6 +926,7 @@ class ImageGenerationResponse(DashScopeAPIResponse):
                 message=api_response.message,
                 output=ImageGenerationOutput(**api_response.output),
                 usage=ImageGenerationUsage(**usage),
+                headers=api_response.headers,
             )
         else:
             return ImageGenerationResponse(
@@ -880,4 +934,5 @@ class ImageGenerationResponse(DashScopeAPIResponse):
                 request_id=api_response.request_id,
                 code=api_response.code,
                 message=api_response.message,
+                headers=api_response.headers,
             )

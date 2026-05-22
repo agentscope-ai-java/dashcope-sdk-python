@@ -261,7 +261,7 @@ def _handle_stream(response: requests.Response):
                 continue  # ignore heartbeat...
 
 
-def _handle_error_message(error, status_code, flattened_output):
+def _handle_error_message(error, status_code, flattened_output, headers):
     code = None
     msg = ""
     request_id = ""
@@ -281,6 +281,7 @@ def _handle_error_message(error, status_code, flattened_output):
         status_code=status_code,
         code=code,
         message=msg,
+        headers=headers,
     )
 
 
@@ -289,12 +290,14 @@ def _handle_http_failed_response(
     flattened_output: bool = False,
 ) -> DashScopeAPIResponse:
     request_id = ""
+    headers = dict(response.headers)
     if "application/json" in response.headers.get("content-type", ""):
         error = response.json()
         return _handle_error_message(
             error,
             response.status_code,
             flattened_output,
+            headers,
         )
     elif SSE_CONTENT_TYPE in response.headers.get("content-type", ""):
         msgs = response.content.decode("utf-8").split("\n")
@@ -305,12 +308,14 @@ def _handle_http_failed_response(
                     error,
                     response.status_code,
                     flattened_output,
+                    headers,
                 )
         return DashScopeAPIResponse(
             request_id=request_id,
             status_code=response.status_code,
             code="Unknown",
             message=msgs,
+            headers=headers,
         )
     else:
         msg = response.content.decode("utf-8")
@@ -321,6 +326,7 @@ def _handle_http_failed_response(
             status_code=response.status_code,
             code="Unknown",
             message=msg,
+            headers=headers,
         )
 
 
@@ -351,13 +357,24 @@ async def _handle_aiohttp_failed_response(
     flattened_output: bool = False,
 ) -> DashScopeAPIResponse:
     request_id = ""
+    headers = dict(response.headers)
     if "application/json" in response.content_type:
         error = await response.json()
-        return _handle_error_message(error, response.status, flattened_output)
+        return _handle_error_message(
+            error,
+            response.status,
+            flattened_output,
+            headers,
+        )
     elif SSE_CONTENT_TYPE in response.content_type:
         async for _, _, data in _handle_aio_stream(response):
             error = json.loads(data)
-        return _handle_error_message(error, response.status, flattened_output)
+        return _handle_error_message(
+            error,
+            response.status,
+            flattened_output,
+            headers,
+        )
     else:
         msg = response.content.decode("utf-8")
         if flattened_output:
@@ -367,6 +384,7 @@ async def _handle_aiohttp_failed_response(
             status_code=response.status,
             code="Unknown",
             message=msg,
+            headers=headers,
         )
 
 
@@ -389,6 +407,7 @@ def _handle_http_stream_response(
     flattened_output: bool = False,
 ):
     request_id = ""
+    headers = dict(response.headers)
     if (
         response.status_code == HTTPStatus.OK
         and SSE_CONTENT_TYPE in response.headers.get("content-type", "")
@@ -416,6 +435,7 @@ def _handle_http_stream_response(
                             status_code=HTTPStatus.OK,
                             output=output,
                             usage=usage,
+                            headers=headers,
                         )
                 except json.JSONDecodeError as e:
                     if flattened_output:
@@ -430,6 +450,7 @@ def _handle_http_stream_response(
                             output=None,
                             code="Unknown",
                             message=event.data,
+                            headers=headers,
                         )
                     continue
             else:
@@ -448,6 +469,7 @@ def _handle_http_stream_response(
                         if "code" in msg
                         else None,  # noqa E501
                         message=msg["message"] if "message" in msg else None,
+                        headers=headers,
                     )  # noqa E501
     # pylint: disable=consider-using-in
     elif (
@@ -487,6 +509,7 @@ def _handle_http_stream_response(
                 output=output,
                 usage=usage,
                 message=msg,
+                headers=headers,
             )
     else:
         yield None, _handle_http_failed_response(response, flattened_output)

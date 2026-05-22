@@ -266,6 +266,7 @@ class HttpRequest(AioBaseRequest):
         response: aiohttp.ClientResponse,
     ):
         request_id = ""
+        headers = dict(response.headers)
         if (
             response.status == HTTPStatus.OK
             and self.stream
@@ -291,6 +292,7 @@ class HttpRequest(AioBaseRequest):
                         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                         code="Unknown",
                         message=data,
+                        headers=headers,
                     )
                     continue
                 if is_error:
@@ -299,6 +301,7 @@ class HttpRequest(AioBaseRequest):
                         status_code=status_code,
                         code=msg["code"],
                         message=msg["message"],
+                        headers=headers,
                     )
                 else:
                     if self.encryption and self.encryption.is_valid():
@@ -308,6 +311,7 @@ class HttpRequest(AioBaseRequest):
                         status_code=HTTPStatus.OK,
                         output=output,
                         usage=usage,
+                        headers=headers,
                     )
         elif (
             response.status == HTTPStatus.OK
@@ -329,6 +333,7 @@ class HttpRequest(AioBaseRequest):
                 request_id=request_id,
                 status_code=HTTPStatus.OK,
                 output=output,
+                headers=headers,
             )
         elif response.status == HTTPStatus.OK:
             json_content = await response.json()
@@ -356,6 +361,7 @@ class HttpRequest(AioBaseRequest):
                 status_code=HTTPStatus.OK,
                 output=output,
                 usage=usage,
+                headers=headers,
             )
         else:
             yield await _handle_aiohttp_failed_response(response)
@@ -365,6 +371,7 @@ class HttpRequest(AioBaseRequest):
         response: requests.Response,
     ):
         request_id = ""
+        headers = dict(response.headers)
         if (
             response.status_code == HTTPStatus.OK
             and self.stream
@@ -395,6 +402,7 @@ class HttpRequest(AioBaseRequest):
                         output=None,
                         code="Unknown",
                         message=data,
+                        headers=headers,
                     )
                     continue
                 if is_error:
@@ -406,6 +414,7 @@ class HttpRequest(AioBaseRequest):
                         if "code" in msg
                         else None,  # noqa E501
                         message=msg["message"] if "message" in msg else None,
+                        headers=headers,
                     )  # noqa E501
                 else:
                     if self.flattened_output:
@@ -418,6 +427,7 @@ class HttpRequest(AioBaseRequest):
                             status_code=HTTPStatus.OK,
                             output=output,
                             usage=usage,
+                            headers=headers,
                         )
         elif response.status_code == HTTPStatus.OK:
             json_content = response.json()
@@ -442,6 +452,7 @@ class HttpRequest(AioBaseRequest):
                     status_code=HTTPStatus.OK,
                     output=output,
                     usage=usage,
+                    headers=headers,
                 )
         else:
             yield _handle_http_failed_response(response)

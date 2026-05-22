@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-# dashscope/cli.py
-# !/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import argparse
 import json
@@ -17,9 +15,6 @@ from dashscope.common.constants import (
     TaskStatus,
 )
 from dashscope.utils.oss_utils import OssUtils
-
-# ================= NEW: Routing & Dispatch Logic =================
-AGENTIC_RL_PREFIXES = {"agentic-rl", "rl"}
 
 
 def print_failed_message(rsp):
@@ -465,22 +460,8 @@ class ParseKVAction(argparse.Action):
                 raise argparse.ArgumentError(self, str(message))
 
 
-def main():  # pylint: disable=too-many-statements
-    # 1. Route check: If the second argument matches the new CLI prefix,
-    # forward to Typer
-    if len(sys.argv) > 1 and sys.argv[1] in AGENTIC_RL_PREFIXES:
-        # Remove the prefix argument so Typer can correctly parse subsequent
-        # subcommands (e.g., run, init, get)
-        sys.argv.pop(1)
-
-        # pylint: disable=no-name-in-module
-        from dashscope.finetune.reinforcement import app
-
-        app()
-
-        return
-
-    # 2. Original argparse logic (remains completely unchanged)
+# pylint: disable=too-many-statements
+def main():
     parser = argparse.ArgumentParser(
         prog="dashscope",
         description="dashscope command line tools.",
