@@ -91,7 +91,7 @@ class DashScopeAPIResponse(DictMixin):
     message: str
     output: Any
     usage: Any
-    headers: dict
+    headers: Dict[Any, Any]
 
     def __init__(
         self,
@@ -101,7 +101,7 @@ class DashScopeAPIResponse(DictMixin):
         message: str = "",
         output: Any = None,
         usage: Any = None,
-        headers: dict = None,
+        headers: Dict[Any, Any] = None,
         **kwargs,
     ):
         super().__init__(
@@ -260,7 +260,7 @@ class GenerationUsage(DictMixin):
 class GenerationResponse(DashScopeAPIResponse):
     output: GenerationOutput
     usage: GenerationUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -344,7 +344,7 @@ class MultiModalConversationUsage(DictMixin):
 class MultiModalConversationResponse(DashScopeAPIResponse):
     output: MultiModalConversationOutput
     usage: MultiModalConversationUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -396,7 +396,7 @@ class TranscriptionUsage(DictMixin):
 class TranscriptionResponse(DashScopeAPIResponse):
     output: TranscriptionOutput
     usage: TranscriptionUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -448,7 +448,7 @@ class RecognitionUsage(DictMixin):
 class RecognitionResponse(DashScopeAPIResponse):
     output: RecognitionOutput
     usage: RecognitionUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -515,7 +515,7 @@ class SpeechSynthesisUsage(DictMixin):
 class SpeechSynthesisResponse(DashScopeAPIResponse):
     output: SpeechSynthesisOutput
     usage: SpeechSynthesisUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -637,7 +637,7 @@ class VideoSynthesisUsage(DictMixin):
 class ImageSynthesisResponse(DashScopeAPIResponse):
     output: ImageSynthesisOutput
     usage: ImageSynthesisUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -673,7 +673,7 @@ class ImageSynthesisResponse(DashScopeAPIResponse):
 class VideoSynthesisResponse(DashScopeAPIResponse):
     output: VideoSynthesisOutput
     usage: VideoSynthesisUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -751,7 +751,7 @@ class ReRankUsage(DictMixin):
 class ReRankResponse(DashScopeAPIResponse):
     output: ReRankOutput
     usage: GenerationUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -826,7 +826,7 @@ class TextToSpeechOutput(DictMixin):
 class TextToSpeechResponse(DashScopeAPIResponse):
     output: TextToSpeechOutput
     usage: MultiModalConversationUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
@@ -910,7 +910,7 @@ class ImageGenerationUsage(DictMixin):
 class ImageGenerationResponse(DashScopeAPIResponse):
     output: ImageGenerationOutput
     usage: ImageGenerationUsage
-    headers: dict
+    headers: Dict[Any, Any]
 
     @staticmethod
     def from_api_response(api_response: DashScopeAPIResponse):
