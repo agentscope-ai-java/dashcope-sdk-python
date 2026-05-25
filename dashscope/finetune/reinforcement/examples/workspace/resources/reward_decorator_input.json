@@ -1,0 +1,12 @@
+{
+  "func_type": "reward",
+  "ground_truth": "0.5",
+  "agent_output": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "I cannot help you with that"
+      }
+    ]
+  }
+}

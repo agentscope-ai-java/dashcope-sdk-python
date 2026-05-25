@@ -3,7 +3,7 @@
 
 from dataclasses import dataclass
 from http import HTTPStatus
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from dashscope.common.base_type import BaseObjectMixin
 
@@ -44,12 +44,12 @@ class FineTuneOutput(BaseObjectMixin):
     hyper_parameters: Dict
     training_type: str
     create_time: str
-    end_time: str
     user_identity: str
     modifier: str
     creator: str
     group: str
-    usage: int
+    end_time: Optional[str] = None
+    usage: Optional[int] = None
 
     def __init__(self, **kwargs):  # pylint: disable=useless-parent-delegation
         super().__init__(**kwargs)

@@ -12,9 +12,10 @@ description = "dashscope client sdk library"
 
 def get_version():
     version_file = os.path.join(package_root, name, "version.py")
+    version_ns = {}
     with open(version_file, "r", encoding="utf-8") as f:
-        exec(compile(f.read(), version_file, "exec"))
-    return locals()["__version__"]
+        exec(compile(f.read(), version_file, "exec"), version_ns)
+    return version_ns["__version__"]
 
 
 def get_dependencies(fname="requirements.txt"):

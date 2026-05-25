@@ -996,8 +996,8 @@ class LogMixin:
     def logs(  # pylint: disable=unused-argument
         cls,
         job_id: str,
-        offset=1,
-        line=1000,
+        offset: int = 1,
+        line: int = 1000,
         api_key: str = None,
         path: str = None,
         workspace: str = None,
@@ -1015,15 +1015,11 @@ class LogMixin:
             DashScopeAPIResponse: The response
         """
         custom_base_url = kwargs.pop("base_address", None)
-        if not custom_base_url:
-            url = join_url(
-                dashscope.base_http_api_url,
-                cls.SUB_PATH.lower(),
-                job_id,
-                "logs",
-            )
-        else:
-            url = custom_base_url
+        url = _get_url(
+            custom_base_url,
+            join_url(cls.SUB_PATH.lower(), job_id, "logs"),
+            path,
+        )
         params = {"offset": offset, "line": line}
         return _get(
             url,
