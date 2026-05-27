@@ -33,12 +33,6 @@ from dashscope.cli import (
 # Command name mapping: old -> new
 _COMMAND_MAP = {
     'fine_tunes.call': 'fine-tunes create',
-    'ft.call': 'ft create',
-    'ft.get': 'ft get',
-    'ft.list': 'ft list',
-    'ft.stream': 'ft stream',
-    'ft.cancel': 'ft cancel',
-    'ft.delete': 'ft delete',
     'fine_tunes.get': 'fine-tunes get',
     'fine_tunes.list': 'fine-tunes list',
     'fine_tunes.stream': 'fine-tunes stream',
