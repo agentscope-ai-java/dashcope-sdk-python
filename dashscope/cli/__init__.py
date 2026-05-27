@@ -1,64 +1,60 @@
 # -*- coding: utf-8 -*-
-"""DashScope command-line entry point.
+"""DashScope unified CLI — single Typer application.
 
-This package is intentionally thin — all command-specific logic lives in
-sub-modules (generation, fine_tunes, files, etc.).
+All sub-commands are registered via ``add_typer()`` from their respective
+modules.
 """
-import argparse
-import sys
+import typer
 
-import dashscope
-from dashscope.cli.common import AGENTIC_RL_PREFIXES
-from dashscope.cli import deployments, files, fine_tunes, generation, oss
+from dashscope.cli import (
+    deployments,
+    files,
+    fine_tunes,
+    generation,
+    oss,
+)
+
+app = typer.Typer(
+    name="dashscope",
+    help="DashScope command line tools.",
+    add_completion=False,
+    no_args_is_help=True,
+    rich_markup_mode="rich",
+)
+
+# Register sub-command groups
+app.add_typer(generation.app)
+app.add_typer(fine_tunes.app)
+app.add_typer(files.app)
+app.add_typer(deployments.app)
+app.add_typer(oss.app)
+
+
+def _register_rl_app():
+    """Lazily import and register the Agentic-RL Typer app.
+
+    Wrapped in a function so that a missing optional dependency
+    won't crash the entire CLI at import time.
+    """
+    try:
+        from dashscope.finetune.reinforcement.common.cli import app as rl_app
+
+        app.add_typer(
+            rl_app,
+            name="rl",
+            help="🚀 Agentic RL fine-tuning commands",
+        )
+    except ImportError:
+        # reinforcement module not available — skip silently
+        pass
+    except Exception:
+        # Any other issue — skip silently
+        pass
+
+
+_register_rl_app()
 
 
 def main():
-    # -----------------------------------------------------------------
-    # 1. Route check: forward Agentic-RL commands to the Typer app
-    # -----------------------------------------------------------------
-    if len(sys.argv) > 1 and sys.argv[1] in AGENTIC_RL_PREFIXES:
-        # Use a local copy so we don't mutate sys.argv for other code
-        forwarded_argv = sys.argv[1:]  # drop program name
-        forwarded_argv.pop(0)  # drop the prefix token
-
-        # pylint: disable=no-name-in-module
-        from dashscope.finetune.reinforcement import app
-
-        sys.argv = [sys.argv[0]] + forwarded_argv
-        app()
-        return 0
-
-    # -----------------------------------------------------------------
-    # 2. Build the argparse parser and register all sub-commands
-    # -----------------------------------------------------------------
-    parser = argparse.ArgumentParser(
-        prog="dashscope",
-        description="dashscope command line tools.",
-    )
-    parser.add_argument("-k", "--api-key", help="Dashscope API key.")
-
-    sub_parsers = parser.add_subparsers(help="Api subcommands")
-
-    # Each module exposes a ``register(sub_parsers)`` function that adds
-    # its own sub-commands and wires up ``set_defaults(func=handler)``.
-    generation.register(sub_parsers)
-    fine_tunes.register(sub_parsers)
-    oss.register(sub_parsers)
-    files.register(sub_parsers)
-    deployments.register(sub_parsers)
-
-    # -----------------------------------------------------------------
-    # 3. Parse and dispatch
-    # -----------------------------------------------------------------
-    args = parser.parse_args()
-
-    if args.api_key is not None:
-        dashscope.api_key = args.api_key
-
-    if not hasattr(args, "func"):
-        # No sub-command given — show help and exit with an error code
-        parser.print_help()
-        return 1
-
-    args.func(args)
-    return 0
+    """Entry point for the ``dashscope`` console script."""
+    app()

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Shared utilities, constants, and helpers for the dashscope CLI."""
-import argparse
 import logging
-import sys
 from http import HTTPStatus
+
+import typer
+from rich.console import Console
 
 logger = logging.getLogger("dashscope.cli")
 
@@ -15,7 +16,11 @@ LOG_PAGE_SIZE = 1000  # log lines per request
 DEFAULT_PAGE_SIZE = 10
 DEFAULT_START_PAGE = 1
 
-AGENTIC_RL_PREFIXES = {"agentic-rl", "rl"}
+# ---------------------------------------------------------------------------
+# Rich consoles
+# ---------------------------------------------------------------------------
+console = Console()
+err_console = Console(stderr=True)
 
 # ---------------------------------------------------------------------------
 # Response helpers
@@ -24,9 +29,10 @@ AGENTIC_RL_PREFIXES = {"agentic-rl", "rl"}
 
 def print_failed_message(rsp):
     """Print a standardised error message for a failed API response."""
-    print(
-        f"Failed, request_id: {rsp.request_id}, status_code: "
-        f"{rsp.status_code}, code: {rsp.code}, message: {rsp.message}",
+    err_console.print(
+        f"[red]Failed[/red] request_id: {rsp.request_id}, "
+        f"status_code: {rsp.status_code}, "
+        f"code: {rsp.code}, message: {rsp.message}",
     )
 
 
@@ -40,67 +46,20 @@ def ensure_ok(rsp):
     if rsp.status_code == HTTPStatus.OK:
         return rsp.output
     print_failed_message(rsp)
-    sys.exit(1)
+    raise typer.Exit(1)
 
 
-# ---------------------------------------------------------------------------
-# argparse helpers
-# ---------------------------------------------------------------------------
+def success(message: str):
+    """Print a success message in green."""
+    console.print(f"[green]✓[/green] {message}")
 
 
-class ParseKVAction(argparse.Action):
-    """Parse ``key=value`` pairs from the command line into a dict.
-
-    Usage::
-
-        parser.add_argument(
-            "--hyper-parameters",
-            nargs="+",
-            dest="params",
-            action=ParseKVAction,
-            metavar="KEY1=VALUE1",
-        )
-    """
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        result = {}
-        for each in values:
-            try:
-                key, value = each.split("=", 1)
-                result[key] = value
-            except ValueError as exc:
-                message = (
-                    f"\nTraceback: {exc}"
-                    f"\nError on '{each}' || It should be 'key=value'"
-                )
-                raise argparse.ArgumentError(self, message)
-        setattr(namespace, self.dest, result)
+def info(message: str):
+    """Print an info message."""
+    console.print(message)
 
 
-def add_pagination_args(parser):
-    """Add the common ``-s/--start_page`` and ``-p/--page_size`` arguments."""
-    parser.add_argument(
-        "-s",
-        "--start_page",
-        type=int,
-        default=DEFAULT_START_PAGE,
-        help=f"Start of page, default {DEFAULT_START_PAGE}",
-    )
-    parser.add_argument(
-        "-p",
-        "--page_size",
-        type=int,
-        default=DEFAULT_PAGE_SIZE,
-        help=f"The page size, default {DEFAULT_PAGE_SIZE}",
-    )
-
-
-def add_base_url_arg(parser):
-    """Add the ``-u/--base_url`` argument shared by Files / Oss commands."""
-    parser.add_argument(
-        "-u",
-        "--base_url",
-        type=str,
-        help="The base url.",
-        required=False,
-    )
+def error(message: str, exit_code: int = 1):
+    """Print an error message in red and exit."""
+    err_console.print(f"[red]Error:[/red] {message}")
+    raise typer.Exit(exit_code)

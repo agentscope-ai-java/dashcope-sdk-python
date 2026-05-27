@@ -1,79 +1,64 @@
 # -*- coding: utf-8 -*-
-"""``oss.upload`` sub-command."""
+"""``oss`` sub-command group."""
 import os
+from typing import Optional
+
+import typer
 
 from dashscope.utils.oss_utils import OssUtils
-from dashscope.cli.common import add_base_url_arg
+from dashscope.cli.common import console, error, success
+
+app = typer.Typer(name="oss", help="OSS upload commands", add_completion=False)
 
 
-# ---------------------------------------------------------------------------
-# Command handler
-# ---------------------------------------------------------------------------
+@app.command("upload")
+def upload(
+    file: str = typer.Option(
+        ...,
+        "-f",
+        "--file",
+        help="The file path to upload",
+    ),
+    model: str = typer.Option(..., "-m", "--model", help="The model name"),
+    api_key: Optional[str] = typer.Option(
+        None,
+        "-k",
+        "--api-key",
+        envvar="DASHSCOPE_API_KEY",
+        help="The dashscope api key",
+    ),
+    base_url: Optional[str] = typer.Option(
+        None,
+        "-u",
+        "--base-url",
+        help="The base url",
+    ),
+):
+    """Upload a file to OSS."""
+    console.print(f"Start oss.upload: model={model}, file={file}")
 
+    if not file or not model:
+        error("Please specify the model and file path")
 
-def upload(args):
-    """Handle ``dashscope oss.upload``."""
-    print(f"Start oss.upload: model={args.model}, file={args.file}")
-
-    if not args.file or not args.model:
-        print("Please specify the model and file path")
-        return
-
-    file_path = os.path.expanduser(args.file)
+    file_path = os.path.expanduser(file)
     if not os.path.exists(file_path):
-        print(f"File {file_path} does not exist")
-        return
+        error(f"File {file_path} does not exist")
 
-    api_key = os.environ.get("DASHSCOPE_API_KEY", args.api_key)
-    if not api_key:
-        print(
+    resolved_key = api_key or os.environ.get("DASHSCOPE_API_KEY")
+    if not resolved_key:
+        error(
             "Please set your DashScope API key as environment variable "
-            "DASHSCOPE_API_KEY or pass it as argument by -k/--api_key",
+            "DASHSCOPE_API_KEY or pass it as argument by -k/--api-key",
         )
-        return
 
     oss_url, _ = OssUtils.upload(
-        model=args.model,
+        model=model,
         file_path=file_path,
-        api_key=api_key,
-        base_address=args.base_url,
+        api_key=resolved_key,
+        base_address=base_url,
     )
 
     if not oss_url:
-        print(f"Failed to upload file: {file_path}")
-        return
+        error(f"Failed to upload file: {file_path}")
 
-    print(f"Uploaded oss url: {oss_url}")
-
-
-# ---------------------------------------------------------------------------
-# Registration
-# ---------------------------------------------------------------------------
-
-
-def register(sub_parsers):
-    """Register the ``oss.upload`` sub-parser."""
-    p = sub_parsers.add_parser("oss.upload")
-    p.add_argument(
-        "-f",
-        "--file",
-        type=str,
-        required=True,
-        help="The file path to upload",
-    )
-    p.add_argument(
-        "-m",
-        "--model",
-        type=str,
-        required=True,
-        help="The model name",
-    )
-    p.add_argument(
-        "-k",
-        "--api_key",
-        type=str,
-        required=False,
-        help="The dashscope api key",
-    )
-    add_base_url_arg(p)
-    p.set_defaults(func=upload)
+    success(f"Uploaded oss url: {oss_url}")

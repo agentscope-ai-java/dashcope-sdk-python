@@ -1,67 +1,50 @@
 # -*- coding: utf-8 -*-
-"""``generation.call`` sub-command."""
+"""``generation`` sub-command group."""
 from http import HTTPStatus
+from typing import Optional
+
+import typer
 
 from dashscope.aigc import Generation
-from dashscope.cli.common import print_failed_message
+from dashscope.cli.common import console, print_failed_message
+
+app = typer.Typer(
+    name="generation",
+    help="Text generation commands",
+    add_completion=False,
+)
 
 
-# ---------------------------------------------------------------------------
-# Command handler
-# ---------------------------------------------------------------------------
+@app.command("call")
+def call(
+    prompt: str = typer.Option(..., "-p", "--prompt", help="Input prompt"),
+    model: str = typer.Option(..., "-m", "--model", help="The model to call"),
+    stream: bool = typer.Option(
+        False,
+        "-s",
+        "--stream",
+        help="Use stream mode",
+    ),
+    history: Optional[str] = typer.Option(  # pylint: disable=unused-argument
+        None,
+        "--history",
+        help="The history of the request",
+    ),
+):
+    """Call text generation API."""
+    response = Generation.call(model, prompt, stream=stream)
 
-
-def call(args):
-    """Handle ``dashscope generation.call``."""
-    response = Generation.call(args.model, args.prompt, stream=args.stream)
-    if args.stream:
+    if stream:
         for rsp in response:
             if rsp.status_code == HTTPStatus.OK:
-                print(rsp.output)
-                print(rsp.usage)
+                console.print(rsp.output)
+                console.print(rsp.usage)
             else:
                 print_failed_message(rsp)
     else:
         if response.status_code == HTTPStatus.OK:
-            print(response.output)
-            print(response.usage)
+            console.print(response.output)
+            console.print(response.usage)
         else:
             print_failed_message(response)
-
-
-# ---------------------------------------------------------------------------
-# Registration
-# ---------------------------------------------------------------------------
-
-
-def register(sub_parsers):
-    """Register the ``generation.call`` sub-parser."""
-    parser = sub_parsers.add_parser("generation.call")
-    parser.add_argument(
-        "-p",
-        "--prompt",
-        type=str,
-        required=True,
-        help="Input prompt",
-    )
-    parser.add_argument(
-        "-m",
-        "--model",
-        type=str,
-        required=True,
-        help="The model to call.",
-    )
-    parser.add_argument(
-        "--history",
-        type=str,
-        required=False,
-        help="The history of the request.",
-    )
-    parser.add_argument(
-        "-s",
-        "--stream",
-        default=False,
-        action="store_true",
-        help="Use stream mode, default false.",
-    )
-    parser.set_defaults(func=call)
+            raise typer.Exit(1)

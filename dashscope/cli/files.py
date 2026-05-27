@@ -1,141 +1,113 @@
 # -*- coding: utf-8 -*-
-"""``files.*`` sub-commands."""
+"""``files`` sub-command group."""
 import json
+from typing import Optional
+
+import typer
 
 import dashscope
 from dashscope.common.constants import FilePurpose
-from dashscope.cli.common import add_base_url_arg, ensure_ok
+from dashscope.cli.common import console, ensure_ok, success
+
+app = typer.Typer(
+    name="files",
+    help="File management commands",
+    add_completion=False,
+)
 
 
-# ---------------------------------------------------------------------------
-# Command handlers
-# ---------------------------------------------------------------------------
-
-
-def upload(args):
-    """Handle ``dashscope files.upload``."""
+@app.command("upload")
+def upload(
+    file: str = typer.Option(
+        ...,
+        "-f",
+        "--file",
+        help="The file path to upload",
+    ),
+    purpose: str = typer.Option(
+        FilePurpose.fine_tune,
+        "-p",
+        "--purpose",
+        help="Purpose to upload file",
+    ),
+    description: Optional[str] = typer.Option(
+        None,
+        "-d",
+        "--description",
+        help="The file description",
+    ),
+    base_url: Optional[str] = typer.Option(
+        None,
+        "-u",
+        "--base-url",
+        help="The base url",
+    ),
+):
+    """Upload a file."""
     rsp = dashscope.Files.upload(
-        file_path=args.file,
-        purpose=args.purpose,
-        description=args.description,
-        base_address=args.base_url,
+        file_path=file,
+        purpose=purpose,
+        description=description,
+        base_address=base_url,
     )
     output = ensure_ok(rsp)
     file_id = output["uploaded_files"][0]["file_id"]
-    print(f"Upload success, file id: {file_id}")
+    success(f"Upload success, file id: {file_id}")
 
 
-def get(args):
-    """Handle ``dashscope files.get``."""
-    rsp = dashscope.Files.get(file_id=args.id, base_address=args.base_url)
+@app.command("get")
+def get(
+    file_id: str = typer.Argument(..., help="The file ID"),
+    base_url: Optional[str] = typer.Option(
+        None,
+        "-u",
+        "--base-url",
+        help="The base url",
+    ),
+):
+    """Get file information."""
+    rsp = dashscope.Files.get(file_id=file_id, base_address=base_url)
     output = ensure_ok(rsp)
     if output:
-        print(
-            f"file info:\n"
-            f"{json.dumps(output, ensure_ascii=False, indent=4)}",
-        )
+        console.print_json(json.dumps(output, ensure_ascii=False))
     else:
-        print("There is no uploaded file.")
+        console.print("There is no uploaded file.")
 
 
-def list_files(args):
-    """Handle ``dashscope files.list``."""
+@app.command("list")
+def list_files(
+    page: int = typer.Option(1, "-p", "--page", help="Page number"),
+    size: int = typer.Option(10, "-s", "--size", help="Page size"),
+    base_url: Optional[str] = typer.Option(
+        None,
+        "-u",
+        "--base-url",
+        help="The base url",
+    ),
+):
+    """List uploaded files."""
     rsp = dashscope.Files.list(
-        page=args.start_page,
-        page_size=args.page_size,
-        base_address=args.base_url,
+        page=page,
+        page_size=size,
+        base_address=base_url,
     )
     output = ensure_ok(rsp)
     if output:
-        print(
-            f"file list info:\n"
-            f"{json.dumps(output, ensure_ascii=False, indent=4)}",
-        )
+        console.print_json(json.dumps(output, ensure_ascii=False))
     else:
-        print("There is no uploaded files.")
+        console.print("There is no uploaded files.")
 
 
-def delete(args):
-    """Handle ``dashscope files.delete``."""
-    ensure_ok(dashscope.Files.delete(args.id, base_address=args.base_url))
-    print("Delete success")
-
-
-# ---------------------------------------------------------------------------
-# Registration
-# ---------------------------------------------------------------------------
-
-
-def register(sub_parsers):
-    """Register all ``files.*`` sub-parsers."""
-
-    # -- files.upload -----------------------------------------------------
-    p = sub_parsers.add_parser("files.upload")
-    p.add_argument(
-        "-f",
-        "--file",
-        type=str,
-        required=True,
-        help="The file path to upload",
-    )
-    p.add_argument(
-        "-p",
-        "--purpose",
-        default=FilePurpose.fine_tune,
-        const=FilePurpose.fine_tune,
-        nargs="?",
-        help="Purpose to upload file[fine-tune]",
-        required=True,
-    )
-    p.add_argument(
-        "-d",
-        "--description",
-        type=str,
-        required=False,
-        help="The file description.",
-    )
-    add_base_url_arg(p)
-    p.set_defaults(func=upload)
-
-    # -- files.get --------------------------------------------------------
-    p = sub_parsers.add_parser("files.get")
-    p.add_argument(
-        "-i",
-        "--id",
-        type=str,
-        required=True,
-        help="The file ID",
-    )
-    add_base_url_arg(p)
-    p.set_defaults(func=get)
-
-    # -- files.delete -----------------------------------------------------
-    p = sub_parsers.add_parser("files.delete")
-    p.add_argument(
-        "-i",
-        "--id",
-        type=str,
-        required=True,
-        help="The files ID",
-    )
-    add_base_url_arg(p)
-    p.set_defaults(func=delete)
-
-    # -- files.list -------------------------------------------------------
-    p = sub_parsers.add_parser("files.list")
-    p.add_argument(
-        "-s",
-        "--start_page",
-        type=int,
-        default=1,
-        help="Start of page, default 1",
-    )
-    p.add_argument(
-        "-p",
-        "--page_size",
-        type=int,
-        default=10,
-        help="The page size, default 10",
-    )
-    add_base_url_arg(p)
-    p.set_defaults(func=list_files)
+@app.command("delete")
+def delete(
+    file_id: str = typer.Argument(..., help="The file ID"),
+    base_url: Optional[str] = typer.Option(
+        None,
+        "-u",
+        "--base-url",
+        help="The base url",
+    ),
+):
+    """Delete a file."""
+    ensure_ok(dashscope.Files.delete(file_id, base_address=base_url))
+    success("Delete success")

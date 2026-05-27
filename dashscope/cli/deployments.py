@@ -1,10 +1,26 @@
 # -*- coding: utf-8 -*-
-"""``deployments.*`` sub-commands."""
+"""``deployments`` sub-command group."""
 import time
+from typing import Optional
+
+import typer
 
 import dashscope
 from dashscope.common.constants import DeploymentStatus
-from dashscope.cli.common import POLL_INTERVAL, ensure_ok, logger
+from dashscope.cli.common import (
+    POLL_INTERVAL,
+    console,
+    err_console,
+    ensure_ok,
+    logger,
+    success,
+)
+
+app = typer.Typer(
+    name="deployments",
+    help="Model deployment commands",
+    add_completion=False,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -12,7 +28,7 @@ from dashscope.cli.common import POLL_INTERVAL, ensure_ok, logger
 # ---------------------------------------------------------------------------
 
 
-def _wait_for_deployment(deployed_model):
+def _wait_for_deployment(deployed_model: str):
     """Block until the deployment reaches a non-pending state."""
     try:
         while True:
@@ -24,17 +40,19 @@ def _wait_for_deployment(deployed_model):
                 DeploymentStatus.PENDING,
                 DeploymentStatus.DEPLOYING,
             ):
-                print(f"Deployment {deployed_model} is {status}")
+                console.print(f"Deployment {deployed_model} is {status}")
                 time.sleep(POLL_INTERVAL)
                 continue
 
-            print(f"Deployment: {deployed_model} status: {status}")
+            console.print(f"Deployment: {deployed_model} status: {status}")
             return
+    except typer.Exit:
+        raise
     except Exception as exc:
         logger.debug("wait_for_deployment error", exc_info=exc)
-        print(
+        err_console.print(
             f"You can get deployment status via: "
-            f"dashscope deployments.get -d {deployed_model}",
+            f"[cyan]dashscope deployments get {deployed_model}[/cyan]",
         )
 
 
@@ -45,10 +63,10 @@ def _print_deployments(output):
         or "deployments" not in output
         or not output["deployments"]
     ):
-        print("There is no deployed model!")
+        console.print("There is no deployed model!")
         return
     for dep in output["deployments"]:
-        print(
+        console.print(
             f"Deployed_model: {dep['deployed_model']}, "
             f"model: {dep['model_name']}, "
             f"status: {dep['status']}",
@@ -56,158 +74,96 @@ def _print_deployments(output):
 
 
 # ---------------------------------------------------------------------------
-# Command handlers
+# Commands
 # ---------------------------------------------------------------------------
 
 
-def call(args):
-    """Handle ``dashscope deployments.call``."""
+@app.command("call")
+def call(
+    model: str = typer.Option(..., "-m", "--model", help="The model ID"),
+    suffix: Optional[str] = typer.Option(
+        None,
+        "-s",
+        "--suffix",
+        help="Deployment suffix, lower-cased, 8 chars max.",
+    ),
+    capacity: int = typer.Option(
+        1,
+        "-c",
+        "--capacity",
+        help="The target capacity",
+    ),
+):
+    """Create a model deployment."""
     rsp = dashscope.Deployments.call(
-        model=args.model,
-        capacity=args.capacity,
-        suffix=args.suffix,
+        model=model,
+        capacity=capacity,
+        suffix=suffix,
     )
     output = ensure_ok(rsp)
     deployed_model = output["deployed_model"]
-    print(f"Create model: {deployed_model} deployment")
+    success(f"Create model: {deployed_model} deployment")
     _wait_for_deployment(deployed_model)
 
 
-def get(args):
-    """Handle ``dashscope deployments.get``."""
-    rsp = dashscope.Deployments.get(args.deploy)
+@app.command("get")
+def get(
+    deployed_model: str = typer.Argument(..., help="The deployed model name"),
+):
+    """Get deployment status."""
+    rsp = dashscope.Deployments.get(deployed_model)
     output = ensure_ok(rsp)
-    print(
+    console.print(
         f"Deployed model: {output['deployed_model']} "
         f"capacity: {output['capacity']} "
         f"status: {output['status']}",
     )
 
 
-def list_deployments(args):
-    """Handle ``dashscope deployments.list``."""
-    rsp = dashscope.Deployments.list(
-        page_no=args.start_page,
-        page_size=args.page_size,
-    )
+@app.command("list")
+def list_deployments(
+    page: int = typer.Option(1, "-p", "--page", help="Page number"),
+    size: int = typer.Option(10, "-s", "--size", help="Page size"),
+):
+    """List model deployments."""
+    rsp = dashscope.Deployments.list(page_no=page, page_size=size)
     output = ensure_ok(rsp)
     if output is None or not output.get("deployments"):
-        print("There is no deployed model.")
+        console.print("There is no deployed model.")
         return
     _print_deployments(output)
 
 
-def update(args):
-    """Handle ``dashscope deployments.update``."""
-    rsp = dashscope.Deployments.update(args.deployed_model, args.version)
-    output = ensure_ok(rsp)
-    _print_deployments(output)
-
-
-def scale(args):
-    """Handle ``dashscope deployments.scale``."""
-    rsp = dashscope.Deployments.scale(args.deployed_model, args.capacity)
+@app.command("scale")
+def scale(
+    deployed_model: str = typer.Argument(
+        ...,
+        help="The deployed model to scale",
+    ),
+    capacity: int = typer.Option(
+        ...,
+        "-c",
+        "--capacity",
+        help="The target capacity",
+    ),
+):
+    """Scale a deployment's capacity."""
+    rsp = dashscope.Deployments.scale(deployed_model, capacity)
     output = ensure_ok(rsp)
     if output is None:
-        print("There is no deployed model.")
+        console.print("There is no deployed model.")
         return
-    print(
+    console.print(
         f"Deployed_model: {output['deployed_model']}, "
         f"model: {output['model_name']}, "
         f"status: {output['status']}",
     )
 
 
-def delete(args):
-    """Handle ``dashscope deployments.delete``."""
-    ensure_ok(dashscope.Deployments.delete(args.deploy))
-    print(f"Deployed model: {args.deploy} delete success")
-
-
-# ---------------------------------------------------------------------------
-# Registration
-# ---------------------------------------------------------------------------
-
-
-def register(sub_parsers):
-    """Register all ``deployments.*`` sub-parsers."""
-
-    # -- deployments.call -------------------------------------------------
-    p = sub_parsers.add_parser("deployments.call")
-    p.add_argument(
-        "-m",
-        "--model",
-        required=True,
-        help="The model ID",
-    )
-    p.add_argument(
-        "-s",
-        "--suffix",
-        required=False,
-        help="Deployment suffix, lower-cased, 8 chars max.",
-    )
-    p.add_argument(
-        "-c",
-        "--capacity",
-        type=int,
-        required=False,
-        default=1,
-        help="The target capacity",
-    )
-    p.set_defaults(func=call)
-
-    # -- deployments.get --------------------------------------------------
-    p = sub_parsers.add_parser("deployments.get")
-    p.add_argument(
-        "-d",
-        "--deploy",
-        required=True,
-        help="The deployed model.",
-    )
-    p.set_defaults(func=get)
-
-    # -- deployments.delete -----------------------------------------------
-    p = sub_parsers.add_parser("deployments.delete")
-    p.add_argument(
-        "-d",
-        "--deploy",
-        required=True,
-        help="The deployed model.",
-    )
-    p.set_defaults(func=delete)
-
-    # -- deployments.list -------------------------------------------------
-    p = sub_parsers.add_parser("deployments.list")
-    p.add_argument(
-        "-s",
-        "--start_page",
-        type=int,
-        default=1,
-        help="Start of page, default 1",
-    )
-    p.add_argument(
-        "-p",
-        "--page_size",
-        type=int,
-        default=10,
-        help="The page size, default 10",
-    )
-    p.set_defaults(func=list_deployments)
-
-    # -- deployments.scale ------------------------------------------------
-    p = sub_parsers.add_parser("deployments.scale")
-    p.add_argument(
-        "-d",
-        "--deployed_model",
-        type=str,
-        required=True,
-        help="The deployed model to scale",
-    )
-    p.add_argument(
-        "-c",
-        "--capacity",
-        type=int,
-        required=True,
-        help="The target capacity",
-    )
-    p.set_defaults(func=scale)
+@app.command("delete")
+def delete(
+    deployed_model: str = typer.Argument(..., help="The deployed model name"),
+):
+    """Delete a deployment."""
+    ensure_ok(dashscope.Deployments.delete(deployed_model))
+    success(f"Deployed model: {deployed_model} delete success")
