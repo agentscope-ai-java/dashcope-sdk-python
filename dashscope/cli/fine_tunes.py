@@ -22,7 +22,17 @@ app = typer.Typer(
     name="fine-tunes",
     help="Fine-tuning job management",
     add_completion=False,
+    invoke_without_command=True,
 )
+
+
+@app.callback()
+def callback(ctx: typer.Context):
+    """Show help if no subcommand is provided."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+
+
 
 
 # ---------------------------------------------------------------------------

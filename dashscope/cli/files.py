@@ -13,7 +13,17 @@ app = typer.Typer(
     name="files",
     help="File management commands",
     add_completion=False,
+    invoke_without_command=True,
 )
+
+
+@app.callback()
+def callback(ctx: typer.Context):
+    """Show help if no subcommand is provided."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+
+
 
 
 @app.command("upload")

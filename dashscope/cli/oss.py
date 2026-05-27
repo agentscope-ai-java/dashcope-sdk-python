@@ -8,7 +8,17 @@ import typer
 from dashscope.utils.oss_utils import OssUtils
 from dashscope.cli.common import console, error, success
 
-app = typer.Typer(name="oss", help="OSS upload commands", add_completion=False)
+app = typer.Typer(name="oss", help="OSS upload commands", add_completion=False,
+    invoke_without_command=True)
+
+
+@app.callback()
+def callback(ctx: typer.Context):
+    """Show help if no subcommand is provided."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+
+
 
 
 @app.command("upload")
