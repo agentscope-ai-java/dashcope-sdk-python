@@ -25,8 +25,8 @@ def callback(ctx: typer.Context):
 
 
 
-@app.command("call")
-def call(
+@app.command("create")
+def create(
     prompt: str = typer.Option(..., "-p", "--prompt", help="Input prompt"),
     model: str = typer.Option(..., "-m", "--model", help="The model to call"),
     stream: bool = typer.Option(
@@ -58,3 +58,29 @@ def call(
         else:
             print_failed_message(response)
             raise typer.Exit(1)
+
+
+# Backward compatibility alias
+@app.command("call", hidden=True)
+def call(
+    prompt: str = typer.Option(..., "-p", "--prompt", help="Input prompt"),
+    model: str = typer.Option(..., "-m", "--model", help="The model to call"),
+    stream: bool = typer.Option(
+        False,
+        "-s",
+        "--stream",
+        help="Use stream mode",
+    ),
+    history: Optional[str] = typer.Option(  # pylint: disable=unused-argument
+        None,
+        "--history",
+        help="The history of the request",
+    ),
+):
+    """(Deprecated: use 'create' instead) Call text generation API."""
+    create(
+        prompt=prompt,
+        model=model,
+        stream=stream,
+        history=history,
+    )
