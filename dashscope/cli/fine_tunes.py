@@ -133,8 +133,8 @@ def _dump_logs(job_id: str):
 # ---------------------------------------------------------------------------
 
 
-@app.command("call")
-def call(
+@app.command("create")
+def create(
     training_file_ids: List[str] = typer.Option(
         ...,
         "-t",
@@ -205,6 +205,72 @@ def call(
     job_id = output["job_id"]
     success(f"Create fine-tune job success, job_id: {job_id}")
     _wait_for_job(job_id)
+
+
+
+
+# Backward compatibility alias
+@app.command("call", hidden=True)
+def call(
+    training_file_ids: List[str] = typer.Option(
+        ...,
+        "-t",
+        "--training-file-ids",
+        help="Training file ids",
+    ),
+    model: str = typer.Option(
+        ...,
+        "-m",
+        "--model",
+        help="Base model to fine-tune",
+    ),
+    validation_file_ids: Optional[List[str]] = typer.Option(
+        None,
+        "-v",
+        "--validation-file-ids",
+        help="Validation file ids",
+    ),
+    mode: Optional[str] = typer.Option(
+        None,
+        "--mode",
+        help="Fine-tune mode",
+    ),
+    n_epochs: Optional[int] = typer.Option(
+        None,
+        "-e",
+        "--n-epochs",
+        help="Number of epochs",
+    ),
+    batch_size: Optional[int] = typer.Option(
+        None,
+        "-b",
+        "--batch-size",
+        help="Batch size",
+    ),
+    learning_rate: Optional[float] = typer.Option(
+        None,
+        "-l",
+        "--learning-rate",
+        help="Learning rate",
+    ),
+    prompt_loss: Optional[float] = typer.Option(
+        None,
+        "-p",
+        "--prompt-loss",
+        help="Prompt loss weight",
+    ),
+):
+    """(Deprecated: use 'create' instead) Create and run a fine-tuning job."""
+    create(
+        training_file_ids=training_file_ids,
+        model=model,
+        validation_file_ids=validation_file_ids,
+        mode=mode,
+        n_epochs=n_epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        prompt_loss=prompt_loss,
+    )
 
 
 @app.command("get")

@@ -88,8 +88,8 @@ def _print_deployments(output):
 # ---------------------------------------------------------------------------
 
 
-@app.command("call")
-def call(
+@app.command("create")
+def create(
     model: str = typer.Option(..., "-m", "--model", help="The model ID"),
     suffix: Optional[str] = typer.Option(
         None,
@@ -115,6 +115,32 @@ def call(
     success(f"Create model: {deployed_model} deployment")
     _wait_for_deployment(deployed_model)
 
+
+
+
+# Backward compatibility alias
+@app.command("call", hidden=True)
+def call(
+    model: str = typer.Option(..., "-m", "--model", help="The model ID"),
+    suffix: Optional[str] = typer.Option(
+        None,
+        "-s",
+        "--suffix",
+        help="Deployment suffix, lower-cased, 8 chars max.",
+    ),
+    capacity: int = typer.Option(
+        1,
+        "-c",
+        "--capacity",
+        help="The target capacity",
+    ),
+):
+    """(Deprecated: use 'create' instead) Create a model deployment."""
+    create(
+        model=model,
+        suffix=suffix,
+        capacity=capacity,
+    )
 
 @app.command("get")
 def get(
