@@ -152,7 +152,7 @@ def _register_rl_app():
     won't crash the entire CLI at import time.
     """
     try:
-        from dashscope.finetune.reinforcement.common.cli import app as rl_app
+        from dashscope.cli.agentic_rl import app as rl_app
 
         app.add_typer(
             rl_app,
