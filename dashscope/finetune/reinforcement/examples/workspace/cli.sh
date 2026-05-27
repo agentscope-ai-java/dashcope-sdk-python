@@ -131,51 +131,51 @@ set -e
 # Helper: extract JSON field using Python (no jq dependency)
 json_get() { python3 -c "import sys,json; print(json.loads(sys.stdin.read())$1)"; }
 json_list() { python3 -c "import sys,json; [print(x) for x in json.loads(sys.stdin.read())$1]"; }
-#
-## ===================== 1. Register functions =====================
-#echo ">>> Step 1: Registering function components..."
-#REGISTER_RESULT=$(dashscope rl register_functions \
-#  --rollout-classpaths "functions.rollout.rollout_only.DemoRolloutProcessor" \
-#  --reward-classpaths "functions.reward.reward.DemoRewardProcessor" \
-#  --reward-classpaths "functions/reward/reward_decorator.py:SafetyProcessor" \
-#  --group-reward-classpaths "functions.reward.group_reward.DemoGroupRewardProcessor" \
-#  --no-lazy-load \
-#  --output-format json)
-#
-#echo "$REGISTER_RESULT"
-#
-#ROLLOUT_INSTANCE_ID=$(echo "$REGISTER_RESULT" | json_get "['rollout_instance_ids'][0]")
-#REWARD_INSTANCE_IDS=($(echo "$REGISTER_RESULT" | json_list "['reward_instance_ids']"))
-#GROUP_REWARD_INSTANCE_ID=$(echo "$REGISTER_RESULT" | json_get "['group_reward_instance_ids'][0]")
-#
-## ===================== 2. Test functions =====================
-#echo ">>> Step 2: Testing rollout function (instance: $ROLLOUT_INSTANCE_ID)..."
-#dashscope rl test_functions "$ROLLOUT_INSTANCE_ID" \
-#  --type rollout \
-#  --input ./resources/rollout_input.json
-#
-#echo ">>> Step 2: Testing reward function (instance: ${REWARD_INSTANCE_IDS[0]})..."
-#dashscope rl test_functions "${REWARD_INSTANCE_IDS[0]}" \
-#  --type reward \
-#  --input ./resources/reward_input.json
-#
-#echo ">>> Step 2: Testing reward function (instance: ${REWARD_INSTANCE_IDS[1]})..."
-#dashscope rl test_functions "${REWARD_INSTANCE_IDS[1]}" \
-#  --type reward \
-#  --input ./resources/reward_decorator_input.json
-#
-#echo ">>> Step 2: Testing group_reward function (instance: $GROUP_REWARD_INSTANCE_ID)..."
-#dashscope rl test_functions "$GROUP_REWARD_INSTANCE_ID" \
-#  --type group_reward \
-#  --input ./resources/group_reward_input.json
-#
-## ===================== 3. Upload dataset =====================
-#echo ">>> Step 3: Uploading datasets..."
-#UPLOAD_RESULT=$(dashscope rl upload_data \
-#  --training-files "./data/calc_train_min.jsonl" \
-#  --validation-files "./data/calc_validation_min.jsonl" \
-#  -o json)
-#echo "$UPLOAD_RESULT"
+
+# ===================== 1. Register functions =====================
+echo ">>> Step 1: Registering function components..."
+REGISTER_RESULT=$(dashscope rl register_functions \
+  --rollout-classpaths "functions.rollout.rollout_only.DemoRolloutProcessor" \
+  --reward-classpaths "functions.reward.reward.DemoRewardProcessor" \
+  --reward-classpaths "functions/reward/reward_decorator.py:SafetyProcessor" \
+  --group-reward-classpaths "functions.reward.group_reward.DemoGroupRewardProcessor" \
+  --no-lazy-load \
+  --output-format json)
+
+echo "$REGISTER_RESULT"
+
+ROLLOUT_INSTANCE_ID=$(echo "$REGISTER_RESULT" | json_get "['rollout_instance_ids'][0]")
+REWARD_INSTANCE_IDS=($(echo "$REGISTER_RESULT" | json_list "['reward_instance_ids']"))
+GROUP_REWARD_INSTANCE_ID=$(echo "$REGISTER_RESULT" | json_get "['group_reward_instance_ids'][0]")
+
+# ===================== 2. Test functions =====================
+echo ">>> Step 2: Testing rollout function (instance: $ROLLOUT_INSTANCE_ID)..."
+dashscope rl test_functions "$ROLLOUT_INSTANCE_ID" \
+  --type rollout \
+  --input ./resources/rollout_input.json
+
+echo ">>> Step 2: Testing reward function (instance: ${REWARD_INSTANCE_IDS[0]})..."
+dashscope rl test_functions "${REWARD_INSTANCE_IDS[0]}" \
+  --type reward \
+  --input ./resources/reward_input.json
+
+echo ">>> Step 2: Testing reward function (instance: ${REWARD_INSTANCE_IDS[1]})..."
+dashscope rl test_functions "${REWARD_INSTANCE_IDS[1]}" \
+  --type reward \
+  --input ./resources/reward_decorator_input.json
+
+echo ">>> Step 2: Testing group_reward function (instance: $GROUP_REWARD_INSTANCE_ID)..."
+dashscope rl test_functions "$GROUP_REWARD_INSTANCE_ID" \
+  --type group_reward \
+  --input ./resources/group_reward_input.json
+
+# ===================== 3. Upload dataset =====================
+echo ">>> Step 3: Uploading datasets..."
+UPLOAD_RESULT=$(dashscope rl upload_data \
+  --training-files "./data/calc_train_min.jsonl" \
+  --validation-files "./data/calc_validation_min.jsonl" \
+  -o json)
+echo "$UPLOAD_RESULT"
 
 # ===================== 4. Submit job =====================
 echo ">>> Step 4: Submitting job..."
