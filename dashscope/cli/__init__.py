@@ -148,8 +148,8 @@ app = typer.Typer(
 
 # Register sub-command groups
 app.add_typer(generation.app)
-app.add_typer(fine_tunes.app)
-app.add_typer(fine_tunes.app, name="ft")  # 别名：ft
+app.add_typer(fine_tunes.app, name="ft")  # 主要命令
+app.add_typer(fine_tunes.app, name="fine-tunes", hidden=True)  # 隐藏，向后兼容
 app.add_typer(files.app)
 app.add_typer(deployments.app)
 app.add_typer(oss.app)
