@@ -97,3 +97,6 @@
 # 2026-05-29 16:12:38.911863
 +pre-commit run --all-files
 +
+
+# 2026-05-29 16:15:07.079459
++帮忙测试/Users/kevin/PycharmProjects/dashscope-sdk-python/tests，有错帮忙修复
