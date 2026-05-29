@@ -67,6 +67,7 @@ from dashscope.tokenizers import (
     list_tokenizers,
 )
 
+
 __all__ = [
     "base_http_api_url",
     "base_websocket_api_url",
