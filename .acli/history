@@ -47,3 +47,7 @@
 
 # 2026-05-29 15:33:37.319171
 +dashscope/cli/files.py:58: error: Argument "description" to "upload" of "Files" has incompatible type "Optional[str]"; expected "str"  [arg-type]
+
+# 2026-05-29 15:37:27.398322
++dashscope/cli/deployments.py:109: error: Argument "suffix" to "call" of "Deployments" has incompatible type "Optional[str]"; expected "str"  [arg-type]
++Found 4 errors in 3 files (checked 215 source files)

@@ -106,7 +106,7 @@ def create(
     rsp = dashscope.Deployments.call(
         model=model,
         capacity=capacity,
-        suffix=suffix,
+        suffix=suffix,  # type: ignore[arg-type]
     )
     output = ensure_ok(rsp)
     deployed_model = output["deployed_model"]
