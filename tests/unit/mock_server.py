@@ -540,7 +540,8 @@ def create_app():
     return runner
 
 
-def run_server(runner):
+def run_server():
+    runner = create_app()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(runner.setup())
@@ -899,10 +900,8 @@ class MockServer:
 
 
 def http_server():
-    runner = create_app()
     proc = multiprocessing.Process(  # pylint: disable=redefined-outer-name
         target=run_server,
-        args=(runner,),
     )
     proc.start()
 

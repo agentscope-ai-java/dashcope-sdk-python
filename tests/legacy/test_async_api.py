@@ -2,6 +2,8 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from http import HTTPStatus
+
+import pytest
 from typing import Union
 
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
@@ -115,6 +117,7 @@ class AsyncRequest(BaseAsyncApi):
         return response
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestAsyncRequest(BaseTestEnvironment):
     @classmethod
     def setup_class(cls):

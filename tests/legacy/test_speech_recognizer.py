@@ -35,6 +35,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestCallback(RecognitionCallback):
     def on_error(self, result: RecognitionResult) -> None:
         raise result.message
@@ -43,6 +44,7 @@ class TestCallback(RecognitionCallback):
         assert result.get_sentence() is not None
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestSpeechRecognition(BaseTestEnvironment):
     @classmethod
     def setup_class(cls):

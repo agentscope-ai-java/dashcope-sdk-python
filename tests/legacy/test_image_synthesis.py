@@ -3,11 +3,14 @@
 
 from http import HTTPStatus
 
+import pytest
+
 from dashscope import ImageSynthesis
 from dashscope.common.constants import TaskStatus
 from tests.unit.base_test import BaseTestEnvironment
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestAsyncImageSynthesisRequest(BaseTestEnvironment):
     @classmethod
     def setup_class(cls):

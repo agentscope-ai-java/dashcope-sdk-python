@@ -2,11 +2,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import json
 
+import pytest
+
 from dashscope.api_entities.encryption import Encryption
 
 
 class TestEncryption:
     @staticmethod
+    @pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
     def test_get_public_keys():
         pub_keys = Encryption._get_public_keys()
         print(f"\nrsa:\n{json.dumps(pub_keys, indent=4, ensure_ascii=False)}")
@@ -14,12 +17,12 @@ class TestEncryption:
         print(f"\npublic_key: {pub_keys.get('public_key')}")
 
     @staticmethod
-    def test_generate_aes_secret_key(self):
+    def test_generate_aes_secret_key():
         key = Encryption._generate_aes_secret_key()
         print(f"\nkey: {key}")
 
     @staticmethod
-    def test_generate_aes_iv(self):
+    def test_generate_aes_iv():
         iv = Encryption._generate_iv()
         print(f"\niv: {iv}")
 
@@ -32,6 +35,7 @@ class TestEncryption:
         print(f"\nciphertext: {ciphertext}")
 
     @staticmethod
+    @pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
     def test_encrypt_aes_key_with_rsa():
         public_keys = Encryption._get_public_keys()
         public_key = public_keys.get("public_key")

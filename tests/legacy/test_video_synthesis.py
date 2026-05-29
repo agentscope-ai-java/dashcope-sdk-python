@@ -3,11 +3,14 @@
 
 from http import HTTPStatus
 
+import pytest
+
 from dashscope import VideoSynthesis
 from dashscope.common.constants import TaskStatus
 from tests.unit.base_test import BaseTestEnvironment
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestAsyncVideoSynthesisRequest(BaseTestEnvironment):
     @classmethod
     def setup_class(cls):

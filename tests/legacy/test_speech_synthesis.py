@@ -39,6 +39,7 @@ call_time: int = 0
 first_data_time: int = 0
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestCallback(ResultCallback):
     def on_error(self, response: SpeechSynthesisResponse):
         assert response.status_code == HTTPStatus.OK
@@ -57,6 +58,7 @@ class TestCallback(ResultCallback):
             assert len(timestamp["words"]) > 0
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestSynthesis(BaseTestEnvironment):
     @classmethod
     def setup_class(cls):

@@ -34,6 +34,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
+@pytest.mark.skip(reason="Legacy integration test, requires real DashScope API")
 class TestSpeechTranscribe(BaseTestEnvironment):
     @classmethod
     def setup_class(cls):
