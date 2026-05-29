@@ -30,10 +30,19 @@ app = typer.Typer(
     name="agentic-rl",
     help="🚀 Agentic RL Fine-Tuning CLI",
     add_completion=False,
+    invoke_without_command=True,
     rich_markup_mode="rich",
 )
 console = Console()
 err_console = Console(stderr=True)
+
+@app.callback()
+def callback(ctx: typer.Context):
+    """Show help if no subcommand is provided."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+
+
 
 _cli_verbose = False
 

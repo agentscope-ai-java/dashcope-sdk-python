@@ -3,3 +3,5 @@ requests
 websocket-client
 cryptography
 certifi
+typer>=0.9.0
+rich>=13.0.0

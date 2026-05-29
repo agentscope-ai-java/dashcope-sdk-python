@@ -129,7 +129,7 @@ from dashscope.finetune.reinforcement.component.processor import (
 
 def __getattr__(name):
     if name == "app":
-        from dashscope.finetune.reinforcement.common.cli import app
+        from dashscope.cli.agentic_rl import app
 
         return app
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
