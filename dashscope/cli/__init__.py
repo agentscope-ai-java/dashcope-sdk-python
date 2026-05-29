@@ -32,40 +32,40 @@ from dashscope.cli import (
 
 # Command name mapping: old -> new
 _COMMAND_MAP = {
-    'fine_tunes.call': 'fine-tunes create',
-    'fine_tunes.get': 'fine-tunes get',
-    'fine_tunes.list': 'fine-tunes list',
-    'fine_tunes.stream': 'fine-tunes stream',
-    'fine_tunes.cancel': 'fine-tunes cancel',
-    'fine_tunes.delete': 'fine-tunes delete',
-    'generation.call': 'generation create',
-    'files.upload': 'files upload',
-    'files.get': 'files get',
-    'files.list': 'files list',
-    'files.delete': 'files delete',
-    'deployments.call': 'deployments create',
-    'deployments.get': 'deployments get',
-    'deployments.list': 'deployments list',
-    'deployments.scale': 'deployments scale',
-    'deployments.delete': 'deployments delete',
-    'oss.upload': 'oss upload',
+    "fine_tunes.call": "fine-tunes create",
+    "fine_tunes.get": "fine-tunes get",
+    "fine_tunes.list": "fine-tunes list",
+    "fine_tunes.stream": "fine-tunes stream",
+    "fine_tunes.cancel": "fine-tunes cancel",
+    "fine_tunes.delete": "fine-tunes delete",
+    "generation.call": "generation create",
+    "files.upload": "files upload",
+    "files.get": "files get",
+    "files.list": "files list",
+    "files.delete": "files delete",
+    "deployments.call": "deployments create",
+    "deployments.get": "deployments get",
+    "deployments.list": "deployments list",
+    "deployments.scale": "deployments scale",
+    "deployments.delete": "deployments delete",
+    "oss.upload": "oss upload",
 }
 
 # Parameter name mapping: old -> new (underscore to dash)
 _PARAM_MAP = {
-    '--training_file_ids': '--training-file-ids',
-    '--validation_file_ids': '--validation-file-ids',
-    '--n_epochs': '--n-epochs',
-    '--batch_size': '--batch-size',
-    '--learning_rate': '--learning-rate',
-    '--prompt_loss': '--prompt-loss',
-    '--hyper_parameters': '--hyper-parameters',
-    '--file_id': '--file-id',
-    '--deployed_model': '--deployed-model',
-    '--base_url': '--base-url',
-    '--api_key': '--api-key',
-    '--start_page': '--start-page',
-    '--page_size': '--page-size',
+    "--training_file_ids": "--training-file-ids",
+    "--validation_file_ids": "--validation-file-ids",
+    "--n_epochs": "--n-epochs",
+    "--batch_size": "--batch-size",
+    "--learning_rate": "--learning-rate",
+    "--prompt_loss": "--prompt-loss",
+    "--hyper_parameters": "--hyper-parameters",
+    "--file_id": "--file-id",
+    "--deployed_model": "--deployed-model",
+    "--base_url": "--base-url",
+    "--api_key": "--api-key",
+    "--start_page": "--start-page",
+    "--page_size": "--page-size",
 }
 
 
@@ -116,15 +116,15 @@ def _extract_global_api_key(argv):
         arg = argv[i]
 
         # Check for -k or --api-key
-        if arg in ('-k', '--api-key'):
+        if arg in ("-k", "--api-key"):
             # Next arg should be the key value
             if i + 1 < len(argv):
                 dashscope.api_key = argv[i + 1]
                 i += 2  # Skip both -k and the value
                 continue
-        elif arg.startswith('--api-key='):
+        elif arg.startswith("--api-key="):
             # Handle --api-key=value format
-            dashscope.api_key = arg.split('=', 1)[1]
+            dashscope.api_key = arg.split("=", 1)[1]
             i += 1
             continue
 
@@ -164,7 +164,9 @@ def _register_rl_app():
     try:
         from dashscope.cli.agentic_rl import app as rl_app
 
-        app.add_typer(rl_app, name="rl", help="🚀 Agentic RL fine-tuning commands")
+        app.add_typer(
+            rl_app, name="rl", help="🚀 Agentic RL fine-tuning commands"
+        )
     except ImportError:
         # reinforcement module not available — skip silently
         pass

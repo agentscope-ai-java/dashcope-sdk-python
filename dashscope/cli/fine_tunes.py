@@ -33,8 +33,6 @@ def callback(ctx: typer.Context):
         typer.echo(ctx.get_help())
 
 
-
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -205,8 +203,6 @@ def create(
     job_id = output["job_id"]
     success(f"Create fine-tune job success, job_id: {job_id}")
     _wait_for_job(job_id)
-
-
 
 
 # Backward compatibility alias

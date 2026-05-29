@@ -29,3 +29,7 @@
 
 # 2026-05-29 13:06:59.076587
 +pre-commit run --all-files
+
+# 2026-05-29 14:40:32.372176
++dashscope/cli/oss.py:69: error: Argument "api_key" to "upload" of "OssUtils" has incompatible type "Optional[str]"; expected "str"  [arg-type]
++

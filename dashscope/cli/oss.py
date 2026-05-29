@@ -8,8 +8,12 @@ import typer
 from dashscope.utils.oss_utils import OssUtils
 from dashscope.cli.common import console, error, success
 
-app = typer.Typer(name="oss", help="OSS upload commands", add_completion=False,
-    invoke_without_command=True)
+app = typer.Typer(
+    name="oss",
+    help="OSS upload commands",
+    add_completion=False,
+    invoke_without_command=True,
+)
 
 
 @app.callback()
@@ -17,8 +21,6 @@ def callback(ctx: typer.Context):
     """Show help if no subcommand is provided."""
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
-
-
 
 
 @app.command("upload")
@@ -60,6 +62,9 @@ def upload(
             "Please set your DashScope API key as environment variable "
             "DASHSCOPE_API_KEY or pass it as argument by -k/--api-key",
         )
+
+    # mypy 需要明确断言 resolved_key 不为 None
+    assert resolved_key is not None
 
     oss_url, _ = OssUtils.upload(
         model=model,

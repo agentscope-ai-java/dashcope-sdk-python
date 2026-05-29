@@ -36,12 +36,12 @@ app = typer.Typer(
 console = Console()
 err_console = Console(stderr=True)
 
+
 @app.callback()
 def callback(ctx: typer.Context):
     """Show help if no subcommand is provided."""
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
-
 
 
 _cli_verbose = False

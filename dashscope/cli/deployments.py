@@ -31,8 +31,6 @@ def callback(ctx: typer.Context):
         typer.echo(ctx.get_help())
 
 
-
-
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -116,8 +114,6 @@ def create(
     _wait_for_deployment(deployed_model)
 
 
-
-
 # Backward compatibility alias
 @app.command("call", hidden=True)
 def call(
@@ -141,6 +137,7 @@ def call(
         suffix=suffix,
         capacity=capacity,
     )
+
 
 @app.command("get")
 def get(

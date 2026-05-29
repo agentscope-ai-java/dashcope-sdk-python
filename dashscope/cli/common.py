@@ -2,6 +2,7 @@
 """Shared utilities, constants, and helpers for the dashscope CLI."""
 import logging
 from http import HTTPStatus
+from typing import NoReturn
 
 import typer
 from rich.console import Console
@@ -59,7 +60,7 @@ def info(message: str):
     console.print(message)
 
 
-def error(message: str, exit_code: int = 1):
+def error(message: str, exit_code: int = 1) -> NoReturn:
     """Print an error message in red and exit."""
     err_console.print(f"[red]Error:[/red] {message}")
     raise typer.Exit(exit_code)

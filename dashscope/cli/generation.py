@@ -23,8 +23,6 @@ def callback(ctx: typer.Context):
         typer.echo(ctx.get_help())
 
 
-
-
 @app.command("create")
 def create(
     prompt: str = typer.Option(..., "-p", "--prompt", help="Input prompt"),

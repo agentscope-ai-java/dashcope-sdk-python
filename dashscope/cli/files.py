@@ -24,8 +24,6 @@ def callback(ctx: typer.Context):
         typer.echo(ctx.get_help())
 
 
-
-
 @app.command("upload")
 def upload(
     file: str = typer.Option(
