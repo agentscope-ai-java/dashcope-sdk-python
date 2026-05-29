@@ -51,3 +51,49 @@
 # 2026-05-29 15:37:27.398322
 +dashscope/cli/deployments.py:109: error: Argument "suffix" to "call" of "Deployments" has incompatible type "Optional[str]"; expected "str"  [arg-type]
 +Found 4 errors in 3 files (checked 215 source files)
+
+# 2026-05-29 15:59:06.977206
++black....................................................................Failed
++- hook id: black
++- files were modified by this hook
++
++reformatted dashscope/cli/__init__.py
++
++All done! ✨ 🍰 ✨
++1 file reformatted, 215 files left unchanged.
++
+
+# 2026-05-29 16:00:15.929132
++dashscope/cli/__init__.py:17:1: E402 module level import not at top of file
++dashscope/cli/__init__.py:19:1: E402 module level import not at top of file
++dashscope/cli/__init__.py:20:1: E402 module level import not at top of file
++
+
+# 2026-05-29 16:01:52.931291
++dashscope/cli/__main__.py:12:1: F401 'sys' imported but unused
++dashscope/cli/__main__.py:12:1: E402 module level import not at top of file
++dashscope/cli/__main__.py:13:1: E402 module level import not at top of file
+
+# 2026-05-29 16:05:34.155763
++dashscope/cli/__main__.py:12:1: F401 'sys' imported but unused
++dashscope/cli/__main__.py:12:1: E402 module level import not at top of file
++dashscope/cli/__main__.py:13:1: E402 module level import not at top of file
++
+
+# 2026-05-29 16:06:53.900958
++************* Module dashscope.cli
++dashscope/cli/__init__.py:17:0: C0413: Import "import typer" should be placed at the top of the module (wrong-import-position)
++dashscope/cli/__init__.py:19:0: C0413: Import "import dashscope" should be placed at the top of the module (wrong-import-position)
++dashscope/cli/__init__.py:20:0: C0413: Import "from dashscope.cli import deployments, files, fine_tunes, generation, oss" should be placed at the top of the module (wrong-import-position)
++
+
+# 2026-05-29 16:08:24.258486
++************* Module dashscope.cli.__main__
++dashscope/cli/__main__.py:12:0: C0413: Import "import sys" should be placed at the top of the module (wrong-import-position)
++dashscope/cli/__main__.py:13:0: C0413: Import "from dashscope.cli import main" should be placed at the top of the module (wrong-import-position)
++dashscope/cli/__main__.py:12:0: W0611: Unused import sys (unused-import)
++
+
+# 2026-05-29 16:12:38.911863
++pre-commit run --all-files
++
