@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+from typing import Optional
 
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
 from dashscope.client.base_api import (
@@ -23,7 +24,7 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
         cls,
         file_path: str,  # type: ignore[override]
         purpose: str = FilePurpose.fine_tune,  # type: ignore[override]
-        description: str = None,  # type: ignore[override]
+        description: Optional[str] = None,  # type: ignore[override]
         api_key: str = None,
         workspace: str = None,
         **kwargs,
@@ -57,9 +58,7 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
                         ),
                     ),
                 ],
-                descriptions=[description]
-                if description is not None
-                else None,
+                descriptions=[description] if description is not None else [],
                 api_key=api_key,
                 workspace=workspace,
                 **kwargs,

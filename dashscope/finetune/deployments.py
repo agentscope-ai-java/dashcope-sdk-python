@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+from typing import Optional
 from dashscope.client.base_api import (
     CreateMixin,
     DeleteMixin,
@@ -35,7 +36,7 @@ class Deployments(
         model: str,
         capacity: int,
         version: str = None,
-        suffix: str = None,
+        suffix: Optional[str] = None,
         api_key: str = None,
         workspace: str = None,
         **kwargs,

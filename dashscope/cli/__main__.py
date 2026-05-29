@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=wrong-import-position
 """Allow ``python -m dashscope.cli`` invocation."""
 import warnings
 
@@ -9,7 +10,8 @@ warnings.filterwarnings(
     category=Warning,
 )
 
-import sys
-from dashscope.cli import main
+# fmt: off
+from dashscope.cli import main  # noqa: E402
+# fmt: on
 
 main()

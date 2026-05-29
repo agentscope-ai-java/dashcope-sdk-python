@@ -196,8 +196,8 @@ def create(
         model=model,
         training_file_ids=training_file_ids,
         validation_file_ids=validation_file_ids or [],
-        mode=mode,
-        hyper_parameters=params if params else None,
+        mode=mode,  # type: ignore[arg-type]
+        hyper_parameters=params if params else None,  # type: ignore[arg-type]
     )
     output = ensure_ok(rsp)
     job_id = output["job_id"]

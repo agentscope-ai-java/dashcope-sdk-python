@@ -3,7 +3,7 @@
 
 import time
 from http import HTTPStatus
-from typing import Iterator, Union
+from typing import Iterator, Optional, Union
 
 from dashscope.client.base_api import (
     CancelMixin,
@@ -43,8 +43,8 @@ class FineTunes(
         model: str,
         training_file_ids: Union[list, str],
         validation_file_ids: Union[list, str] = None,
-        mode: str = None,
-        hyper_parameters: dict = {},
+        mode: Optional[str] = None,
+        hyper_parameters: Optional[dict] = {},
         api_key: str = None,
         workspace: str = None,
         **kwargs,

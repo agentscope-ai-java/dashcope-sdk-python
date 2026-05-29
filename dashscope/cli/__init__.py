@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=wrong-import-position
 """DashScope command-line entry point.
 
 This package is intentionally thin — all command-specific logic lives in
@@ -14,10 +15,10 @@ warnings.filterwarnings(
     category=Warning,
 )
 
-import typer
+import typer  # noqa: E402
 
-import dashscope
-from dashscope.cli import (
+import dashscope  # noqa: E402
+from dashscope.cli import (  # noqa: E402
     deployments,
     files,
     fine_tunes,
@@ -148,8 +149,8 @@ app = typer.Typer(
 
 # Register sub-command groups
 app.add_typer(generation.app)
-app.add_typer(fine_tunes.app, name="ft")  # 主要命令
-app.add_typer(fine_tunes.app, name="fine-tunes", hidden=True)  # 隐藏，向后兼容
+app.add_typer(fine_tunes.app, name="ft")
+app.add_typer(fine_tunes.app, name="fine-tunes", hidden=True)
 app.add_typer(files.app)
 app.add_typer(deployments.app)
 app.add_typer(oss.app)
@@ -165,13 +166,13 @@ def _register_rl_app():
         from dashscope.cli.agentic_rl import app as rl_app
 
         app.add_typer(
-            rl_app, name="rl", help="🚀 Agentic RL fine-tuning commands"
+            rl_app,
+            name="rl",
+            help="🚀 Agentic RL fine-tuning commands",
         )
     except ImportError:
-        # reinforcement module not available — skip silently
         pass
     except Exception:
-        # Any other issue — skip silently
         pass
 
 
@@ -180,7 +181,7 @@ _register_rl_app()
 
 def main():
     """Entry point for the ``dashscope`` console script."""
-    # Extract global api-key parameter FIRST (may appear before command name)
+    # Extract global api-key parameter FIRST
     argv = _extract_global_api_key(sys.argv)
 
     # Then translate legacy command format

@@ -33,3 +33,14 @@
 # 2026-05-29 14:40:32.372176
 +dashscope/cli/oss.py:69: error: Argument "api_key" to "upload" of "OssUtils" has incompatible type "Optional[str]"; expected "str"  [arg-type]
 +
+
+# 2026-05-29 15:00:55.307849
++dashscope/cli/fine_tunes.py:199: error: Argument "mode" to "call" of "FineTunes" has incompatible type "Optional[str]"; expected "str"  [arg-type]
+
+# 2026-05-29 15:13:02.469613
++继续
+
+# 2026-05-29 15:16:30.624932
++dashscope/cli/fine_tunes.py:199: error: Argument "mode" to "call" of "FineTunes" has incompatible type "Optional[str]"; expected "str"  [arg-type]
++dashscope/cli/fine_tunes.py:200: error: Argument "hyper_parameters" to "call" of "FineTunes" has incompatible type "Optional[dict[str, int]]"; expected "dict[Any, Any]"  [arg-type]
++
