@@ -44,3 +44,6 @@
 +dashscope/cli/fine_tunes.py:199: error: Argument "mode" to "call" of "FineTunes" has incompatible type "Optional[str]"; expected "str"  [arg-type]
 +dashscope/cli/fine_tunes.py:200: error: Argument "hyper_parameters" to "call" of "FineTunes" has incompatible type "Optional[dict[str, int]]"; expected "dict[Any, Any]"  [arg-type]
 +
+
+# 2026-05-29 15:33:37.319171
++dashscope/cli/files.py:58: error: Argument "description" to "upload" of "Files" has incompatible type "Optional[str]"; expected "str"  [arg-type]

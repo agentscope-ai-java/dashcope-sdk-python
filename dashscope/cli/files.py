@@ -55,7 +55,7 @@ def upload(
     rsp = dashscope.Files.upload(
         file_path=file,
         purpose=purpose,
-        description=description,
+        description=description,  # type: ignore[arg-type]
         base_address=base_url,
     )
     output = ensure_ok(rsp)
