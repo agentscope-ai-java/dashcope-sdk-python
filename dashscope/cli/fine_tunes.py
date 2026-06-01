@@ -121,7 +121,7 @@ def _dump_logs(job_id: str):
         output = ensure_ok(rsp)
         for line in output["logs"]:
             console.print(line, highlight=False)
-        if len(output["total"]) < LOG_PAGE_SIZE:
+        if len(output["logs"]) < LOG_PAGE_SIZE:
             break
         offset += LOG_PAGE_SIZE
 
