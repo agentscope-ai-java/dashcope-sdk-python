@@ -70,7 +70,7 @@ _PARAM_MAP = {
 }
 
 
-def _translate_legacy_args(argv, opt=None):
+def _translate_legacy_args(argv):
     """Translate legacy argparse command format to Typer format.
 
     Legacy format:  dashscope fine_tunes.call --training_file_ids ...
