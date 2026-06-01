@@ -57,7 +57,9 @@ def upload(
     if not os.path.exists(file_path):
         error(f"File {file_path} does not exist")
 
-    resolved_key = api_key or dashscope.api_key or os.environ.get("DASHSCOPE_API_KEY")
+    resolved_key = (
+        api_key or dashscope.api_key or os.environ.get("DASHSCOPE_API_KEY")
+    )
     if not resolved_key:
         error(
             "Please set your DashScope API key as environment variable "
