@@ -75,6 +75,13 @@ class VideoSynthesis(BaseAsyncApi):
         first_frame_url: str = None,
         last_frame_url: str = None,
         media: List[Dict] = None,
+        size: str = None,
+        duration: int = None,
+        seed: int = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        resolution: str = None,
+        ratio: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -83,30 +90,38 @@ class VideoSynthesis(BaseAsyncApi):
             model (str): The model, reference ``Models``.
             prompt (Any): The prompt for video synthesis.
             extend_prompt (bool): @deprecated, use prompt_extend in parameters
-            negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
+            negative_prompt (str): The negative prompt is the opposite
+                of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
-            img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
-            audio_url (str): The input audio url
-            reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url str: reference file url uploaded by the user  # pylint: disable=line-too-long
-            reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
+            img_url (str): The input image url.
+            audio_url (str): The input audio url.
+            reference_video_urls (List[str]): Character reference video
+                file urls.
+            reference_urls (List[str]): Character reference file urls.
+            reference_url (str): Reference file url.
+            reference_video_description (List[str]): Description for
+                reference video picture and sound.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            head_frame (str): The URL of the first frame image for generating the video.
-            tail_frame (str): The URL of the last frame image for generating the video.
-            first_frame_url (str): The URL of the first frame image for generating the video.
-            last_frame_url (str): The URL of the last frame image for generating the video.
-            media (list): media file list
-            **kwargs:
-                size(str, `optional`): The output video size(width*height).
-                duration(
-                    int,
-                    optional
-                ): The duration. Duration of video generation. The default value is 5, in seconds.  # noqa: E501
-                seed(int, optional): The seed. The random seed for video generation. The default value is 5.  # noqa: E501  # pylint: disable=line-too-long
+            head_frame (str): URL of the first frame image.
+            tail_frame (str): URL of the last frame image.
+            first_frame_url (str): URL of the first frame image.
+            last_frame_url (str): URL of the last frame image.
+            media (list): media file list.
+            size (str, optional): Output video size (width*height),
+                e.g. "1280*720".
+            duration (int, optional): Duration of video in seconds.
+                Default is 5.
+            seed (int, optional): Random seed for video generation.
+            prompt_extend (bool, optional): Whether to extend prompt
+                automatically for better results.
+            watermark (bool, optional): Whether to add watermark.
+            resolution (str, optional): Output resolution, e.g.
+                "720P", "1080P".
+            ratio (str, optional): Aspect ratio, e.g. "16:9", "9:16".
+            **kwargs: Additional parameters passed to the API.
 
         Raises:
             InputRequired: The prompt cannot be empty.
@@ -114,6 +129,20 @@ class VideoSynthesis(BaseAsyncApi):
         Returns:
             VideoSynthesisResponse: The video synthesis result.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if duration is not None:
+            kwargs["duration"] = duration
+        if seed is not None:
+            kwargs["seed"] = seed
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if resolution is not None:
+            kwargs["resolution"] = resolution
+        if ratio is not None:
+            kwargs["ratio"] = ratio
         return super().call(  # type: ignore[return-value]
             model,
             prompt,
@@ -350,6 +379,13 @@ class VideoSynthesis(BaseAsyncApi):
         first_frame_url: str = None,
         last_frame_url: str = None,
         media: List[Dict] = None,
+        size: str = None,
+        duration: int = None,
+        seed: int = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        resolution: str = None,
+        ratio: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -358,30 +394,34 @@ class VideoSynthesis(BaseAsyncApi):
             model (str): The model, reference ``Models``.
             prompt (Any): The prompt for video synthesis.
             extend_prompt (bool): @deprecated, use prompt_extend in parameters
-            negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
+            negative_prompt (str): The negative prompt is the opposite
+                of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
-            img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
+            img_url (str): The input image url.
             audio_url (str): The input audio url.
-            reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url (str): reference file url uploaded by the user  # pylint: disable=line-too-long
-            reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
+            reference_video_urls (List[str]): Character reference video
+                file urls.
+            reference_urls (List[str]): Character reference file urls.
+            reference_url (str): Reference file url.
+            reference_video_description (List[str]): Description for
+                reference video picture and sound.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            head_frame (str): The URL of the first frame image for generating the video.
-            tail_frame (str): The URL of the last frame image for generating the video.
-            first_frame_url (str): The URL of the first frame image for generating the video.
-            last_frame_url (str): The URL of the last frame image for generating the video.
-            media (list): media file list
-            **kwargs:
-                size(str, `optional`): The output video size(width*height).
-                duration(
-                    int,
-                    optional
-                ): The duration. Duration of video generation. The default value is 5, in seconds.  # noqa: E501
-                seed(int, optional): The seed. The random seed for video generation. The default value is 5.  # noqa: E501  # pylint: disable=line-too-long
+            head_frame (str): URL of the first frame image.
+            tail_frame (str): URL of the last frame image.
+            first_frame_url (str): URL of the first frame image.
+            last_frame_url (str): URL of the last frame image.
+            media (list): media file list.
+            size (str, optional): Output video size (width*height).
+            duration (int, optional): Duration of video in seconds.
+            seed (int, optional): Random seed for video generation.
+            prompt_extend (bool, optional): Whether to extend prompt.
+            watermark (bool, optional): Whether to add watermark.
+            resolution (str, optional): Output resolution.
+            ratio (str, optional): Aspect ratio, e.g. "16:9".
+            **kwargs: Additional parameters passed to the API.
 
         Raises:
             InputRequired: The prompt cannot be empty.
@@ -390,6 +430,20 @@ class VideoSynthesis(BaseAsyncApi):
             DashScopeAPIResponse: The video synthesis
                 task id in the response.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if duration is not None:
+            kwargs["duration"] = duration
+        if seed is not None:
+            kwargs["seed"] = seed
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if resolution is not None:
+            kwargs["resolution"] = resolution
+        if ratio is not None:
+            kwargs["ratio"] = ratio
         task_group, function = _get_task_group_and_task(__name__)
 
         inputs, kwargs, task = cls._get_input(
@@ -569,6 +623,13 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         first_frame_url: str = None,
         last_frame_url: str = None,
         media: List[Dict] = None,
+        size: str = None,
+        duration: int = None,
+        seed: int = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        resolution: str = None,
+        ratio: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -577,30 +638,34 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             model (str): The model, reference ``Models``.
             prompt (Any): The prompt for video synthesis.
             extend_prompt (bool): @deprecated, use prompt_extend in parameters
-            negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
+            negative_prompt (str): The negative prompt is the opposite
+                of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
-            img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
+            img_url (str): The input image url.
             audio_url (str): The input audio url.
-            reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url (str): reference file url uploaded by the user  # pylint: disable=line-too-long
-            reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
+            reference_video_urls (List[str]): Character reference video
+                file urls.
+            reference_urls (List[str]): Character reference file urls.
+            reference_url (str): Reference file url.
+            reference_video_description (List[str]): Description for
+                reference video picture and sound.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            head_frame (str): The URL of the first frame image for generating the video.
-            tail_frame (str): The URL of the last frame image for generating the video.
-            first_frame_url (str): The URL of the first frame image for generating the video.
-            last_frame_url (str): The URL of the last frame image for generating the video.
-            media (list): media file list
-            **kwargs:
-                size(str, `optional`): The output video size(width*height).
-                duration(
-                    int,
-                    optional
-                ): The duration. Duration of video generation. The default value is 5, in seconds.  # noqa: E501
-                seed(int, optional): The seed. The random seed for video generation. The default value is 5.  # noqa: E501  # pylint: disable=line-too-long
+            head_frame (str): URL of the first frame image.
+            tail_frame (str): URL of the last frame image.
+            first_frame_url (str): URL of the first frame image.
+            last_frame_url (str): URL of the last frame image.
+            media (list): media file list.
+            size (str, optional): Output video size (width*height).
+            duration (int, optional): Duration of video in seconds.
+            seed (int, optional): Random seed for video generation.
+            prompt_extend (bool, optional): Whether to extend prompt.
+            watermark (bool, optional): Whether to add watermark.
+            resolution (str, optional): Output resolution.
+            ratio (str, optional): Aspect ratio, e.g. "16:9".
+            **kwargs: Additional parameters passed to the API.
 
         Raises:
             InputRequired: The prompt cannot be empty.
@@ -608,6 +673,20 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         Returns:
             VideoSynthesisResponse: The video synthesis result.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if duration is not None:
+            kwargs["duration"] = duration
+        if seed is not None:
+            kwargs["seed"] = seed
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if resolution is not None:
+            kwargs["resolution"] = resolution
+        if ratio is not None:
+            kwargs["ratio"] = ratio
         task_group, f = _get_task_group_and_task(__name__)
         # pylint: disable=protected-access
         inputs, kwargs, task = VideoSynthesis._get_input(
@@ -672,6 +751,13 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         first_frame_url: str = None,
         last_frame_url: str = None,
         media: List[Dict] = None,
+        size: str = None,
+        duration: int = None,
+        seed: int = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        resolution: str = None,
+        ratio: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -680,30 +766,34 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             model (str): The model, reference ``Models``.
             prompt (Any): The prompt for video synthesis.
             extend_prompt (bool): @deprecated, use prompt_extend in parameters
-            negative_prompt (str): The negative prompt is the opposite of the prompt meaning.
+            negative_prompt (str): The negative prompt is the opposite
+                of the prompt meaning.
             template (str): LoRa input, such as gufeng, katong, etc.
-            img_url (str): The input image url, Generate the URL of the image referenced by the video.  # pylint: disable=line-too-long
+            img_url (str): The input image url.
             audio_url (str): The input audio url.
-            reference_video_urls (List[str]): list of character reference video file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_urls (List[str]): list of character reference file urls uploaded by the user  # pylint: disable=line-too-long
-            reference_url (str): reference file url uploaded by the user  # pylint: disable=line-too-long
-            reference_video_description (List[str]): For the description information of the picture and sound of the reference video, corresponding to ref video, it needs to be in the order of the url. If the quantity is different, an error will be reported  # pylint: disable=line-too-long
+            reference_video_urls (List[str]): Character reference video
+                file urls.
+            reference_urls (List[str]): Character reference file urls.
+            reference_url (str): Reference file url.
+            reference_video_description (List[str]): Description for
+                reference video picture and sound.
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            head_frame (str): The URL of the first frame image for generating the video.
-            tail_frame (str): The URL of the last frame image for generating the video.
-            first_frame_url (str): The URL of the first frame image for generating the video.
-            last_frame_url (str): The URL of the last frame image for generating the video.
-            media (list): media file list
-            **kwargs:
-                size(str, `optional`): The output video size(width*height).
-                duration(
-                    int,
-                    optional
-                ): The duration. Duration of video generation. The default value is 5, in seconds.  # noqa: E501
-                seed(int, optional): The seed. The random seed for video generation. The default value is 5.  # noqa: E501  # pylint: disable=line-too-long
+            head_frame (str): URL of the first frame image.
+            tail_frame (str): URL of the last frame image.
+            first_frame_url (str): URL of the first frame image.
+            last_frame_url (str): URL of the last frame image.
+            media (list): media file list.
+            size (str, optional): Output video size (width*height).
+            duration (int, optional): Duration of video in seconds.
+            seed (int, optional): Random seed for video generation.
+            prompt_extend (bool, optional): Whether to extend prompt.
+            watermark (bool, optional): Whether to add watermark.
+            resolution (str, optional): Output resolution.
+            ratio (str, optional): Aspect ratio, e.g. "16:9".
+            **kwargs: Additional parameters passed to the API.
 
         Raises:
             InputRequired: The prompt cannot be empty.
@@ -712,6 +802,20 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             DashScopeAPIResponse: The video synthesis
                 task id in the response.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if duration is not None:
+            kwargs["duration"] = duration
+        if seed is not None:
+            kwargs["seed"] = seed
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if resolution is not None:
+            kwargs["resolution"] = resolution
+        if ratio is not None:
+            kwargs["ratio"] = ratio
         task_group, function = _get_task_group_and_task(__name__)
 
         # pylint: disable=protected-access

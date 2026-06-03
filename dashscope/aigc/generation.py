@@ -55,80 +55,55 @@ class Generation(BaseApi):
         messages: List[Message] = None,
         plugins: Union[str, Dict[str, Any]] = None,
         workspace: str = None,
+        stream: bool = None,
+        temperature: float = None,
+        top_p: float = None,
+        top_k: int = None,
+        max_tokens: int = None,
+        seed: int = None,
+        stop: Union[str, List] = None,
+        repetition_penalty: float = None,
+        presence_penalty: float = None,
+        result_format: str = None,
+        incremental_output: bool = None,
+        enable_search: bool = None,
+        tools: List[Dict[str, Any]] = None,
+        tool_choice: Union[str, Dict[str, Any]] = None,
+        enable_thinking: bool = None,
+        n: int = None,
         **kwargs,
     ) -> Union[GenerationResponse, Generator[GenerationResponse, None, None]]:
         """Call generation model service.
 
         Args:
-            model (str): The requested model, such as qwen-turbo
+            model (str): The requested model, such as qwen-turbo.
             prompt (Any): The input prompt.
-            history (list):The user provided history, deprecated
-                examples:
-                    [{'user':'The weather is fine today.',
-                    'bot': 'Suitable for outings'}].
-                Defaults to None.
-            api_key (str, optional): The api api_key, can be None,
-                if None, will get by default rule(TODO: api key doc).
+            history (list): The user provided history, deprecated.
+            api_key (str, optional): The api api_key, can be None.
             messages (list): The generation messages.
-                examples:
-                    [{'role': 'user',
-                      'content': 'The weather is fine today.'},
-                      {'role': 'assistant', 'content': 'Suitable for outings'}]
             plugins (Any): The plugin config. Can be plugins config str, or dict.
-            **kwargs:
-                stream(bool, `optional`): Enable server-sent events
-                    (ref: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)  # noqa E501  # pylint: disable=line-too-long
-                    the result will back partially[qwen-turbo,bailian-v1].
-                temperature(float, `optional`): Used to control the degree
-                    of randomness and diversity. Specifically, the temperature
-                    value controls the degree to which the probability distribution
-                    of each candidate word is smoothed when generating text.
-                    A higher temperature value will reduce the peak value of
-                    the probability, allowing more low-probability words to be
-                    selected, and the generated results will be more diverse;
-                    while a lower temperature value will enhance the peak value
-                    of the probability, making it easier for high-probability
-                    words to be selected, the generated results are more
-                    deterministic, range(0, 2) .[qwen-turbo,qwen-plus].
-                top_p(float, `optional`): A sampling strategy, called nucleus
-                    sampling, where the model considers the results of the
-                    tokens with top_p probability mass. So 0.1 means only
-                    the tokens comprising the top 10% probability mass are
-                    considered[qwen-turbo,bailian-v1].
-                top_k(int, `optional`): The size of the sample candidate set when generated.  # noqa E501  # pylint: disable=line-too-long
-                    For example, when the value is 50, only the 50 highest-scoring tokens  # noqa E501  # pylint: disable=line-too-long
-                    in a single generation form a randomly sampled candidate set. # noqa E501
-                    The larger the value, the higher the randomness generated;  # noqa E501
-                    the smaller the value, the higher the certainty generated. # noqa E501
-                    The default value is 0, which means the top_k policy is  # noqa E501
-                    not enabled. At this time, only the top_p policy takes effect. # noqa E501
-                enable_search(bool, `optional`): Whether to enable web search(quark).  # noqa E501
-                    Currently works best only on the first round of conversation.
-                    Default to False, support model: [qwen-turbo].
-                customized_model_id(str, required) The enterprise-specific
-                    large model id, which needs to be generated from the
-                    operation background of the enterprise-specific
-                    large model product, support model: [bailian-v1].
-                result_format(str, `optional`): [message|text] Set result result format. # noqa E501
-                    Default result is text
-                incremental_output(bool, `optional`): Used to control the streaming output mode. # noqa E501  # pylint: disable=line-too-long
-                    If true, the subsequent output will include the previously input content. # noqa E501  # pylint: disable=line-too-long
-                    Otherwise, the subsequent output will not include the previously output # noqa E501  # pylint: disable=line-too-long
-                    content. Default false.
-                stop(list[str] or list[list[int]], `optional`): Used to control the generation to stop  # noqa E501  # pylint: disable=line-too-long
-                    when encountering setting str or token ids, the result will not include # noqa E501  # pylint: disable=line-too-long
-                    stop words or tokens.
-                max_tokens(int, `optional`): The maximum token num expected to be output. It should be # noqa E501  # pylint: disable=line-too-long
-                    noted that the length generated by the model will only be less than max_tokens,  # noqa E501  # pylint: disable=line-too-long
-                    not necessarily equal to it. If max_tokens is set too large, the service will # noqa E501  # pylint: disable=line-too-long
-                    directly prompt that the length exceeds the limit. It is generally # noqa E501
-                    not recommended to set this value.
-                repetition_penalty(float, `optional`): Used to control the repeatability when generating models.  # noqa E501  # pylint: disable=line-too-long
-                    Increasing repetition_penalty can reduce the duplication of model generation.  # noqa E501  # pylint: disable=line-too-long
-                    1.0 means no punishment.
             workspace (str): The dashscope workspace id.
-        Raises:
-            InvalidInput: The history and auto_history are mutually exclusive.
+            stream (bool, optional): Enable streaming output.
+            temperature (float, optional): Controls randomness, range [0, 2).
+            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_k (int, optional): Size of candidate token set for sampling.
+            max_tokens (int, optional): Maximum output token count.
+            seed (int, optional): Random seed for reproducibility.
+            stop (str or list, optional): Stop sequences.
+            repetition_penalty (float, optional): Penalizes repeated sequences.
+                1.0 means no penalty.
+            presence_penalty (float, optional): Controls content repetition,
+                range [-2.0, 2.0].
+            result_format (str, optional): "message" or "text".
+            incremental_output (bool, optional): In streaming mode, output only
+                new tokens (True) vs. cumulative output (False).
+            enable_search (bool, optional): Enable web search.
+            tools (list, optional): Tool definitions for function calling.
+            tool_choice (str or dict, optional): Tool selection strategy.
+            enable_thinking (bool, optional): Enable thinking mode for
+                hybrid thinking models.
+            n (int, optional): Number of responses to generate (1-4).
+            **kwargs: Additional parameters passed to the API.
 
         Returns:
             Union[GenerationResponse,
@@ -141,6 +116,38 @@ class Generation(BaseApi):
             raise InputRequired("prompt or messages is required!")
         if model is None or not model:
             raise ModelRequired("Model is required!")
+        if stream is not None:
+            kwargs["stream"] = stream
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if top_p is not None:
+            kwargs["top_p"] = top_p
+        if top_k is not None:
+            kwargs["top_k"] = top_k
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if seed is not None:
+            kwargs["seed"] = seed
+        if stop is not None:
+            kwargs["stop"] = stop
+        if repetition_penalty is not None:
+            kwargs["repetition_penalty"] = repetition_penalty
+        if presence_penalty is not None:
+            kwargs["presence_penalty"] = presence_penalty
+        if result_format is not None:
+            kwargs["result_format"] = result_format
+        if incremental_output is not None:
+            kwargs["incremental_output"] = incremental_output
+        if enable_search is not None:
+            kwargs["enable_search"] = enable_search
+        if tools is not None:
+            kwargs["tools"] = tools
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+        if enable_thinking is not None:
+            kwargs["enable_thinking"] = enable_thinking
+        if n is not None:
+            kwargs["n"] = n
         task_group, function = _get_task_group_and_task(__name__)
         if plugins is not None:
             headers = kwargs.pop("headers", {})
@@ -305,80 +312,52 @@ class AioGeneration(BaseAioApi):
         messages: List[Message] = None,
         plugins: Union[str, Dict[str, Any]] = None,
         workspace: str = None,
+        stream: bool = None,
+        temperature: float = None,
+        top_p: float = None,
+        top_k: int = None,
+        max_tokens: int = None,
+        seed: int = None,
+        stop: Union[str, List] = None,
+        repetition_penalty: float = None,
+        presence_penalty: float = None,
+        result_format: str = None,
+        incremental_output: bool = None,
+        enable_search: bool = None,
+        tools: List[Dict[str, Any]] = None,
+        tool_choice: Union[str, Dict[str, Any]] = None,
+        enable_thinking: bool = None,
+        n: int = None,
         **kwargs,
     ) -> Union[GenerationResponse, AsyncGenerator[GenerationResponse, None]]:
         """Call generation model service.
 
         Args:
-            model (str): The requested model, such as qwen-turbo
+            model (str): The requested model, such as qwen-turbo.
             prompt (Any): The input prompt.
-            history (list):The user provided history, deprecated
-                examples:
-                    [{'user':'The weather is fine today.',
-                    'bot': 'Suitable for outings'}].
-                Defaults to None.
-            api_key (str, optional): The api api_key, can be None,
-                if None, will get by default rule(TODO: api key doc).
+            history (list): The user provided history, deprecated.
+            api_key (str, optional): The api api_key, can be None.
             messages (list): The generation messages.
-                examples:
-                    [{'role': 'user',
-                      'content': 'The weather is fine today.'},
-                      {'role': 'assistant', 'content': 'Suitable for outings'}]
             plugins (Any): The plugin config. Can be plugins config str, or dict.
-            **kwargs:
-                stream(bool, `optional`): Enable server-sent events
-                    (ref: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)  # noqa E501  # pylint: disable=line-too-long
-                    the result will back partially[qwen-turbo,bailian-v1].
-                temperature(float, `optional`): Used to control the degree
-                    of randomness and diversity. Specifically, the temperature
-                    value controls the degree to which the probability distribution
-                    of each candidate word is smoothed when generating text.
-                    A higher temperature value will reduce the peak value of
-                    the probability, allowing more low-probability words to be
-                    selected, and the generated results will be more diverse;
-                    while a lower temperature value will enhance the peak value
-                    of the probability, making it easier for high-probability
-                    words to be selected, the generated results are more
-                    deterministic, range(0, 2) .[qwen-turbo,qwen-plus].
-                top_p(float, `optional`): A sampling strategy, called nucleus
-                    sampling, where the model considers the results of the
-                    tokens with top_p probability mass. So 0.1 means only
-                    the tokens comprising the top 10% probability mass are
-                    considered[qwen-turbo,bailian-v1].
-                top_k(int, `optional`): The size of the sample candidate set when generated.  # noqa E501  # pylint: disable=line-too-long
-                    For example, when the value is 50, only the 50 highest-scoring tokens  # noqa E501  # pylint: disable=line-too-long
-                    in a single generation form a randomly sampled candidate set. # noqa E501
-                    The larger the value, the higher the randomness generated;  # noqa E501
-                    the smaller the value, the higher the certainty generated. # noqa E501
-                    The default value is 0, which means the top_k policy is  # noqa E501
-                    not enabled. At this time, only the top_p policy takes effect. # noqa E501
-                enable_search(bool, `optional`): Whether to enable web search(quark).  # noqa E501
-                    Currently works best only on the first round of conversation.
-                    Default to False, support model: [qwen-turbo].
-                customized_model_id(str, required) The enterprise-specific
-                    large model id, which needs to be generated from the
-                    operation background of the enterprise-specific
-                    large model product, support model: [bailian-v1].
-                result_format(str, `optional`): [message|text] Set result result format. # noqa E501
-                    Default result is text
-                incremental_output(bool, `optional`): Used to control the streaming output mode. # noqa E501  # pylint: disable=line-too-long
-                    If true, the subsequent output will include the previously input content. # noqa E501  # pylint: disable=line-too-long
-                    Otherwise, the subsequent output will not include the previously output # noqa E501  # pylint: disable=line-too-long
-                    content. Default false.
-                stop(list[str] or list[list[int]], `optional`): Used to control the generation to stop  # noqa E501  # pylint: disable=line-too-long
-                    when encountering setting str or token ids, the result will not include # noqa E501  # pylint: disable=line-too-long
-                    stop words or tokens.
-                max_tokens(int, `optional`): The maximum token num expected to be output. It should be # noqa E501  # pylint: disable=line-too-long
-                    noted that the length generated by the model will only be less than max_tokens,  # noqa E501  # pylint: disable=line-too-long
-                    not necessarily equal to it. If max_tokens is set too large, the service will # noqa E501  # pylint: disable=line-too-long
-                    directly prompt that the length exceeds the limit. It is generally # noqa E501
-                    not recommended to set this value.
-                repetition_penalty(float, `optional`): Used to control the repeatability when generating models.  # noqa E501  # pylint: disable=line-too-long
-                    Increasing repetition_penalty can reduce the duplication of model generation.  # noqa E501  # pylint: disable=line-too-long
-                    1.0 means no punishment.
             workspace (str): The dashscope workspace id.
-        Raises:
-            InvalidInput: The history and auto_history are mutually exclusive.
+            stream (bool, optional): Enable streaming output.
+            temperature (float, optional): Controls randomness, range [0, 2).
+            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_k (int, optional): Size of candidate token set for sampling.
+            max_tokens (int, optional): Maximum output token count.
+            seed (int, optional): Random seed for reproducibility.
+            stop (str or list, optional): Stop sequences.
+            repetition_penalty (float, optional): Penalizes repeated sequences.
+            presence_penalty (float, optional): Controls content repetition.
+            result_format (str, optional): "message" or "text".
+            incremental_output (bool, optional): In streaming mode, output only
+                new tokens (True) vs. cumulative output (False).
+            enable_search (bool, optional): Enable web search.
+            tools (list, optional): Tool definitions for function calling.
+            tool_choice (str or dict, optional): Tool selection strategy.
+            enable_thinking (bool, optional): Enable thinking mode.
+            n (int, optional): Number of responses to generate (1-4).
+            **kwargs: Additional parameters passed to the API.
 
         Returns:
             Union[GenerationResponse,
@@ -391,6 +370,38 @@ class AioGeneration(BaseAioApi):
             raise InputRequired("prompt or messages is required!")
         if model is None or not model:
             raise ModelRequired("Model is required!")
+        if stream is not None:
+            kwargs["stream"] = stream
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if top_p is not None:
+            kwargs["top_p"] = top_p
+        if top_k is not None:
+            kwargs["top_k"] = top_k
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if seed is not None:
+            kwargs["seed"] = seed
+        if stop is not None:
+            kwargs["stop"] = stop
+        if repetition_penalty is not None:
+            kwargs["repetition_penalty"] = repetition_penalty
+        if presence_penalty is not None:
+            kwargs["presence_penalty"] = presence_penalty
+        if result_format is not None:
+            kwargs["result_format"] = result_format
+        if incremental_output is not None:
+            kwargs["incremental_output"] = incremental_output
+        if enable_search is not None:
+            kwargs["enable_search"] = enable_search
+        if tools is not None:
+            kwargs["tools"] = tools
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+        if enable_thinking is not None:
+            kwargs["enable_thinking"] = enable_thinking
+        if n is not None:
+            kwargs["n"] = n
         task_group, function = _get_task_group_and_task(__name__)
         if plugins is not None:
             headers = kwargs.pop("headers", {})

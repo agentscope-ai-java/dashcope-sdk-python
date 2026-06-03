@@ -17,6 +17,9 @@ class TextReRank(BaseApi):
 
     class Models:
         gte_rerank = "gte-rerank"
+        gte_rerank_v2 = "gte-rerank-v2"
+        qwen3_rerank = "qwen3-rerank"
+        qwen3_vl_rerank = "qwen3-vl-rerank"
 
     @classmethod
     def call(  # type: ignore[override]
@@ -27,6 +30,7 @@ class TextReRank(BaseApi):
         return_documents: bool = None,
         top_n: int = None,
         api_key: str = None,
+        instruct: str = None,
         **kwargs,
     ) -> ReRankResponse:
         """Calling rerank service.
@@ -40,6 +44,8 @@ class TextReRank(BaseApi):
             top_n(int, `optional`): how many documents to return, default return  # noqa: E501
                 all the documents.
             api_key (str, optional): The DashScope api key. Defaults to None.
+            instruct (str, optional): Custom task instruction to guide
+                ranking strategy. English recommended.
 
         Raises:
             InputRequired: The query and documents are required.
@@ -63,6 +69,8 @@ class TextReRank(BaseApi):
             parameters["return_documents"] = return_documents
         if top_n is not None:
             parameters["top_n"] = top_n
+        if instruct is not None:
+            parameters["instruct"] = instruct
         parameters = {**parameters, **kwargs}
 
         response = super().call(

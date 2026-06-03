@@ -2,7 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import copy
-from typing import AsyncGenerator, Generator, List, Union
+from typing import Any, AsyncGenerator, Dict, Generator, List, Union
 
 from dashscope.api_entities.dashscope_response import (
     MultiModalConversationResponse,
@@ -35,6 +35,22 @@ class MultiModalConversation(BaseApi):
         text: str = None,
         voice: str = None,
         language_type: str = None,
+        stream: bool = None,
+        temperature: float = None,
+        top_p: float = None,
+        top_k: int = None,
+        max_tokens: int = None,
+        seed: int = None,
+        stop: Union[str, List] = None,
+        repetition_penalty: float = None,
+        presence_penalty: float = None,
+        result_format: str = None,
+        incremental_output: bool = None,
+        enable_search: bool = None,
+        tools: List[Dict[str, Any]] = None,
+        tool_choice: Union[str, Dict[str, Any]] = None,
+        enable_thinking: bool = None,
+        n: int = None,
         **kwargs,
     ) -> Union[
         MultiModalConversationResponse,
@@ -47,56 +63,70 @@ class MultiModalConversation(BaseApi):
         """Call the conversation model service.
 
         Args:
-            model (str): The requested model, such as 'qwen-multimodal-v1'
+            model (str): The requested model, such as 'qwen-vl-max'.
             messages (list): The generation messages.
-                examples:
-                    [
-                        {
-                            "role": "system",
-                            "content": [
-                                {"text": "你是达摩院的生活助手机器人。"}
-                            ]
-                        },
-                        {
-                            "role": "user",
-                            "content": [
-                                {"image": "http://XXXX"},
-                                {"text": "这个图片是哪里？"},
-                            ]
-                        }
-                    ]
-            api_key (str, optional): The api api_key, can be None,
-                if None, will retrieve by rule [1].
-                [1]: https://help.aliyun.com/zh/dashscope/developer-reference/api-key-settings. # noqa E501  # pylint: disable=line-too-long
+            api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             text (str): The text to generate.
-            voice (str): The voice name of qwen tts, include 'Cherry'/'Ethan'/'Sunny'/'Dylan' and so on,  # pylint: disable=line-too-long
-                    you can get the total voice list : https://help.aliyun.com/zh/model-studio/qwen-tts.  # pylint: disable=line-too-long
-            language_type (str): The synthesized language type, default is 'auto', useful for [qwen3-tts].  # pylint: disable=line-too-long
-            **kwargs:
-                stream(bool, `optional`): Enable server-sent events
-                    (ref: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)  # noqa E501  # pylint: disable=line-too-long
-                    the result will back partially[qwen-turbo,bailian-v1].
-                max_length(int, `optional`): The maximum length of tokens to
-                    generate. The token count of your prompt plus max_length
-                    cannot exceed the model's context length. Most models
-                    have a context length of 2000 tokens[qwen-turbo,bailian-v1]. # noqa E501
-                top_p(float, `optional`): A sampling strategy, called nucleus
-                    sampling, where the model considers the results of the
-                    tokens with top_p probability mass. So 0.1 means only
-                    the tokens comprising the top 10% probability mass are
-                    considered[qwen-turbo,bailian-v1].
-                top_k(float, `optional`):
-
-
-        Raises:
-            InvalidInput: The history and auto_history are mutually exclusive.
+            voice (str): The voice name for qwen tts.
+            language_type (str): The synthesized language type.
+            stream (bool, optional): Enable streaming output.
+            temperature (float, optional): Controls randomness, range [0, 2).
+            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_k (int, optional): Size of candidate token set for sampling.
+            max_tokens (int, optional): Maximum output token count.
+            seed (int, optional): Random seed for reproducibility.
+            stop (str or list, optional): Stop sequences.
+            repetition_penalty (float, optional): Penalizes repeated sequences.
+            presence_penalty (float, optional): Controls content repetition.
+            result_format (str, optional): "message" or "text".
+            incremental_output (bool, optional): In streaming mode, output only
+                new tokens (True) vs. cumulative output (False).
+            enable_search (bool, optional): Enable web search.
+            tools (list, optional): Tool definitions for function calling.
+            tool_choice (str or dict, optional): Tool selection strategy.
+            enable_thinking (bool, optional): Enable thinking mode.
+            n (int, optional): Number of responses to generate (1-4).
+            **kwargs: Additional parameters passed to the API.
 
         Returns:
             Union[MultiModalConversationResponse,
                   Generator[MultiModalConversationResponse, None, None]]: If
-            stream is True, return Generator, otherwise MultiModalConversationResponse.
+            stream is True, return Generator, otherwise
+            MultiModalConversationResponse.
         """
+        if stream is not None:
+            kwargs["stream"] = stream
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if top_p is not None:
+            kwargs["top_p"] = top_p
+        if top_k is not None:
+            kwargs["top_k"] = top_k
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if seed is not None:
+            kwargs["seed"] = seed
+        if stop is not None:
+            kwargs["stop"] = stop
+        if repetition_penalty is not None:
+            kwargs["repetition_penalty"] = repetition_penalty
+        if presence_penalty is not None:
+            kwargs["presence_penalty"] = presence_penalty
+        if result_format is not None:
+            kwargs["result_format"] = result_format
+        if incremental_output is not None:
+            kwargs["incremental_output"] = incremental_output
+        if enable_search is not None:
+            kwargs["enable_search"] = enable_search
+        if tools is not None:
+            kwargs["tools"] = tools
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+        if enable_thinking is not None:
+            kwargs["enable_thinking"] = enable_thinking
+        if n is not None:
+            kwargs["n"] = n
         if model is None or not model:
             raise ModelRequired("Model is required!")
         task_group, _ = _get_task_group_and_task(__name__)
@@ -249,6 +279,22 @@ class AioMultiModalConversation(BaseAioApi):
         text: str = None,
         voice: str = None,
         language_type: str = None,
+        stream: bool = None,
+        temperature: float = None,
+        top_p: float = None,
+        top_k: int = None,
+        max_tokens: int = None,
+        seed: int = None,
+        stop: Union[str, List] = None,
+        repetition_penalty: float = None,
+        presence_penalty: float = None,
+        result_format: str = None,
+        incremental_output: bool = None,
+        enable_search: bool = None,
+        tools: List[Dict[str, Any]] = None,
+        tool_choice: Union[str, Dict[str, Any]] = None,
+        enable_thinking: bool = None,
+        n: int = None,
         **kwargs,
     ) -> Union[
         MultiModalConversationResponse,
@@ -260,55 +306,70 @@ class AioMultiModalConversation(BaseAioApi):
         """Call the conversation model service asynchronously.
 
         Args:
-            model (str): The requested model, such as 'qwen-multimodal-v1'
+            model (str): The requested model, such as 'qwen-vl-max'.
             messages (list): The generation messages.
-                examples:
-                    [
-                        {
-                            "role": "system",
-                            "content": [
-                                {"text": "你是达摩院的生活助手机器人。"}
-                            ]
-                        },
-                        {
-                            "role": "user",
-                            "content": [
-                                {"image": "http://XXXX"},
-                                {"text": "这个图片是哪里？"},
-                            ]
-                        }
-                    ]
-            api_key (str, optional): The api api_key, can be None,
-                if None, will retrieve by rule [1].
-                [1]: https://help.aliyun.com/zh/dashscope/developer-reference/api-key-settings. # noqa E501  # pylint: disable=line-too-long
+            api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
             text (str): The text to generate.
-            voice (str): The voice name of qwen tts, include 'Cherry'/'Ethan'/'Sunny'/'Dylan' and so on,  # pylint: disable=line-too-long
-                    you can get the total voice list : https://help.aliyun.com/zh/model-studio/qwen-tts.  # pylint: disable=line-too-long
-            language_type (str): The synthesized language type, default is 'auto', useful for [qwen3-tts].  # pylint: disable=line-too-long
-            **kwargs:
-                stream(bool, `optional`): Enable server-sent events
-                    (ref: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)  # noqa E501  # pylint: disable=line-too-long
-                    the result will back partially[qwen-turbo,bailian-v1].
-                max_length(int, `optional`): The maximum length of tokens to
-                    generate. The token count of your prompt plus max_length
-                    cannot exceed the model's context length. Most models
-                    have a context length of 2000 tokens[qwen-turbo,bailian-v1]. # noqa E501
-                top_p(float, `optional`): A sampling strategy, called nucleus
-                    sampling, where the model considers the results of the
-                    tokens with top_p probability mass. So 0.1 means only
-                    the tokens comprising the top 10% probability mass are
-                    considered[qwen-turbo,bailian-v1].
-                top_k(float, `optional`):
-
-        Raises:
-            InvalidInput: The history and auto_history are mutually exclusive.
+            voice (str): The voice name for qwen tts.
+            language_type (str): The synthesized language type.
+            stream (bool, optional): Enable streaming output.
+            temperature (float, optional): Controls randomness, range [0, 2).
+            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_k (int, optional): Size of candidate token set for sampling.
+            max_tokens (int, optional): Maximum output token count.
+            seed (int, optional): Random seed for reproducibility.
+            stop (str or list, optional): Stop sequences.
+            repetition_penalty (float, optional): Penalizes repeated sequences.
+            presence_penalty (float, optional): Controls content repetition.
+            result_format (str, optional): "message" or "text".
+            incremental_output (bool, optional): In streaming mode, output only
+                new tokens (True) vs. cumulative output (False).
+            enable_search (bool, optional): Enable web search.
+            tools (list, optional): Tool definitions for function calling.
+            tool_choice (str or dict, optional): Tool selection strategy.
+            enable_thinking (bool, optional): Enable thinking mode.
+            n (int, optional): Number of responses to generate (1-4).
+            **kwargs: Additional parameters passed to the API.
 
         Returns:
             Union[MultiModalConversationResponse,
                   AsyncGenerator[MultiModalConversationResponse, None]]: If
-            stream is True, return AsyncGenerator, otherwise MultiModalConversationResponse.
+            stream is True, return AsyncGenerator, otherwise
+            MultiModalConversationResponse.
         """
+        if stream is not None:
+            kwargs["stream"] = stream
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+        if top_p is not None:
+            kwargs["top_p"] = top_p
+        if top_k is not None:
+            kwargs["top_k"] = top_k
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+        if seed is not None:
+            kwargs["seed"] = seed
+        if stop is not None:
+            kwargs["stop"] = stop
+        if repetition_penalty is not None:
+            kwargs["repetition_penalty"] = repetition_penalty
+        if presence_penalty is not None:
+            kwargs["presence_penalty"] = presence_penalty
+        if result_format is not None:
+            kwargs["result_format"] = result_format
+        if incremental_output is not None:
+            kwargs["incremental_output"] = incremental_output
+        if enable_search is not None:
+            kwargs["enable_search"] = enable_search
+        if tools is not None:
+            kwargs["tools"] = tools
+        if tool_choice is not None:
+            kwargs["tool_choice"] = tool_choice
+        if enable_thinking is not None:
+            kwargs["enable_thinking"] = enable_thinking
+        if n is not None:
+            kwargs["n"] = n
         if model is None or not model:
             raise ModelRequired("Model is required!")
         task_group, _ = _get_task_group_and_task(__name__)

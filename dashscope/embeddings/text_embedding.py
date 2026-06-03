@@ -25,6 +25,10 @@ class TextEmbedding(BaseApi):
         input: Union[str, List[str]],  # pylint: disable=redefined-builtin
         workspace: str = None,
         api_key: str = None,
+        text_type: str = None,
+        dimension: int = None,
+        output_type: str = None,
+        instruct: str = None,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Get embedding of text input.
@@ -36,8 +40,17 @@ class TextEmbedding(BaseApi):
                 if opened file object, will read all lines,
                 one embedding per line.
             workspace (str): The dashscope workspace id.
+            text_type (str, optional): "query" for search queries,
+                "document" (default) for corpus/symmetric tasks.
+            dimension (int, optional): Output vector dimension.
+                Options: 2048 (v4 only), 1536 (v4 only), 1024 (default),
+                768, 512, 256, 128, 64. Only for v3/v4.
+            output_type (str, optional): Output format: "dense" (default),
+                "sparse", or "dense&sparse". Only for v3/v4.
+            instruct (str, optional): Custom task instruction to guide
+                model understanding of query intent.
             **kwargs:
-                text_type(str, `optional`): query or document.
+                Additional parameters passed to the API.
 
         Returns:
             DashScopeAPIResponse: The embedding result.
@@ -48,6 +61,14 @@ class TextEmbedding(BaseApi):
         else:
             embedding_input[TEXT_EMBEDDING_INPUT_KEY] = input
         kwargs.pop("stream", False)  # not support streaming output.
+        if text_type is not None:
+            kwargs["text_type"] = text_type
+        if dimension is not None:
+            kwargs["dimension"] = dimension
+        if output_type is not None:
+            kwargs["output_type"] = output_type
+        if instruct is not None:
+            kwargs["instruct"] = instruct
         task_group, function = _get_task_group_and_task(__name__)
         return super().call(
             model=model,

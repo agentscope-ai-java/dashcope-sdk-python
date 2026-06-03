@@ -54,6 +54,11 @@ class MultiModalEmbedding(BaseApi):
 
     class Models:
         multimodal_embedding_one_peace_v1 = "multimodal-embedding-one-peace-v1"
+        multimodal_embedding_v1 = "multimodal-embedding-v1"
+        qwen3_vl_embedding = "qwen3-vl-embedding"
+        qwen2_5_vl_embedding = "qwen2.5-vl-embedding"
+        tongyi_embedding_vision_plus = "tongyi-embedding-vision-plus"
+        tongyi_embedding_vision_flash = "tongyi-embedding-vision-flash"
 
     @classmethod
     def call(  # type: ignore[override]
@@ -63,6 +68,13 @@ class MultiModalEmbedding(BaseApi):
         input: List[MultiModalEmbeddingItemBase],
         api_key: str = None,
         workspace: str = None,
+        dimension: int = None,
+        output_type: str = None,
+        fps: float = None,
+        instruct: str = None,
+        enable_fusion: bool = None,
+        res_level: int = None,
+        max_video_frames: int = None,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Get embedding multimodal contents..
@@ -72,6 +84,20 @@ class MultiModalEmbedding(BaseApi):
             input (List[MultiModalEmbeddingElement]): The embedding
                 elements, every element include data, modal, factor field.
             workspace (str): The dashscope workspace id.
+            dimension (int, optional): Output vector dimensions.
+                Model-specific supported values.
+            output_type (str, optional): Output vector format,
+                currently only "dense" is supported.
+            fps (float, optional): Video frame extraction ratio
+                in range [0,1]. Default: 1.0.
+            instruct (str, optional): Custom task instruction to guide
+                model understanding of query intent.
+            enable_fusion (bool, optional): Only for qwen3-vl-embedding.
+                When True, fuses all contents into 1 vector.
+            res_level (int, optional): Resolution tier: 0/1/2/3.
+                Only for snapshot models.
+            max_video_frames (int, optional): Max video sampling frames,
+                up to 64. Only for snapshot models.
             **kwargs:
                 auto_truncation(bool, `optional`): Automatically truncate
                 audio longer than 15 seconds or text longer than 70 words.
@@ -96,6 +122,20 @@ class MultiModalEmbedding(BaseApi):
             kwargs["headers"] = headers
         embedding_input["contents"] = input
         kwargs.pop("stream", False)  # not support streaming output.
+        if dimension is not None:
+            kwargs["dimension"] = dimension
+        if output_type is not None:
+            kwargs["output_type"] = output_type
+        if fps is not None:
+            kwargs["fps"] = fps
+        if instruct is not None:
+            kwargs["instruct"] = instruct
+        if enable_fusion is not None:
+            kwargs["enable_fusion"] = enable_fusion
+        if res_level is not None:
+            kwargs["res_level"] = res_level
+        if max_video_frames is not None:
+            kwargs["max_video_frames"] = max_video_frames
         task_group, function = _get_task_group_and_task(__name__)
         return super().call(
             model=model,
@@ -140,6 +180,11 @@ class AioMultiModalEmbedding(BaseAioApi):
 
     class Models:
         multimodal_embedding_one_peace_v1 = "multimodal-embedding-one-peace-v1"
+        multimodal_embedding_v1 = "multimodal-embedding-v1"
+        qwen3_vl_embedding = "qwen3-vl-embedding"
+        qwen2_5_vl_embedding = "qwen2.5-vl-embedding"
+        tongyi_embedding_vision_plus = "tongyi-embedding-vision-plus"
+        tongyi_embedding_vision_flash = "tongyi-embedding-vision-flash"
 
     @classmethod
     async def call(  # type: ignore[override]
@@ -149,6 +194,13 @@ class AioMultiModalEmbedding(BaseAioApi):
         input: List[MultiModalEmbeddingItemBase],
         api_key: str = None,
         workspace: str = None,
+        dimension: int = None,
+        output_type: str = None,
+        fps: float = None,
+        instruct: str = None,
+        enable_fusion: bool = None,
+        res_level: int = None,
+        max_video_frames: int = None,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Get embedding multimodal contents..
@@ -158,6 +210,20 @@ class AioMultiModalEmbedding(BaseAioApi):
             input (List[MultiModalEmbeddingElement]): The embedding
                 elements, every element include data, modal, factor field.
             workspace (str): The dashscope workspace id.
+            dimension (int, optional): Output vector dimensions.
+                Model-specific supported values.
+            output_type (str, optional): Output vector format,
+                currently only "dense" is supported.
+            fps (float, optional): Video frame extraction ratio
+                in range [0,1]. Default: 1.0.
+            instruct (str, optional): Custom task instruction to guide
+                model understanding of query intent.
+            enable_fusion (bool, optional): Only for qwen3-vl-embedding.
+                When True, fuses all contents into 1 vector.
+            res_level (int, optional): Resolution tier: 0/1/2/3.
+                Only for snapshot models.
+            max_video_frames (int, optional): Max video sampling frames,
+                up to 64. Only for snapshot models.
             **kwargs:
                 auto_truncation(bool, `optional`): Automatically truncate
                 audio longer than 15 seconds or text longer than 70 words.
@@ -182,6 +248,20 @@ class AioMultiModalEmbedding(BaseAioApi):
             kwargs["headers"] = headers
         embedding_input["contents"] = input
         kwargs.pop("stream", False)  # not support streaming output.
+        if dimension is not None:
+            kwargs["dimension"] = dimension
+        if output_type is not None:
+            kwargs["output_type"] = output_type
+        if fps is not None:
+            kwargs["fps"] = fps
+        if instruct is not None:
+            kwargs["instruct"] = instruct
+        if enable_fusion is not None:
+            kwargs["enable_fusion"] = enable_fusion
+        if res_level is not None:
+            kwargs["res_level"] = res_level
+        if max_video_frames is not None:
+            kwargs["max_video_frames"] = max_video_frames
         task_group, function = _get_task_group_and_task(__name__)
         response = await super().call(
             model=model,
