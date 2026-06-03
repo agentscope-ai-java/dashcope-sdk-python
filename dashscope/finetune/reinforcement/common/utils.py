@@ -292,7 +292,7 @@ main() {
     if [ "${FUNCTION_LAYER}" = "False" ]; then
         # Phase 2:
         if ! install_with_retry "virtualenv"; then
-            log "Failed to install default package: $pkg"
+            log "Failed to install default package: virtualenv"
             exit 202
         fi
         virtualenv dashscope-env
