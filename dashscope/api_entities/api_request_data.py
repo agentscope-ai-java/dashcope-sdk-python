@@ -171,8 +171,8 @@ class ApiRequestData:
     def to_query_parameters(self) -> str:
         # pylint: disable=not-an-iterable
         query_string = "?"
-        for key, value in self.parameters.items:
-            param = f"{key}/{value}&"
+        for key, value in self.parameters.items():
+            param = f"{key}={value}&"
             query_string += param
         query_string = query_string[0:-1]  # remove last #
         return urlencode(query_string)  # type: ignore[arg-type]

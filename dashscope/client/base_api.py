@@ -75,11 +75,6 @@ class AsyncAioTaskGetMixin:
                 **custom_headers,
                 **headers,
             }
-        if workspace is not None:
-            headers = {
-                "X-DashScope-WorkSpace": workspace,
-                **kwargs.pop("headers", {}),
-            }
         kwargs["headers"] = headers
         kwargs["http_method"] = HTTPMethod.GET
         return kwargs

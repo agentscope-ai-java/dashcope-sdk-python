@@ -642,9 +642,10 @@ def merge_multimodal_single_response(  # noqa: E501
     """
     # Check if all choices have been sent (for n > 1 case)
     if n > 1 and accumulated_data:
-        all_sent = any(
+        all_sent = all(
             data.get("all_choices_sent", False)
             for data in accumulated_data.values()
+            if isinstance(data, dict) and "all_choices_sent" in data
         )
         if all_sent:
             return False

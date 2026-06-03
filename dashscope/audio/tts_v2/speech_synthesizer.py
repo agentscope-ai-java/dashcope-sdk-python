@@ -490,7 +490,7 @@ class SpeechSynthesizer:
         self.model = model
         self.voice = voice
         self.aformat = format.format
-        if self.aformat == "DEFAULT":
+        if self.aformat == "Default":
             self.aformat = "mp3"
         self.sample_rate = format.sample_rate
         if self.sample_rate == 0:

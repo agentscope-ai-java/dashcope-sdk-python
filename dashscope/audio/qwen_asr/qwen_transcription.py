@@ -114,6 +114,7 @@ class QwenTranscription(BaseAsyncApi):
                 if try_count <= QwenTranscription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
                     continue
+                raise
 
             try_count = 0
             break
@@ -187,6 +188,7 @@ class QwenTranscription(BaseAsyncApi):
                 if try_count <= QwenTranscription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
                     continue
+                raise
             break
 
         return response

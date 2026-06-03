@@ -83,27 +83,30 @@ class OssUtils(GetMixin):
             "x_oss_forbid_overwrite"
         ]
         form_data["success_action_status"] = "200"
-        form_data["x-oss-content-type"] = mimetypes.guess_type(file_path)[0]
+        form_data["x-oss-content-type"] = (
+            mimetypes.guess_type(file_path)[0] or "application/octet-stream"
+        )
         url = upload_info["upload_host"]
-        # pylint: disable=consider-using-with
-        files = {"file": open(file_path, "rb")}
-        with requests.Session() as session:
-            response = session.post(
-                url,
-                files=files,
-                data=form_data,
-                headers=headers,
-                timeout=3600,
-            )
-            if response.status_code == HTTPStatus.OK:
-                return "oss://" + form_data["key"], upload_info
-            else:
-                msg = (
-                    f"Uploading file: {file_path} to oss failed, "
-                    f"error: {cls._decode_response_error(response=response)}"
+        with open(file_path, "rb") as f:
+            files = {"file": f}
+            with requests.Session() as session:
+                response = session.post(
+                    url,
+                    files=files,
+                    data=form_data,
+                    headers=headers,
+                    timeout=3600,
                 )
-                logger.error(msg)
-                raise UploadFileException(msg)
+                if response.status_code == HTTPStatus.OK:
+                    return "oss://" + form_data["key"], upload_info
+                else:
+                    msg = (
+                        f"Uploading file: {file_path} to oss failed, "
+                        f"error: "
+                        f"{cls._decode_response_error(response=response)}"
+                    )
+                    logger.error(msg)
+                    raise UploadFileException(msg)
 
     @classmethod
     def get_upload_certificate(

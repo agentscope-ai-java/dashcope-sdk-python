@@ -62,9 +62,9 @@ class History(list):
         """
         if items is not None:
             logger.warning(DEPRECATED_MESSAGE)
-            list.__init__(items)
+            list.__init__(self, items)
         else:
-            list.__init__([])
+            list.__init__(self, [])
 
 
 def _history_to_qwen_format(history: History, n_history: int):

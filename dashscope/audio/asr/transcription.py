@@ -154,6 +154,7 @@ class Transcription(BaseAsyncApi):
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
                     continue
+                raise
 
             try_count = 0
             break
@@ -228,6 +229,7 @@ class Transcription(BaseAsyncApi):
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
                     continue
+                raise
 
             break
 

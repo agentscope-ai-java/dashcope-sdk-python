@@ -566,15 +566,16 @@ class ImageSynthesisOutput(DictMixin):
         self,
         task_id: str = None,
         task_status: str = None,
-        results: List[ImageSynthesisResult] = [],
+        results: List[ImageSynthesisResult] = None,
         **kwargs,
     ):
+        if results is None:
+            results = []
         res = []
         if len(results) > 0:
             for result in results:
                 res.append(ImageSynthesisResult(**result))
         super().__init__(
-            self,
             task_id=task_id,
             task_status=task_status,
             results=res,
@@ -596,7 +597,6 @@ class VideoSynthesisOutput(DictMixin):
         **kwargs,
     ):
         super().__init__(
-            self,
             task_id=task_id,
             task_status=task_status,
             video_url=video_url,
@@ -835,7 +835,7 @@ class TextToSpeechResponse(DashScopeAPIResponse):
             if api_response.usage:
                 usage = api_response.usage
 
-            return MultiModalConversationResponse(
+            return TextToSpeechResponse(
                 status_code=api_response.status_code,
                 request_id=api_response.request_id,
                 code=api_response.code,

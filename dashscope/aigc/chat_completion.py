@@ -118,25 +118,14 @@ class Completions(CreateMixin):
         if stop is not None:
             data["stop"] = stop
         if max_tokens is not None:
-            data[max_tokens] = max_tokens  # type: ignore[index]
+            data["max_tokens"] = max_tokens
         if repetition_penalty is not None:
             data["repetition_penalty"] = repetition_penalty
         if extra_body is not None and extra_body:
             data = {**data, **extra_body}
 
         if extra_headers is not None and extra_headers:
-            kwargs = (
-                {
-                    "headers": extra_headers,
-                }
-                if kwargs
-                else {
-                    **kwargs,
-                    **{
-                        "headers": extra_headers,
-                    },
-                }
-            )
+            kwargs["headers"] = extra_headers
 
         response = super().call(
             data=data,

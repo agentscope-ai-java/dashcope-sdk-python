@@ -367,8 +367,17 @@ async def _handle_aiohttp_failed_response(
             headers,
         )
     elif SSE_CONTENT_TYPE in response.content_type:
+        error = None
         async for _, _, data in _handle_aio_stream(response):
             error = json.loads(data)
+        if error is None:
+            return DashScopeAPIResponse(
+                request_id=request_id,
+                status_code=response.status,
+                code="Unknown",
+                message="Empty SSE error response",
+                headers=headers,
+            )
         return _handle_error_message(
             error,
             response.status,
@@ -376,7 +385,7 @@ async def _handle_aiohttp_failed_response(
             headers,
         )
     else:
-        msg = response.content.decode("utf-8")
+        msg = await response.text()
         if flattened_output:
             return {"status_code": response.status, "message": msg}  # type: ignore[return-value] # pylint: disable=line-too-long # noqa: E501
         return DashScopeAPIResponse(
@@ -460,7 +469,7 @@ def _handle_http_stream_response(
                         "message": event.data,
                     }
                 else:
-                    msg = json.loads(event.eventType)
+                    msg = json.loads(event.data)
                     yield event.eventType, DashScopeAPIResponse(
                         request_id=request_id,
                         status_code=status_code,
