@@ -7,7 +7,9 @@
 
 </div>
 
-# DashScope Python Library
+# DashScope Python SDK
+
+The DashScope Python SDK provides a comprehensive interface to [Alibaba Cloud Model Studio (Bailian)](https://www.alibabacloud.com/help/en/model-studio/) APIs, covering text generation, multi-modal understanding, embeddings, reranking, image/video generation, speech synthesis & recognition, and more.
 
 ## Installation
 To install the DashScope Python SDK, simply run:
@@ -26,26 +28,25 @@ pip install dashscope[tokenizer]
 ```
 
 
-## QuickStart
-
-You can use `Generation` api to call model qwen-turbo(通义千问).
+## Quick Start
 
 ```python
 from http import HTTPStatus
-import dashscope
 from dashscope import Generation
 
-dashscope.api_key = 'YOUR-DASHSCOPE-API-KEY'
-responses = Generation.call(model=Generation.Models.qwen_turbo,
-                            prompt='今天天气好吗？')
+responses = Generation.call(
+    model="qwen-plus",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Who are you?"},
+    ],
+    result_format="message",
+)
 
 if responses.status_code == HTTPStatus.OK:
-    print('Result is: %s' % responses.output)
+    print(responses.output.choices[0].message.content)
 else:
-    print('Failed request_id: %s, status_code: %s, code: %s, message:%s' %
-            (responses.request_id, responses.status_code, responses.code,
-            responses.message))
-
+    print(f"Error: {responses.code} - {responses.message}")
 ```
 
 ## API Key Authentication
@@ -87,85 +88,416 @@ save_api_key(api_key='YOUR-DASHSCOPE-API-KEY',
 
 ```
 
+## Supported Models
 
-## Sample Code
+| Category | Recommended Models | SDK Class |
+|----------|-------------------|-----------|
+| Text Generation | qwen3.7-max, qwen3.7-plus, qwen3.6-flash | `Generation` |
+| Multi-Modal Understanding | qwen3.5-omni-plus, qwen3.7-plus (vision) | `MultiModalConversation` |
+| Text Embedding | text-embedding-v4, text-embedding-v3 | `TextEmbedding` |
+| Multi-Modal Embedding | tongyi-embedding-vision-plus, qwen3-vl-embedding | `MultiModalEmbedding` |
+| Text ReRank | qwen3-rerank, gte-rerank-v2 | `TextReRank` |
+| Image Generation | wan2.7-image-pro, qwen-image-2.0-pro | `ImageSynthesis` |
+| Video Generation | wan2.7-t2v, wan2.7-i2v, happyhorse-1.0-t2v/i2v | `VideoSynthesis` |
+| Speech Synthesis (TTS) | cosyvoice-v3.5-plus, cosyvoice-v1 | `SpeechSynthesizer`, `HttpSpeechSynthesizer` |
+| Speech Recognition (ASR) | fun-asr-realtime, fun-asr, paraformer-v1 | `Transcription` |
+| Omni (Real-time) | qwen3.5-omni-plus-realtime | `MultiModalConversation` |
 
-`call` function provides  synchronous call, the function call will return when computation is done on the server side.
+For the latest model list, visit [Bailian Model Plaza](https://bailian.console.aliyun.com/).
+
+## SDK Features
+
+### Text Generation
+
+Synchronous call with messages:
 
 ```python
 from http import HTTPStatus
 from dashscope import Generation
-# export DASHSCOPE_API_KEY='YOUR-DASHSCOPE-API-KEY' in environment
-def sync_dashscope_sample():
-    responses = Generation.call(
-        model=Generation.Models.qwen_turbo,
-        prompt='Is the weather good today?')
 
-    if responses.status_code == HTTPStatus.OK:
-        print('Result is: %s'%responses.output)
-    else:
-        print('Code: %s, status_code: %s, code: %s, message: %s'%(responses.status_code,
-                                                   responses.code,
-                                                   responses.message))
-
-if __name__ == '__main__':
-    sync_dashscope_sample()
+response = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "Tell me a joke"}],
+    result_format="message",
+)
 ```
 
-For requests with longer processing times, you can obtain partial results before the full output is generated. Set the **stream** parameter to **True**. In this case, the results will be returned in batches, and the current output mode is incremental (output will overwrite the previous content). When the output is in stream mode, the interface returns a generator, and you need to iterate through the generator to get the results. Each output contains partial data for streaming, and the last output contains the final generated result.
+Streaming:
 
-Example with simple streaming:
 ```python
-from http import HTTPStatus
-from dashscope import Generation
-
-def sample_sync_call_stream():
-    prompt_text = 'Give me a recipe using carrots, potatoes, and eggplants'
-    response_generator = Generation.call(
-        model=Generation.Models.qwen_turbo,
-        prompt=prompt_text,
-        stream=True,
-        max_length=512,
-        top_p=0.8)
-    for resp in response_generator:  # Iterate through the streaming output results
-        if resp.status_code == HTTPStatus.OK:
-            print(resp.output)
-        else:
-            print('Request failed, message: %s'%resp.message)
-
-if __name__ == '__main__':
-    sample_sync_call_stream()
-
+responses = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "Write a short poem"}],
+    result_format="message",
+    stream=True,
+)
+for response in responses:
+    if response.status_code == HTTPStatus.OK:
+        print(response.output.choices[0].message.content, end="")
 ```
-#### Stream with Messages
+
+Async (non-blocking):
+
 ```python
-from http import HTTPStatus
-from dashscope import Generation
-from dashscope.api_entities.dashscope_response import Role
+from dashscope import AioGeneration
 
-
-def stream_with_messages():
-    messages = [{'role': Role.SYSTEM, 'content': 'You are a helpful assistant.'},
-                {'role': Role.USER, 'content': '如何做西红柿炖牛腩？'}]
-    responses = Generation.call(
-        Generation.Models.qwen_turbo,
-        messages=messages,
-        result_format='message',  # set the result to be "message" format.
-        stream=True,
-    )
-    for response in responses:
-       if response.status_code == HTTPStatus.OK:
-           print(response)
-       else:
-           print('Request id: %s, Status code: %s, error code: %s, error message: %s' % (
-               response.request_id, response.status_code,
-               response.code, response.message
-           ))
-
-if __name__ == '__main__':
-    stream_with_messages()
-
+response = await AioGeneration.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "Hello"}],
+    result_format="message",
+)
 ```
+
+Key parameters: `stream`, `temperature`, `top_p`, `top_k`, `max_tokens`, `seed`, `stop`, `repetition_penalty`, `tools`, `tool_choice`, `enable_thinking`.
+
+### Multi-Modal Conversation
+
+Vision (image + text), video, and audio understanding:
+
+```python
+from dashscope import MultiModalConversation
+
+response = MultiModalConversation.call(
+    model="qwen-vl-max",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"image": "https://example.com/image.jpg"},
+            {"text": "What is in this image?"},
+        ],
+    }],
+)
+```
+
+### Text Embedding
+
+```python
+from dashscope import TextEmbedding
+
+response = TextEmbedding.call(
+    model="text-embedding-v3",
+    input="Hello world",
+    dimension=1024,
+    text_type="document",
+)
+```
+
+Parameters: `text_type` ("query" / "document"), `dimension`, `output_type` ("dense" / "sparse" / "dense&sparse"), `instruct`.
+
+### Multi-Modal Embedding
+
+```python
+from dashscope import (
+    MultiModalEmbedding,
+    MultiModalEmbeddingItemImage,
+    MultiModalEmbeddingItemText,
+)
+
+response = MultiModalEmbedding.call(
+    model="multimodal-embedding-v1",
+    input=[
+        MultiModalEmbeddingItemImage("https://example.com/image.jpg", factor=1),
+        MultiModalEmbeddingItemText("a cat", factor=1),
+    ],
+)
+```
+
+### Batch Text Embedding
+
+```python
+from dashscope import BatchTextEmbedding
+
+# Sync: submit and wait for result
+result = BatchTextEmbedding.call(
+    model="text-embedding-async-v2",
+    url="https://your-file-url/texts.txt",
+)
+
+# Or async: submit task, then poll
+task = BatchTextEmbedding.async_call(
+    model="text-embedding-async-v2",
+    url="https://your-file-url/texts.txt",
+)
+result = BatchTextEmbedding.wait(task)
+```
+
+### Text ReRank
+
+```python
+from dashscope import TextReRank
+
+response = TextReRank.call(
+    model="gte-rerank-v2",
+    query="What is deep learning?",
+    documents=[
+        "Deep learning is a subset of machine learning.",
+        "The weather is nice today.",
+        "Neural networks are the foundation of deep learning.",
+    ],
+    top_n=2,
+    return_documents=True,
+)
+```
+
+### Image Generation
+
+```python
+from dashscope import ImageSynthesis
+
+# Async task pattern
+response = ImageSynthesis.async_call(
+    model="wanx-v1",
+    prompt="A serene mountain landscape at sunset",
+)
+
+# Wait for result
+result = ImageSynthesis.wait(response)
+
+# Sync call (for wan2.2-t2i-flash/plus)
+result = ImageSynthesis.sync_call(
+    model="wan2.2-t2i-flash",
+    prompt="A serene mountain landscape at sunset",
+)
+```
+
+### Video Generation
+
+```python
+from dashscope import VideoSynthesis
+
+# Text-to-video
+response = VideoSynthesis.async_call(
+    model="wan2.7-t2v",
+    prompt="A cat playing with a ball of yarn",
+)
+
+result = VideoSynthesis.wait(response)
+```
+
+### Speech Synthesis (TTS)
+
+WebSocket streaming (real-time):
+
+```python
+from dashscope.audio.tts_v2 import SpeechSynthesizer
+
+synthesizer = SpeechSynthesizer(model="cosyvoice-v1", voice="longxiaochun")
+audio = synthesizer.call("Hello, welcome to DashScope!")
+```
+
+HTTP (one-shot):
+
+```python
+from dashscope import HttpSpeechSynthesizer
+
+result = HttpSpeechSynthesizer.call(
+    model="cosyvoice-v3-flash",
+    text="Hello, welcome to DashScope!",
+    voice="longxiaochun",
+)
+```
+
+### Speech Recognition (ASR)
+
+File transcription:
+
+```python
+from dashscope.audio.asr import Transcription
+
+# Submit transcription task
+response = Transcription.async_call(
+    model="paraformer-v1",
+    file_urls=["https://example.com/audio.wav"],
+)
+
+# Wait for result
+result = Transcription.wait(response)
+```
+
+### Tokenization
+
+```python
+from dashscope import Tokenization
+
+response = Tokenization.call(model="qwen-turbo", prompt="Hello world")
+print(response.usage)
+```
+
+Local tokenizer (requires `pip install dashscope[tokenizer]`):
+
+```python
+from dashscope import get_tokenizer
+
+tokenizer = get_tokenizer("qwen-turbo")
+tokens = tokenizer.encode("Hello world")
+```
+
+### Application
+
+Call a Bailian application:
+
+```python
+from dashscope import Application
+
+response = Application.call(app_id="YOUR_APP_ID", prompt="Hello")
+```
+
+### Fine-tuning
+
+```python
+from dashscope import FineTunes
+
+# Create a fine-tuning job
+response = FineTunes.call(
+    model="qwen-turbo",
+    training_file_ids=["file-xxx"],
+    hyper_parameters={"n_epochs": 3},
+)
+
+# Check status
+status = FineTunes.get("ft-xxx")
+```
+
+### Deployments
+
+```python
+from dashscope import Deployments
+
+# Deploy a fine-tuned model
+response = Deployments.call(model="your-finetuned-model", capacity=1)
+
+# List / get / scale / delete
+deployments = Deployments.list()
+info = Deployments.get("deployed-model-name")
+Deployments.scale("deployed-model-name", capacity=2)
+Deployments.delete("deployed-model-name")
+```
+
+### Assistants & Threads (Beta)
+
+```python
+from dashscope import Assistants, Threads, Messages, Runs
+
+# Create an assistant
+assistant = Assistants.create(
+    model="qwen-max",
+    name="Math Tutor",
+    instructions="You are a math tutor.",
+)
+
+# Create a thread and send a message
+thread = Threads.create()
+Messages.create(thread.id, content="What is 2+2?")
+
+# Run the assistant and wait for completion
+run = Runs.create(thread.id, assistant_id=assistant.id)
+result = Runs.wait(run.id, thread_id=thread.id)
+```
+
+### OpenAI-Compatible Interface
+
+```python
+from dashscope.aigc.chat_completion import Completions
+
+response = Completions.create(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "Hello"}],
+    max_tokens=100,
+)
+```
+
+## CLI Reference
+
+The DashScope CLI is installed automatically with the SDK. All commands support `-k / --api-key` for authentication (or use the `DASHSCOPE_API_KEY` environment variable).
+
+### Text Generation
+
+```shell
+dashscope generation create -m qwen-plus -p "Hello, who are you?"
+dashscope generation create -m qwen-plus -p "Tell me a story" --stream
+```
+
+### File Management
+
+```shell
+dashscope files upload --file training_data.jsonl --purpose fine-tune
+dashscope files list
+dashscope files get file-xxx
+dashscope files delete file-xxx
+```
+
+### Fine-tuning
+
+```shell
+# Create a fine-tuning job
+dashscope ft create -m qwen-turbo -t file-xxx
+
+# List jobs
+dashscope ft list
+
+# Get job status
+dashscope ft get ft-xxx
+
+# Stream training events
+dashscope ft stream ft-xxx
+
+# Cancel / delete a job
+dashscope ft cancel ft-xxx
+dashscope ft delete ft-xxx
+```
+
+### Deployments
+
+```shell
+dashscope deployments create -m your-finetuned-model --capacity 1
+dashscope deployments list
+dashscope deployments get dm-xxx
+dashscope deployments scale dm-xxx --capacity 2
+dashscope deployments delete dm-xxx
+```
+
+### OSS Upload
+
+```shell
+dashscope oss upload -m qwen-plus --file data.jsonl
+```
+
+### Agentic RL (Reinforcement Learning)
+
+```shell
+# Register reward/rollout functions
+dashscope rl register_functions \
+    --rollout-classpaths rollout.py:MyRollout \
+    --reward-classpaths reward.py:MyReward
+
+# Test registered functions
+dashscope rl test_functions instance-xxx --type reward --input '{"key": "value"}'
+
+# Upload training data
+dashscope rl upload_data --training-files train.jsonl
+
+# Run RL training workflow
+dashscope rl run -c config.yaml
+
+# Monitor jobs
+dashscope rl list
+dashscope rl get job-xxx
+dashscope rl logs job-xxx
+dashscope rl cancel job-xxx
+```
+
+### Legacy Command Support
+
+The CLI supports legacy argparse-style commands for backward compatibility:
+
+```shell
+# Legacy format (still works)
+dashscope fine_tunes.call --training_file_ids file-xxx
+
+# New format (recommended)
+dashscope ft create --training-file-ids file-xxx
+```
+
 ## Logging
 To output Dashscope logs, you need to configure the logger.
 ```shell
@@ -178,7 +510,7 @@ The output contains the following fields:
 ```
      request_id (str): The request id.
      status_code (int): HTTP status code, 200 indicates that the
-         request was successful, others indicate an error。
+         request was successful, others indicate an error.
      code (str): Error code if error occurs, otherwise empty str.
      message (str): Set to error message on error.
      output (Any): The request output.
