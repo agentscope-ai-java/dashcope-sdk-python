@@ -22,7 +22,7 @@ class TextReRank(BaseApi):
         qwen3_vl_rerank = "qwen3-vl-rerank"
 
     @classmethod
-    def call(  # type: ignore[override]
+    def call(  # type: ignore[override]  # pylint: disable=arguments-renamed
         cls,
         model: str,
         query: str,

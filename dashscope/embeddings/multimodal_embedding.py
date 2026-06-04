@@ -61,7 +61,7 @@ class MultiModalEmbedding(BaseApi):
         tongyi_embedding_vision_flash = "tongyi-embedding-vision-flash"
 
     @classmethod
-    def call(  # type: ignore[override]
+    def call(  # type: ignore[override]  # pylint: disable=arguments-renamed
         cls,
         model: str,
         # pylint: disable=redefined-builtin
@@ -187,7 +187,7 @@ class AioMultiModalEmbedding(BaseAioApi):
         tongyi_embedding_vision_flash = "tongyi-embedding-vision-flash"
 
     @classmethod
-    async def call(  # type: ignore[override]
+    async def call(  # type: ignore[override]  # pylint: disable=arguments-renamed  # noqa: E501
         cls,
         model: str,
         # pylint: disable=redefined-builtin

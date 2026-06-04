@@ -46,7 +46,7 @@ class Generation(BaseApi):
 
     @classmethod
     # type: ignore[override]
-    def call(  # pylint: disable=arguments-renamed  # type: ignore[override]
+    def call(  # pylint: disable=arguments-renamed,too-many-branches,too-many-statements  # type: ignore[override]  # noqa: E501
         cls,
         model: str,
         prompt: Any = None,
@@ -81,11 +81,11 @@ class Generation(BaseApi):
             history (list): The user provided history, deprecated.
             api_key (str, optional): The api api_key, can be None.
             messages (list): The generation messages.
-            plugins (Any): The plugin config. Can be plugins config str, or dict.
+            plugins (Any): The plugin config, str or dict.
             workspace (str): The dashscope workspace id.
             stream (bool, optional): Enable streaming output.
             temperature (float, optional): Controls randomness, range [0, 2).
-            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_p (float, optional): Nucleus sampling, range (0, 1.0].
             top_k (int, optional): Size of candidate token set for sampling.
             max_tokens (int, optional): Maximum output token count.
             seed (int, optional): Random seed for reproducibility.
@@ -302,7 +302,7 @@ class AioGeneration(BaseAioApi):
 
     # type: ignore[override]
     @classmethod
-    async def call(  # type: ignore[override] # pylint: disable=arguments-renamed # noqa: E501
+    async def call(  # type: ignore[override] # pylint: disable=arguments-renamed,too-many-branches,too-many-statements # noqa: E501
         # type: ignore[override]
         cls,
         model: str,
@@ -338,11 +338,11 @@ class AioGeneration(BaseAioApi):
             history (list): The user provided history, deprecated.
             api_key (str, optional): The api api_key, can be None.
             messages (list): The generation messages.
-            plugins (Any): The plugin config. Can be plugins config str, or dict.
+            plugins (Any): The plugin config, str or dict.
             workspace (str): The dashscope workspace id.
             stream (bool, optional): Enable streaming output.
             temperature (float, optional): Controls randomness, range [0, 2).
-            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_p (float, optional): Nucleus sampling, range (0, 1.0].
             top_k (int, optional): Size of candidate token set for sampling.
             max_tokens (int, optional): Maximum output token count.
             seed (int, optional): Random seed for reproducibility.
@@ -362,7 +362,7 @@ class AioGeneration(BaseAioApi):
         Returns:
             Union[GenerationResponse,
                   AsyncGenerator[GenerationResponse, None]]: If
-            stream is True, return AsyncGenerator, otherwise GenerationResponse.
+            stream is True, return AsyncGenerator, else GenerationResponse.
         """
         if (prompt is None or not prompt) and (
             messages is None or not messages

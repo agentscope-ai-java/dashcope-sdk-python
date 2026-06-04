@@ -26,7 +26,7 @@ class MultiModalConversation(BaseApi):
 
     @classmethod
     # type: ignore
-    def call(  # pylint: disable=arguments-renamed,too-many-branches
+    def call(  # pylint: disable=arguments-renamed,too-many-branches,too-many-statements  # noqa: E501
         cls,
         model: str,
         messages: List = None,
@@ -72,7 +72,7 @@ class MultiModalConversation(BaseApi):
             language_type (str): The synthesized language type.
             stream (bool, optional): Enable streaming output.
             temperature (float, optional): Controls randomness, range [0, 2).
-            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_p (float, optional): Nucleus sampling, range (0, 1.0].
             top_k (int, optional): Size of candidate token set for sampling.
             max_tokens (int, optional): Maximum output token count.
             seed (int, optional): Random seed for reproducibility.
@@ -270,7 +270,7 @@ class AioMultiModalConversation(BaseAioApi):
         qwen_vl_chat_v1 = "qwen-vl-chat-v1"
 
     @classmethod  # type: ignore
-    async def call(  # pylint: disable=arguments-renamed,too-many-branches
+    async def call(  # pylint: disable=arguments-renamed,too-many-branches,too-many-statements  # noqa: E501
         cls,
         model: str,
         messages: List = None,
@@ -315,7 +315,7 @@ class AioMultiModalConversation(BaseAioApi):
             language_type (str): The synthesized language type.
             stream (bool, optional): Enable streaming output.
             temperature (float, optional): Controls randomness, range [0, 2).
-            top_p (float, optional): Nucleus sampling threshold, range (0, 1.0].
+            top_p (float, optional): Nucleus sampling, range (0, 1.0].
             top_k (int, optional): Size of candidate token set for sampling.
             max_tokens (int, optional): Maximum output token count.
             seed (int, optional): Random seed for reproducibility.

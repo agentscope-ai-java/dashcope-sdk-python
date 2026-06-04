@@ -19,7 +19,7 @@ class TextEmbedding(BaseApi):
         text_embedding_v4 = "text-embedding-v4"
 
     @classmethod
-    def call(  # type: ignore[override]
+    def call(  # type: ignore[override]  # pylint: disable=arguments-renamed
         cls,
         model: str,
         input: Union[str, List[str]],  # pylint: disable=redefined-builtin

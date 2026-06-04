@@ -372,7 +372,10 @@ async def _handle_aiohttp_failed_response(
             error = json.loads(data)
         if error is None:
             if flattened_output:
-                return {"status_code": response.status, "message": "Empty SSE error response"}  # type: ignore[return-value] # noqa: E501
+                return {  # type: ignore[return-value]
+                    "status_code": response.status,
+                    "message": "Empty SSE error response",
+                }
             return DashScopeAPIResponse(
                 request_id=request_id,
                 status_code=response.status,
