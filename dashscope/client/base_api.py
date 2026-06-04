@@ -273,6 +273,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         url = _normalization_url(base_url, "tasks", task_id, "cancel")
         kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
         kwargs["base_address"] = url
+        kwargs["http_method"] = HTTPMethod.POST
         if not api_key:
             api_key = get_default_api_key()
         request = _build_api_request(
@@ -324,6 +325,8 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         Returns:
             DashScopeAPIResponse: The response data.
         """
+        import aiohttp  # pylint: disable=import-outside-toplevel
+
         base_url = kwargs.pop("base_address", None)
         url = _normalization_url(base_url, "tasks")
         params = {"page_no": page_no, "page_size": page_size}
@@ -339,22 +342,40 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             params["region"] = region
         if status is not None:
             params["status"] = status
-        kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
-        kwargs["base_address"] = url
         if not api_key:
             api_key = get_default_api_key()
-        request = _build_api_request(
-            model_name,
-            "",
-            "",
-            "",
-            "",
-            api_key=api_key,
-            is_service=False,
-            extra_url_parameters=params,
-            **kwargs,
-        )
-        return await cls._handle_request(request)
+        headers = {
+            **_workspace_header(workspace),
+            **default_headers(api_key),
+        }
+        async with aiohttp.ClientSession() as session:
+            response = await session.get(
+                url,
+                params=params,
+                headers=headers,
+            )
+            if response.status == HTTPStatus.OK:
+                json_content = await response.json()
+                request_id = ""
+                if "request_id" in json_content:
+                    request_id = json_content["request_id"]
+                    json_content.pop("request_id")
+                return DashScopeAPIResponse(
+                    request_id=request_id,
+                    status_code=response.status,
+                    code=None,  # type: ignore[arg-type]
+                    output=json_content,
+                    usage=None,
+                    message="",
+                )
+            else:
+                from dashscope.common.utils import (  # pylint: disable=import-outside-toplevel  # noqa: E501
+                    _handle_aiohttp_failed_response,
+                )
+
+                return await _handle_aiohttp_failed_response(
+                    response,
+                )
 
     @classmethod
     async def fetch(

@@ -78,4 +78,5 @@ def upload(
     if not oss_url:
         error(f"Failed to upload file: {file_path}")
 
-    success(f"Uploaded oss url: {oss_url}")
+    success("Uploaded oss url:")
+    typer.echo(oss_url)
