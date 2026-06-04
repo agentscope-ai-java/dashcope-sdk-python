@@ -125,7 +125,10 @@ class Completions(CreateMixin):
             data = {**data, **extra_body}
 
         if extra_headers is not None and extra_headers:
-            kwargs["headers"] = extra_headers
+            kwargs["headers"] = {
+                **kwargs.get("headers", {}),
+                **extra_headers,
+            }
 
         response = super().call(
             data=data,
