@@ -66,7 +66,6 @@ def upload(
             "DASHSCOPE_API_KEY or pass it as argument by -k/--api-key",
         )
 
-    # mypy 需要明确断言 resolved_key 不为 None
     assert resolved_key is not None
 
     oss_url, _ = OssUtils.upload(
