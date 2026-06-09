@@ -3,6 +3,9 @@
 
 from http import HTTPStatus
 
+import pytest
+
+from dashscope.common.error import InvalidInput
 from dashscope.utils import oss_utils
 from dashscope.utils.oss_utils import OssUtils
 
@@ -57,3 +60,88 @@ class TestOssUtils:
         assert returned_certificate is upload_certificate
         assert FakeSession.captured_file is not None
         assert FakeSession.captured_file.closed
+
+    def test_check_and_upload_local_uploads_relative_file_uri(
+        self,
+        monkeypatch,
+    ):
+        captured_file_path = {}
+
+        def fake_isfile(file_path):
+            captured_file_path["value"] = file_path
+            return True
+
+        def fake_upload(model, file_path, api_key, upload_certificate):
+            assert model == "test-model"
+            assert api_key == "test-api-key"
+            assert upload_certificate == {"cert": "value"}
+            assert file_path == "test_video_frames/frame_0000.jpg"
+            return "oss://test-dir/frame_0000.jpg", {"cert": "value"}
+
+        monkeypatch.setattr(oss_utils.os.path, "isfile", fake_isfile)
+        monkeypatch.setattr(OssUtils, "upload", fake_upload)
+
+        is_upload, file_url, certificate = oss_utils.check_and_upload_local(
+            model="test-model",
+            content="file://test_video_frames/frame_0000.jpg",
+            api_key="test-api-key",
+            upload_certificate={"cert": "value"},
+        )
+
+        assert is_upload
+        assert file_url == "oss://test-dir/frame_0000.jpg"
+        assert certificate == {"cert": "value"}
+        assert (
+            captured_file_path["value"] == "test_video_frames/frame_0000.jpg"
+        )
+
+    def test_check_and_upload_local_supports_windows_absolute_file_uri(
+        self,
+        monkeypatch,
+    ):
+        captured_file_path = {}
+
+        def fake_isfile(file_path):
+            captured_file_path["value"] = file_path
+            return True
+
+        def fake_upload(
+            model,
+            file_path,
+            api_key,
+            upload_certificate,
+        ):
+            assert model == "test-model"
+            assert file_path == "C:/Users/test/frame_0000.jpg"
+            assert api_key == "test-api-key"
+            return "oss://test-dir/frame_0000.jpg", upload_certificate
+
+        monkeypatch.setattr(oss_utils.os.path, "isfile", fake_isfile)
+        monkeypatch.setattr(OssUtils, "upload", fake_upload)
+
+        is_upload, file_url, _ = oss_utils.check_and_upload_local(
+            model="test-model",
+            content="file:///C:/Users/test/frame_0000.jpg",
+            api_key="test-api-key",
+        )
+
+        assert is_upload
+        assert file_url == "oss://test-dir/frame_0000.jpg"
+        assert captured_file_path["value"] == "C:/Users/test/frame_0000.jpg"
+
+    def test_check_and_upload_local_raises_when_file_uri_not_found(
+        self,
+        monkeypatch,
+    ):
+        monkeypatch.setattr(
+            oss_utils.os.path,
+            "isfile",
+            lambda file_path: False,
+        )
+
+        with pytest.raises(InvalidInput):
+            oss_utils.check_and_upload_local(
+                model="test-model",
+                content="file://missing/frame_0000.jpg",
+                api_key="test-api-key",
+            )
