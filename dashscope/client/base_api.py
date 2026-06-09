@@ -165,12 +165,14 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             workspace,
             **kwargs,
         )
+        wait_kwargs = kwargs.copy()
+        if wait_timeout_seconds is not None:
+            wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = await BaseAsyncAioApi.wait(
             response,
             api_key=api_key,
             workspace=workspace,
-            wait_timeout_seconds=wait_timeout_seconds,
-            **kwargs,
+            **wait_kwargs,
         )
         return response
 
@@ -626,11 +628,14 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             workspace=workspace,
             **kwargs,
         )
+        wait_kwargs = {}
+        if wait_timeout_seconds is not None:
+            wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = cls.wait(
             task_response,
             api_key=api_key,
             workspace=workspace,
-            wait_timeout_seconds=wait_timeout_seconds,
+            **wait_kwargs,
         )
         return response
 

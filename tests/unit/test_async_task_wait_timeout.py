@@ -6,8 +6,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from dashscope.aigc.image_synthesis import ImageSynthesis
+from dashscope.aigc.video_synthesis import VideoSynthesis
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
 from dashscope.client.base_api import BaseAsyncAioApi, BaseAsyncApi
+from dashscope.embeddings.batch_text_embedding import BatchTextEmbedding
 from dashscope.common.constants import TaskStatus
 from dashscope.common.error import TimeoutException
 
@@ -35,6 +38,23 @@ class TimeoutCallTestAsyncApi(BaseAsyncApi):
     @classmethod
     def wait(cls, task, api_key=None, workspace=None, **kwargs):
         cls.captured_wait_kwargs = kwargs
+        return task
+
+
+class LegacyWaitSignatureTestAsyncApi(BaseAsyncApi):
+    @classmethod
+    def async_call(cls, *_args, **_kwargs):
+        return DashScopeAPIResponse(
+            request_id="request-id",
+            status_code=HTTPStatus.OK,
+            code=None,
+            output={"task_id": "task-id"},
+            usage=None,
+            message="",
+        )
+
+    @classmethod
+    def wait(cls, task, api_key=None, workspace=None):
         return task
 
 
@@ -88,6 +108,17 @@ class TestAsyncTaskWaitTimeout:
                     "task-id",
                     wait_timeout_seconds=0,
                 )
+
+    def test_base_async_call_does_not_pass_default_wait_timeout(
+        self,
+    ):
+        response = LegacyWaitSignatureTestAsyncApi.call(
+            "model",
+            "input",
+            api_key="api-key",
+        )
+
+        assert response.output["task_id"] == "task-id"
 
     def test_base_async_call_excludes_wait_timeout_from_request(
         self,
@@ -161,4 +192,35 @@ class TestAsyncTaskWaitTimeout:
         assert (
             async_call_mock.call_args.kwargs["custom_param"] == "custom-value"
         )
+        assert wait_mock.call_args.kwargs["wait_timeout_seconds"] == 10
+
+    @pytest.mark.parametrize(
+        "api_class",
+        [ImageSynthesis, VideoSynthesis, BatchTextEmbedding],
+    )
+    def test_overridden_wait_accepts_wait_timeout(
+        self,
+        api_class,
+    ):
+        wait_response = DashScopeAPIResponse(
+            request_id="request-id",
+            status_code=HTTPStatus.BAD_REQUEST,
+            code="InvalidParameter",
+            output=None,
+            usage=None,
+            message="invalid parameter",
+        )
+
+        with patch.object(
+            BaseAsyncApi,
+            "wait",
+            return_value=wait_response,
+        ) as wait_mock:
+            response = api_class.wait(
+                "task-id",
+                api_key="api-key",
+                wait_timeout_seconds=10,
+            )
+
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         assert wait_mock.call_args.kwargs["wait_timeout_seconds"] == 10
