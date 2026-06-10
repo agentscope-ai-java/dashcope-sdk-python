@@ -13,6 +13,7 @@ from dashscope.common.constants import (
     SSE_CONTENT_TYPE,
     HTTPMethod,
 )
+from dashscope.common.env import get_trust_env
 from dashscope.common.error import UnsupportedHTTPMethod
 from dashscope.common.logging import logger
 from dashscope.common.utils import async_to_sync
@@ -249,6 +250,7 @@ class AioHttpRequest(AioBaseRequest):
             async with aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=self.timeout),
                 headers=self.headers,
+                trust_env=get_trust_env(),
             ) as session:
                 logger.debug("Starting request: %s", self.url)
                 if self.method == HTTPMethod.POST:
