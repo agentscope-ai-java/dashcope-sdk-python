@@ -153,19 +153,29 @@ class QwenTtsRealtime:
         self.thread.daemon = True
         self.thread.start()
         timeout = 5
-        start_time = time.time()
+        start_time = time.monotonic()
         while (
             not (self.ws.sock and self.ws.sock.connected)
             and not self.websocket_closed_event.is_set()
-            and (time.time() - start_time) < timeout
         ):
-            time.sleep(0.1)
+            elapsed_seconds = time.monotonic() - start_time
+            if elapsed_seconds >= timeout:
+                break
+            time.sleep(min(0.1, timeout - elapsed_seconds))
         if not self._is_websocket_connected():
             raise TimeoutError(
                 "websocket connection could not established within 5s. "
                 f"{self._build_connection_state_message()}",
             )
-        if not self.session_created_event.wait(timeout):
+        while (
+            not self.session_created_event.is_set()
+            and not self.websocket_closed_event.is_set()
+        ):
+            elapsed_seconds = time.monotonic() - start_time
+            if elapsed_seconds >= timeout:
+                break
+            time.sleep(min(0.1, timeout - elapsed_seconds))
+        if not self.session_created_event.is_set():
             raise TimeoutError(
                 "websocket session could not be created within 5s. "
                 f"{self._build_connection_state_message()}",
