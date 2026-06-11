@@ -9,6 +9,7 @@ import pytest
 from dashscope.aigc.image_synthesis import ImageSynthesis
 from dashscope.aigc.video_synthesis import VideoSynthesis
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
+from dashscope.client import base_api
 from dashscope.client.base_api import BaseAsyncAioApi, BaseAsyncApi
 from dashscope.embeddings.batch_text_embedding import BatchTextEmbedding
 from dashscope.common.constants import TaskStatus
@@ -108,6 +109,42 @@ class TestAsyncTaskWaitTimeout:
                     wait_timeout_seconds="0",
                 )
 
+    def test_base_async_api_wait_sleep_does_not_exceed_remaining_timeout(
+        self,
+    ):
+        response = DashScopeAPIResponse(
+            request_id="request-id",
+            status_code=HTTPStatus.OK,
+            code=None,
+            output={"task_status": TaskStatus.RUNNING},
+            usage=None,
+            message="",
+        )
+
+        with patch.object(
+            TimeoutWaitTestAsyncApi,
+            "_get",
+            return_value=response,
+        ):
+            with patch.object(
+                base_api.time,
+                "monotonic",
+                side_effect=[100.0, 100.2, 100.2],
+            ):
+                with patch.object(
+                    base_api.time,
+                    "sleep",
+                    side_effect=TimeoutException("stop test"),
+                ) as sleep_mock:
+                    with pytest.raises(TimeoutException):
+                        TimeoutWaitTestAsyncApi.wait(
+                            "task-id",
+                            wait_timeout_seconds=0.5,
+                        )
+
+        sleep_mock.assert_called_once()
+        assert sleep_mock.call_args.args[0] == pytest.approx(0.3)
+
     @pytest.mark.asyncio
     async def test_base_async_aio_api_wait_raises_timeout(self):
         response = DashScopeAPIResponse(
@@ -151,6 +188,43 @@ class TestAsyncTaskWaitTimeout:
                     "task-id",
                     wait_timeout_seconds="0",
                 )
+
+    @pytest.mark.asyncio
+    async def test_async_aio_wait_sleep_uses_remaining_timeout(
+        self,
+    ):
+        response = DashScopeAPIResponse(
+            request_id="request-id",
+            status_code=HTTPStatus.OK,
+            code=None,
+            output={"task_status": TaskStatus.RUNNING},
+            usage=None,
+            message="",
+        )
+
+        with patch.object(
+            TimeoutTestAsyncAioApi,
+            "_get",
+            AsyncMock(return_value=response),
+        ):
+            with patch.object(
+                base_api.time,
+                "monotonic",
+                side_effect=[100.0, 100.2, 100.2],
+            ):
+                with patch.object(
+                    base_api.asyncio,
+                    "sleep",
+                    AsyncMock(side_effect=TimeoutException("stop test")),
+                ) as sleep_mock:
+                    with pytest.raises(TimeoutException):
+                        await TimeoutTestAsyncAioApi.wait(
+                            "task-id",
+                            wait_timeout_seconds=0.5,
+                        )
+
+        sleep_mock.assert_awaited_once()
+        assert sleep_mock.await_args.args[0] == pytest.approx(0.3)
 
     def test_base_async_call_does_not_pass_default_wait_timeout(
         self,

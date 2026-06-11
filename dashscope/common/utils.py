@@ -239,6 +239,9 @@ def _handle_stream(response: requests.Response):
             if line:
                 line = line.decode("utf8")
                 line = line.rstrip("\n").rstrip("\r")
+                if not line:
+                    eventType = None
+                    continue
                 if line.startswith("id:"):
                     event_id = line[len("id:") :]
                     event.id = event_id.strip()
@@ -258,8 +261,8 @@ def _handle_stream(response: requests.Response):
                     yield (is_error, status_code, event)
                     if is_error:
                         break
-                else:
-                    continue  # ignore heartbeat...
+            else:
+                eventType = None
     except requests.exceptions.RequestException:
         logger.exception(
             "Stream response interrupted while reading SSE response, "
@@ -348,6 +351,9 @@ async def _handle_aio_stream(response):
             if line:
                 line = line.decode("utf8")
                 line = line.rstrip("\n").rstrip("\r")
+                if not line:
+                    event_type = None
+                    continue
                 if line.startswith("event:"):
                     event_type = line[len("event:") :].strip()
                     if event_type == "error":
@@ -364,6 +370,8 @@ async def _handle_aio_stream(response):
                         break
                 else:
                     continue  # ignore heartbeat...
+            else:
+                event_type = None
     except (aiohttp.ClientError, asyncio.TimeoutError):
         logger.exception(
             "Stream response interrupted while reading aiohttp SSE "
