@@ -97,13 +97,19 @@ class QwenTtsRealtime:
         self.user_workspace = workspace
         self.model = model
         self.config = {}
-        self.callback = callback
+        self.callback = callback or QwenTtsRealtimeCallback()
         self.ws = None
+        self.thread = None
         self.session_id = None
         self.last_message = None
         self.last_response_id = None
         self.last_first_text_time = None
         self.last_first_audio_delay = None
+        self.last_error = None
+        self.close_status_code = None
+        self.close_msg = None
+        self.session_created_event = threading.Event()
+        self.websocket_closed_event = threading.Event()
         self.metrics = []
 
     def _generate_event_id(self):
@@ -131,6 +137,11 @@ class QwenTtsRealtime:
         """
         connect to server, create session and return default session configuration  # noqa: E501
         """
+        self.last_error = None
+        self.close_status_code = None
+        self.close_msg = None
+        self.session_created_event.clear()
+        self.websocket_closed_event.clear()
         self.ws = websocket.WebSocketApp(
             self.url,
             header=self._get_websocket_header(),
@@ -141,23 +152,45 @@ class QwenTtsRealtime:
         self.thread = threading.Thread(target=self.ws.run_forever)
         self.thread.daemon = True
         self.thread.start()
-        timeout = 5  # 最长等待时间（秒）
+        timeout = 5
         start_time = time.time()
         while (
             not (self.ws.sock and self.ws.sock.connected)
+            and not self.websocket_closed_event.is_set()
             and (time.time() - start_time) < timeout
         ):
-            time.sleep(0.1)  # 短暂休眠，避免密集轮询
-        if not (self.ws.sock and self.ws.sock.connected):
+            time.sleep(0.1)
+        if not self._is_websocket_connected():
             raise TimeoutError(
                 "websocket connection could not established within 5s. "
-                "Please check your network connection, firewall settings, or server status.",  # noqa: E501  # pylint: disable=line-too-long
+                f"{self._build_connection_state_message()}",
+            )
+        if not self.session_created_event.wait(timeout):
+            raise TimeoutError(
+                "websocket session could not be created within 5s. "
+                f"{self._build_connection_state_message()}",
             )
         self.callback.on_open()
+
+    def _is_websocket_connected(self):
+        return bool(self.ws and self.ws.sock and self.ws.sock.connected)
+
+    def _build_connection_state_message(self):
+        return (
+            f"close_status_code: {self.close_status_code}, "
+            f"close_msg: {self.close_msg}, "
+            f"last_error: {self.last_error}, "
+            f"last_message: {self.last_message}"
+        )
 
     def __send_str(self, data: str, enable_log: bool = True):
         if enable_log:
             logger.debug("[qwen tts realtime] send string: %s", data)
+        if not self._is_websocket_connected():
+            raise ConnectionError(
+                "qwen tts realtime websocket connection is closed. "
+                f"{self._build_connection_state_message()}",
+            )
         self.ws.send(data)
 
     def update_session(
@@ -351,6 +384,7 @@ class QwenTtsRealtime:
                 if "type" in message:
                     if "session.created" == json_data["type"]:
                         self.session_id = json_data["session"]["id"]
+                        self.session_created_event.set()
                     if "response.created" == json_data["type"]:
                         self.last_response_id = json_data["response"]["id"]
                     elif "response.audio.delta" == json_data["type"]:
@@ -387,8 +421,11 @@ class QwenTtsRealtime:
         close_status_code,
         close_msg,
     ):
+        self.close_status_code = close_status_code
+        self.close_msg = close_msg
+        self.websocket_closed_event.set()
         logger.debug(
-            "[omni realtime] connection closed with code %s and message %s",  # noqa: E501
+            "[qwen tts realtime] connection closed with code %s and message %s",  # noqa: E501
             close_status_code,
             close_msg,
         )
@@ -396,9 +433,8 @@ class QwenTtsRealtime:
 
     # WebSocket发生错误的回调函数
     def on_error(self, ws, error):  # pylint: disable=unused-argument
-        print(f"websocket closed due to {error}")
-        # pylint: disable=broad-exception-raised
-        raise Exception(f"websocket closed due to {error}")
+        self.last_error = error
+        logger.error("[qwen tts realtime] websocket closed due to %s", error)
 
     # 获取上一个任务的taskId
     def get_session_id(self):

@@ -20,7 +20,12 @@ from dashscope.common.constants import (
     TaskStatus,
     HTTPMethod,
 )
-from dashscope.common.error import InvalidParameter, InvalidTask, ModelRequired
+from dashscope.common.error import (
+    InvalidParameter,
+    InvalidTask,
+    ModelRequired,
+    TimeoutException,
+)
 from dashscope.common.logging import logger
 from dashscope.common.utils import (
     _handle_http_failed_response,
@@ -148,6 +153,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         workspace: str = None,
         **kwargs,
     ) -> DashScopeAPIResponse:
+        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
         # call request service.
         response = await BaseAsyncAioApi.async_call(
             model,
@@ -159,11 +165,14 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             workspace,
             **kwargs,
         )
+        wait_kwargs = kwargs.copy()
+        if wait_timeout_seconds is not None:
+            wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = await BaseAsyncAioApi.wait(
             response,
             api_key=api_key,
             workspace=workspace,
-            **kwargs,
+            **wait_kwargs,
         )
         return response
 
@@ -202,6 +211,8 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         Returns:
             DashScopeAPIResponse: The async task information.
         """
+        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
+        start_time = time.monotonic()
         task_id = cls._get_task_id(task)
         wait_seconds = 1
         max_wait_seconds = 5
@@ -236,6 +247,12 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
+                    if (
+                        wait_timeout_seconds is not None
+                        and time.monotonic() - start_time
+                        >= wait_timeout_seconds
+                    ):
+                        raise TimeoutException(f"Wait task {task_id} timeout.")
                     await asyncio.sleep(wait_seconds)  # 异步等待
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
@@ -246,6 +263,11 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
+                if (
+                    wait_timeout_seconds is not None
+                    and time.monotonic() - start_time >= wait_timeout_seconds
+                ):
+                    raise TimeoutException(f"Wait task {task_id} timeout.")
                 await asyncio.sleep(wait_seconds)  # 异步等待
             else:
                 return rsp
@@ -432,7 +454,7 @@ class BaseAioApi:
             function (str, optional): The function of the task.
                 Defaults to None.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
             api_protocol (str, optional): Api protocol websocket or http.
                 Defaults to None.
             ws_stream_mode (str, optional): websocket stream mode,
@@ -498,7 +520,7 @@ class BaseApi:
             function (str, optional): The function of the task.
                 Defaults to None.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
             api_protocol (str, optional): Api protocol websocket or http.
                 Defaults to None.
             ws_stream_mode (str, optional): websocket stream mode,
@@ -599,16 +621,21 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Call service and get result."""
+        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
         task_response = cls.async_call(  # type: ignore[misc]
             *args,
             api_key=api_key,
             workspace=workspace,
             **kwargs,
         )
+        wait_kwargs = {}
+        if wait_timeout_seconds is not None:
+            wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = cls.wait(
             task_response,
             api_key=api_key,
             workspace=workspace,
+            **wait_kwargs,
         )
         return response
 
@@ -778,6 +805,8 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         Returns:
             DashScopeAPIResponse: The async task information.
         """
+        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
+        start_time = time.monotonic()
         task_id = cls._get_task_id(task)
         wait_seconds = 1
         max_wait_seconds = 5
@@ -789,8 +818,8 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             # the query interval after every 3(increment_steps)
             # intervals, until we hit the max waiting interval
             # of 5(seconds）
-            # TODO: investigate if we can use long-poll
-            # (server side return immediately when ready)
+            # Polling is used here because the task status API returns the
+            # current state for each request.
             if wait_seconds < max_wait_seconds and step % increment_steps == 0:
                 wait_seconds = min(wait_seconds * 2, max_wait_seconds)
             rsp = cls._get(task_id, api_key, workspace=workspace, **kwargs)
@@ -808,6 +837,12 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
+                    if (
+                        wait_timeout_seconds is not None
+                        and time.monotonic() - start_time
+                        >= wait_timeout_seconds
+                    ):
+                        raise TimeoutException(f"Wait task {task_id} timeout.")
                     time.sleep(wait_seconds)
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
@@ -818,6 +853,11 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
+                if (
+                    wait_timeout_seconds is not None
+                    and time.monotonic() - start_time >= wait_timeout_seconds
+                ):
+                    raise TimeoutException(f"Wait task {task_id} timeout.")
                 time.sleep(wait_seconds)
             else:
                 return rsp
@@ -844,7 +884,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             function (str, optional): The function of the task.
                 Defaults to None.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The async task information,
@@ -987,7 +1027,7 @@ class ListMixin:
 
         Args:
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
             path (str, optional): The path of the api, if not default.
             page_no (int, optional): Page number. Defaults to 1.
             page_size (int, optional): Items per page. Defaults to 10.
@@ -1063,7 +1103,7 @@ class GetMixin:
         Args:
             target (str): The target to get, such as model_id.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The object information in output.
@@ -1104,7 +1144,7 @@ class GetStatusMixin:
         Args:
             target (str): The target to get, such as model_id.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The object information in output.
@@ -1144,7 +1184,7 @@ class DeleteMixin:
         Args:
             target (str): The object to delete, .
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The delete result.
@@ -1193,7 +1233,7 @@ class CreateMixin:
         Args:
             data (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The created object in output.
@@ -1252,7 +1292,7 @@ class UpdateMixin:
             target (str): The target to update.
             json (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The updated object information in output.
@@ -1316,7 +1356,7 @@ class PutMixin:
             target (str): The target to update.
             json (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The updated object information in output.
@@ -1368,7 +1408,7 @@ class FileUploadMixin:
             descriptions (list[str]): The file description messages.
             params (dict): The parameters
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The uploaded file information in the output.
@@ -1418,7 +1458,7 @@ class CancelMixin:
         Args:
             target (str): The request params, key/value map.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The cancel result.
@@ -1455,25 +1495,38 @@ class CancelMixin:
 class StreamEventMixin:
     @classmethod
     def _handle_stream(cls, response: requests.Response):
-        # TODO define done message.
         is_error = False
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR
-        for line in response.iter_lines():
-            if line:
-                line = line.decode("utf8")
-                line = line.rstrip("\n").rstrip("\r")
-                if line.startswith("event:error"):
-                    is_error = True
-                elif line.startswith("status:"):
-                    status_code = line[len("status:") :]
-                    status_code = int(status_code.strip())
-                elif line.startswith("data:"):
-                    line = line[len("data:") :]
-                    yield (is_error, status_code, line)
-                    if is_error:
-                        break
-                else:
-                    continue  # ignore heartbeat...
+        event_type = None
+        try:
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode("utf8")
+                    line = line.rstrip("\n").rstrip("\r")
+                    if line.startswith("event:"):
+                        event_type = line[len("event:") :].strip()
+                        if event_type == "error":
+                            is_error = True
+                    elif line.startswith("status:"):
+                        status_code = line[len("status:") :]
+                        status_code = int(status_code.strip())
+                    elif line.startswith("data:"):
+                        line = line[len("data:") :]
+                        if event_type == "done":
+                            continue
+                        yield (is_error, status_code, line)
+                        if is_error:
+                            break
+                    else:
+                        continue  # ignore heartbeat...
+        except requests.exceptions.RequestException:
+            logger.exception(
+                "Stream response interrupted while reading SSE response, "
+                "status_code=%s, request_id=%s",
+                response.status_code,
+                response.headers.get("X-Request-Id"),
+            )
+            raise
 
     @classmethod
     def _handle_response(cls, response: requests.Response):
@@ -1529,7 +1582,7 @@ class StreamEventMixin:
         Args:
             target (str): The target to get, such as model_id.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The target outputs.

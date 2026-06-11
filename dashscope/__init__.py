@@ -28,6 +28,7 @@ from dashscope.common.env import (
     base_compatible_api_url,
     base_http_api_url,
     base_websocket_api_url,
+    trust_env,
 )
 from dashscope.finetune.deployments import Deployments
 from dashscope.finetune.finetunes import FineTunes
@@ -46,7 +47,7 @@ from dashscope.embeddings.text_embedding import TextEmbedding
 from dashscope.files import Files
 from dashscope.models import Models
 from dashscope.nlp.understanding import Understanding
-from dashscope.rerank.text_rerank import TextReRank
+from dashscope.rerank import AioTextReRank, TextReRank
 from dashscope.threads import (
     MessageFile,
     Messages,
@@ -74,6 +75,7 @@ __all__ = [
     "base_websocket_api_url",
     "api_key",
     "api_key_file_path",
+    "trust_env",
     "save_api_key",
     "AioGeneration",
     "Conversation",
@@ -106,6 +108,7 @@ __all__ = [
     "list_tokenizers",
     "Application",
     "TextReRank",
+    "AioTextReRank",
     "Assistants",
     "Threads",
     "Messages",

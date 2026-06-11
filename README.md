@@ -241,17 +241,34 @@ response = TextReRank.call(
 
 ### Image Generation
 
+Image and video generation APIs use server-side asynchronous tasks:
+
+- `async_call()` submits a task and returns task information immediately. It is not a Python `async` coroutine.
+- `call()` submits a task and blocks by polling task status until the task finishes.
+- Use `fetch()` to query task status manually, or `wait()` to block until completion.
+- Use `wait_timeout_seconds` with blocking calls to limit the maximum wait time.
+
 ```python
 from dashscope import ImageSynthesis
 
-# Async task pattern
+# Submit a server-side async task
 response = ImageSynthesis.async_call(
     model="wanx-v1",
     prompt="A serene mountain landscape at sunset",
 )
 
-# Wait for result
+# Query task status manually
+status = ImageSynthesis.fetch(response)
+
+# Or wait for result
 result = ImageSynthesis.wait(response)
+
+# Blocking call with timeout
+result = ImageSynthesis.call(
+    model="wanx-v1",
+    prompt="A serene mountain landscape at sunset",
+    wait_timeout_seconds=60,
+)
 
 # Sync call (for wan2.2-t2i-flash/plus)
 result = ImageSynthesis.sync_call(
@@ -265,13 +282,21 @@ result = ImageSynthesis.sync_call(
 ```python
 from dashscope import VideoSynthesis
 
-# Text-to-video
+# Submit a server-side async task
 response = VideoSynthesis.async_call(
     model="wan2.7-t2v",
     prompt="A cat playing with a ball of yarn",
 )
 
+# Wait for result
 result = VideoSynthesis.wait(response)
+
+# Blocking call with timeout
+result = VideoSynthesis.call(
+    model="wan2.7-t2v",
+    prompt="A cat playing with a ball of yarn",
+    wait_timeout_seconds=60,
+)
 ```
 
 ### Speech Synthesis (TTS)

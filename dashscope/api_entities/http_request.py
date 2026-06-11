@@ -18,6 +18,7 @@ from dashscope.common.constants import (
     HTTPMethod,
 )
 from dashscope.common.error import UnsupportedHTTPMethod
+from dashscope.common.env import get_trust_env
 from dashscope.common.logging import logger
 from dashscope.common.utils import (
     _handle_aio_stream,
@@ -176,6 +177,7 @@ class HttpRequest(AioBaseRequest):
                     connector=connector,
                     timeout=aiohttp.ClientTimeout(total=self.timeout),
                     headers=self.headers,
+                    trust_env=get_trust_env(),
                 )
                 should_close = True
 
@@ -223,12 +225,26 @@ class HttpRequest(AioBaseRequest):
                 # Only close if we created the session
                 if should_close:
                     await session.close()
-        except aiohttp.ClientConnectorError as e:
-            logger.error(e)
-            raise e
-        except BaseException as e:
-            logger.error(e)
-            raise e
+        except aiohttp.ClientError:
+            logger.exception(
+                "Aio HTTP request failed, url=%s, method=%s, stream=%s, "
+                "timeout=%s",
+                self.url,
+                self.method,
+                self.stream,
+                self.timeout,
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Unexpected aio HTTP request error, url=%s, method=%s, "
+                "stream=%s, timeout=%s",
+                self.url,
+                self.method,
+                self.stream,
+                self.timeout,
+            )
+            raise
 
     @staticmethod
     def __handle_parameters(params: dict) -> dict:
@@ -507,6 +523,23 @@ class HttpRequest(AioBaseRequest):
                 # Only close if we created the session
                 if should_close:
                     session.close()
-        except BaseException as e:
-            logger.error(e)
-            raise e
+        except requests.exceptions.RequestException:
+            logger.exception(
+                "HTTP request failed, url=%s, method=%s, stream=%s, "
+                "timeout=%s",
+                self.url,
+                self.method,
+                self.stream,
+                self.timeout,
+            )
+            raise
+        except Exception:
+            logger.exception(
+                "Unexpected HTTP request error, url=%s, method=%s, "
+                "stream=%s, timeout=%s",
+                self.url,
+                self.method,
+                self.stream,
+                self.timeout,
+            )
+            raise

@@ -24,6 +24,7 @@ import aiohttp
 import certifi
 import pytest
 
+import dashscope
 from dashscope.api_entities.http_request import HttpRequest
 from dashscope.api_entities.api_request_data import ApiRequestData
 from dashscope.common.constants import ApiProtocol, HTTPMethod
@@ -576,6 +577,57 @@ class TestAsyncBackwardCompatibility:
 
         # 验证临时 aio_session 被关闭（原有行为）
         mock_session.close.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_temporary_aio_session_uses_global_trust_env(self):
+        """测试临时 aio_session 会使用全局 trust_env 配置"""
+        mock_session = AsyncMock()
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.headers = {"content-type": "application/json"}
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=None)
+        mock_session.request.return_value = mock_response
+
+        http_request = HttpRequest(
+            url="http://example.com/api",
+            api_key="fake-api-key",
+            http_method=HTTPMethod.POST,
+            stream=False,
+        )
+        http_request.data = ApiRequestData(
+            model="test-model",
+            task_group="test",
+            task="test",
+            function="test",
+            input_data={"test": "data"},
+            form=None,
+            is_binary_input=False,
+            api_protocol=ApiProtocol.HTTPS,
+        )
+
+        original_trust_env = dashscope.trust_env
+        dashscope.trust_env = False
+        try:
+
+            async def mock_handle_response(_response):
+                yield mock_response
+
+            with patch(
+                "aiohttp.ClientSession",
+                return_value=mock_session,
+            ) as session_class:
+                with patch.object(
+                    http_request,
+                    "_handle_aio_response",
+                    side_effect=mock_handle_response,
+                ):
+                    _ = await http_request.aio_call()
+
+            session_class.assert_called_once()
+            assert session_class.call_args.kwargs["trust_env"] is False
+        finally:
+            dashscope.trust_env = original_trust_env
 
 
 class TestAsyncSessionLifecycle:
