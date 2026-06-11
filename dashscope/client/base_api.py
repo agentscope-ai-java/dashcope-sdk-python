@@ -212,6 +212,8 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             DashScopeAPIResponse: The async task information.
         """
         wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
+        if wait_timeout_seconds is not None:
+            wait_timeout_seconds = float(wait_timeout_seconds)
         start_time = time.monotonic()
         task_id = cls._get_task_id(task)
         wait_seconds = 1
@@ -806,6 +808,8 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             DashScopeAPIResponse: The async task information.
         """
         wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
+        if wait_timeout_seconds is not None:
+            wait_timeout_seconds = float(wait_timeout_seconds)
         start_time = time.monotonic()
         task_id = cls._get_task_id(task)
         wait_seconds = 1

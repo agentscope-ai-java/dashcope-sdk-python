@@ -129,6 +129,48 @@ class TestOssUtils:
         assert file_url == "oss://test-dir/frame_0000.jpg"
         assert captured_file_path["value"] == "C:/Users/test/frame_0000.jpg"
 
+    @pytest.mark.parametrize(
+        "file_uri",
+        [
+            "file://localhost/home/user/frame_0000.jpg",
+            "file://127.0.0.1/home/user/frame_0000.jpg",
+        ],
+    )
+    def test_check_and_upload_local_treats_loopback_host_as_local_path(
+        self,
+        monkeypatch,
+        file_uri,
+    ):
+        captured_file_path = {}
+
+        def fake_isfile(file_path):
+            captured_file_path["value"] = file_path
+            return True
+
+        def fake_upload(
+            model,
+            file_path,
+            api_key,
+            upload_certificate,
+        ):
+            assert model == "test-model"
+            assert file_path == "/home/user/frame_0000.jpg"
+            assert api_key == "test-api-key"
+            return "oss://test-dir/frame_0000.jpg", upload_certificate
+
+        monkeypatch.setattr(oss_utils.os.path, "isfile", fake_isfile)
+        monkeypatch.setattr(OssUtils, "upload", fake_upload)
+
+        is_upload, file_url, _ = oss_utils.check_and_upload_local(
+            model="test-model",
+            content=file_uri,
+            api_key="test-api-key",
+        )
+
+        assert is_upload
+        assert file_url == "oss://test-dir/frame_0000.jpg"
+        assert captured_file_path["value"] == "/home/user/frame_0000.jpg"
+
     def test_check_and_upload_local_raises_when_file_uri_not_found(
         self,
         monkeypatch,

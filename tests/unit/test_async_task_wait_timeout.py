@@ -87,6 +87,27 @@ class TestAsyncTaskWaitTimeout:
             with pytest.raises(TimeoutException):
                 TimeoutWaitTestAsyncApi.wait("task-id", wait_timeout_seconds=0)
 
+    def test_base_async_api_wait_accepts_string_timeout(self):
+        response = DashScopeAPIResponse(
+            request_id="request-id",
+            status_code=HTTPStatus.OK,
+            code=None,
+            output={"task_status": TaskStatus.RUNNING},
+            usage=None,
+            message="",
+        )
+
+        with patch.object(
+            TimeoutWaitTestAsyncApi,
+            "_get",
+            return_value=response,
+        ):
+            with pytest.raises(TimeoutException):
+                TimeoutWaitTestAsyncApi.wait(
+                    "task-id",
+                    wait_timeout_seconds="0",
+                )
+
     @pytest.mark.asyncio
     async def test_base_async_aio_api_wait_raises_timeout(self):
         response = DashScopeAPIResponse(
@@ -107,6 +128,28 @@ class TestAsyncTaskWaitTimeout:
                 await TimeoutTestAsyncAioApi.wait(
                     "task-id",
                     wait_timeout_seconds=0,
+                )
+
+    @pytest.mark.asyncio
+    async def test_base_async_aio_api_wait_accepts_string_timeout(self):
+        response = DashScopeAPIResponse(
+            request_id="request-id",
+            status_code=HTTPStatus.OK,
+            code=None,
+            output={"task_status": TaskStatus.RUNNING},
+            usage=None,
+            message="",
+        )
+
+        with patch.object(
+            TimeoutTestAsyncAioApi,
+            "_get",
+            AsyncMock(return_value=response),
+        ):
+            with pytest.raises(TimeoutException):
+                await TimeoutTestAsyncAioApi.wait(
+                    "task-id",
+                    wait_timeout_seconds="0",
                 )
 
     def test_base_async_call_does_not_pass_default_wait_timeout(
