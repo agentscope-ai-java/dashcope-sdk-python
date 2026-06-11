@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import asyncio
 import json
 from http import HTTPStatus
 
@@ -14,7 +13,6 @@ from dashscope.common.constants import (
     SSE_CONTENT_TYPE,
     HTTPMethod,
 )
-from dashscope.common.env import get_trust_env
 from dashscope.common.error import UnsupportedHTTPMethod
 from dashscope.common.logging import logger
 from dashscope.common.utils import async_to_sync
@@ -109,38 +107,25 @@ class AioHttpRequest(AioBaseRequest):
             return result
 
     async def _handle_stream(self, response):
+        # TODO define done message.
         is_error = False
         status_code = HTTPStatus.BAD_REQUEST
-        event_type = None
-        try:
-            async for line in response.content:
-                if line:
-                    line = line.decode("utf8")
-                    line = line.rstrip("\n").rstrip("\r")
-                    if line.startswith("event:"):
-                        event_type = line[len("event:") :].strip()
-                        if event_type == "error":
-                            is_error = True
-                    elif line.startswith("status:"):
-                        status_code = line[len("status:") :]
-                        status_code = int(status_code.strip())
-                    elif line.startswith("data:"):
-                        line = line[len("data:") :]
-                        if event_type == "done":
-                            continue
-                        yield (is_error, status_code, line)
-                        if is_error:
-                            break
-                    else:
-                        continue  # ignore heartbeat...
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            logger.exception(
-                "Stream response interrupted while reading aiohttp SSE "
-                "response, status_code=%s, request_id=%s",
-                response.status,
-                response.headers.get("X-Request-Id"),
-            )
-            raise
+        async for line in response.content:
+            if line:
+                line = line.decode("utf8")
+                line = line.rstrip("\n").rstrip("\r")
+                if line.startswith("event:error"):
+                    is_error = True
+                elif line.startswith("status:"):
+                    status_code = line[len("status:") :]
+                    status_code = int(status_code.strip())
+                elif line.startswith("data:"):
+                    line = line[len("data:") :]
+                    yield (is_error, status_code, line)
+                    if is_error:
+                        break
+                else:
+                    continue  # ignore heartbeat...
 
     # pylint: disable=too-many-statements
     async def _handle_response(  # pylint: disable=too-many-branches
@@ -264,7 +249,6 @@ class AioHttpRequest(AioBaseRequest):
             async with aiohttp.ClientSession(
                 timeout=aiohttp.ClientTimeout(total=self.timeout),
                 headers=self.headers,
-                trust_env=get_trust_env(),
             ) as session:
                 logger.debug("Starting request: %s", self.url)
                 if self.method == HTTPMethod.POST:
@@ -297,23 +281,9 @@ class AioHttpRequest(AioBaseRequest):
                 async with response:
                     async for rsp in self._handle_response(response):
                         yield rsp
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            logger.exception(
-                "Aio HTTP request failed, url=%s, method=%s, stream=%s, "
-                "timeout=%s",
-                self.url,
-                self.method,
-                self.stream,
-                self.timeout,
-            )
-            raise
-        except Exception:
-            logger.exception(
-                "Unexpected aio HTTP request error, url=%s, method=%s, "
-                "stream=%s, timeout=%s",
-                self.url,
-                self.method,
-                self.stream,
-                self.timeout,
-            )
-            raise
+        except aiohttp.ClientConnectorError as e:
+            logger.error(e)
+            raise e
+        except Exception as e:
+            logger.error(e)
+            raise e

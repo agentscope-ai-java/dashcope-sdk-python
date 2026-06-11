@@ -229,45 +229,36 @@ class SSEEvent:
 
 
 def _handle_stream(response: requests.Response):
+    # TODO define done message.
     is_error = False
     status_code = HTTPStatus.BAD_REQUEST
     event = SSEEvent(None, None, None)  # type: ignore[arg-type]
     eventType = None
-
-    try:
-        for line in response.iter_lines():
-            if line:
-                line = line.decode("utf8")
-                line = line.rstrip("\n").rstrip("\r")
-                if line.startswith("id:"):
-                    event_id = line[len("id:") :]
-                    event.id = event_id.strip()
-                elif line.startswith("event:"):
-                    eventType = line[len("event:") :].strip()
-                    event.eventType = eventType
-                    if eventType == "error":
-                        is_error = True
-                elif line.startswith("status:"):
-                    status_code = line[len("status:") :]
-                    status_code = int(status_code.strip())
-                elif line.startswith("data:"):
-                    line = line[len("data:") :]
-                    event.data = line.strip()
-                    if eventType is not None and eventType == "done":
-                        continue
-                    yield (is_error, status_code, event)
-                    if is_error:
-                        break
-                else:
-                    continue  # ignore heartbeat...
-    except requests.exceptions.RequestException:
-        logger.exception(
-            "Stream response interrupted while reading SSE response, "
-            "status_code=%s, request_id=%s",
-            response.status_code,
-            response.headers.get("X-Request-Id"),
-        )
-        raise
+    for line in response.iter_lines():
+        if line:
+            line = line.decode("utf8")
+            line = line.rstrip("\n").rstrip("\r")
+            if line.startswith("id:"):
+                id = line[len("id:") :]  # pylint: disable=redefined-builtin
+                event.id = id.strip()
+            elif line.startswith("event:"):
+                eventType = line[len("event:") :]
+                event.eventType = eventType.strip()
+                if eventType == "error":
+                    is_error = True
+            elif line.startswith("status:"):
+                status_code = line[len("status:") :]
+                status_code = int(status_code.strip())
+            elif line.startswith("data:"):
+                line = line[len("data:") :]
+                event.data = line.strip()
+                if eventType is not None and eventType == "done":
+                    continue
+                yield (is_error, status_code, event)
+                if is_error:
+                    break
+            else:
+                continue  # ignore heartbeat...
 
 
 def _handle_error_message(error, status_code, flattened_output, headers):
@@ -340,38 +331,25 @@ def _handle_http_failed_response(
 
 
 async def _handle_aio_stream(response):
+    # TODO define done message.
     is_error = False
     status_code = HTTPStatus.BAD_REQUEST
-    event_type = None
-    try:
-        async for line in response.content:
-            if line:
-                line = line.decode("utf8")
-                line = line.rstrip("\n").rstrip("\r")
-                if line.startswith("event:"):
-                    event_type = line[len("event:") :].strip()
-                    if event_type == "error":
-                        is_error = True
-                elif line.startswith("status:"):
-                    status_code = line[len("status:") :]
-                    status_code = int(status_code.strip())
-                elif line.startswith("data:"):
-                    line = line[len("data:") :]
-                    if event_type == "done":
-                        continue
-                    yield (is_error, status_code, line)
-                    if is_error:
-                        break
-                else:
-                    continue  # ignore heartbeat...
-    except (aiohttp.ClientError, asyncio.TimeoutError):
-        logger.exception(
-            "Stream response interrupted while reading aiohttp SSE "
-            "response, status_code=%s, request_id=%s",
-            response.status,
-            response.headers.get("X-Request-Id"),
-        )
-        raise
+    async for line in response.content:
+        if line:
+            line = line.decode("utf8")
+            line = line.rstrip("\n").rstrip("\r")
+            if line.startswith("event:error"):
+                is_error = True
+            elif line.startswith("status:"):
+                status_code = line[len("status:") :]
+                status_code = int(status_code.strip())
+            elif line.startswith("data:"):
+                line = line[len("data:") :]
+                yield (is_error, status_code, line)
+                if is_error:
+                    break
+            else:
+                continue  # ignore heartbeat...
 
 
 async def _handle_aiohttp_failed_response(

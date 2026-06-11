@@ -2,7 +2,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
-import sys
 
 from dashscope.common.constants import (
     DASHSCOPE_API_KEY_ENV,
@@ -16,12 +15,6 @@ api_version = os.environ.get(DASHSCOPE_API_VERSION_ENV, "v1")
 # read the api key from env
 api_key = os.environ.get(DASHSCOPE_API_KEY_ENV)
 api_key_file_path = os.environ.get(DASHSCOPE_API_KEY_FILE_PATH_ENV)
-trust_env = os.environ.get("DASHSCOPE_TRUST_ENV", "true").lower() in (
-    "true",
-    "1",
-    "yes",
-)
-
 
 # define api base url, ensure end /
 base_http_api_url = os.environ.get(
@@ -36,8 +29,3 @@ base_compatible_api_url = os.environ.get(
     "DASHSCOPE_COMPATIBLE_BASE_URL",
     f"https://dashscope.aliyuncs.com/compatible-mode/{api_version}",
 )
-
-
-def get_trust_env() -> bool:
-    dashscope_module = sys.modules.get("dashscope")
-    return bool(getattr(dashscope_module, "trust_env", trust_env))
