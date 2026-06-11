@@ -454,7 +454,7 @@ class BaseAioApi:
             function (str, optional): The function of the task.
                 Defaults to None.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
             api_protocol (str, optional): Api protocol websocket or http.
                 Defaults to None.
             ws_stream_mode (str, optional): websocket stream mode,
@@ -520,7 +520,7 @@ class BaseApi:
             function (str, optional): The function of the task.
                 Defaults to None.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
             api_protocol (str, optional): Api protocol websocket or http.
                 Defaults to None.
             ws_stream_mode (str, optional): websocket stream mode,
@@ -818,8 +818,8 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             # the query interval after every 3(increment_steps)
             # intervals, until we hit the max waiting interval
             # of 5(seconds）
-            # TODO: investigate if we can use long-poll
-            # (server side return immediately when ready)
+            # Polling is used here because the task status API returns the
+            # current state for each request.
             if wait_seconds < max_wait_seconds and step % increment_steps == 0:
                 wait_seconds = min(wait_seconds * 2, max_wait_seconds)
             rsp = cls._get(task_id, api_key, workspace=workspace, **kwargs)
@@ -884,7 +884,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             function (str, optional): The function of the task.
                 Defaults to None.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The async task information,
@@ -1027,7 +1027,7 @@ class ListMixin:
 
         Args:
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
             path (str, optional): The path of the api, if not default.
             page_no (int, optional): Page number. Defaults to 1.
             page_size (int, optional): Items per page. Defaults to 10.
@@ -1103,7 +1103,7 @@ class GetMixin:
         Args:
             target (str): The target to get, such as model_id.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The object information in output.
@@ -1144,7 +1144,7 @@ class GetStatusMixin:
         Args:
             target (str): The target to get, such as model_id.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The object information in output.
@@ -1184,7 +1184,7 @@ class DeleteMixin:
         Args:
             target (str): The object to delete, .
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The delete result.
@@ -1233,7 +1233,7 @@ class CreateMixin:
         Args:
             data (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The created object in output.
@@ -1292,7 +1292,7 @@ class UpdateMixin:
             target (str): The target to update.
             json (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The updated object information in output.
@@ -1356,7 +1356,7 @@ class PutMixin:
             target (str): The target to update.
             json (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The updated object information in output.
@@ -1408,7 +1408,7 @@ class FileUploadMixin:
             descriptions (list[str]): The file description messages.
             params (dict): The parameters
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The uploaded file information in the output.
@@ -1458,7 +1458,7 @@ class CancelMixin:
         Args:
             target (str): The request params, key/value map.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The cancel result.
@@ -1495,25 +1495,38 @@ class CancelMixin:
 class StreamEventMixin:
     @classmethod
     def _handle_stream(cls, response: requests.Response):
-        # TODO define done message.
         is_error = False
         status_code = HTTPStatus.INTERNAL_SERVER_ERROR
-        for line in response.iter_lines():
-            if line:
-                line = line.decode("utf8")
-                line = line.rstrip("\n").rstrip("\r")
-                if line.startswith("event:error"):
-                    is_error = True
-                elif line.startswith("status:"):
-                    status_code = line[len("status:") :]
-                    status_code = int(status_code.strip())
-                elif line.startswith("data:"):
-                    line = line[len("data:") :]
-                    yield (is_error, status_code, line)
-                    if is_error:
-                        break
-                else:
-                    continue  # ignore heartbeat...
+        event_type = None
+        try:
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode("utf8")
+                    line = line.rstrip("\n").rstrip("\r")
+                    if line.startswith("event:"):
+                        event_type = line[len("event:") :].strip()
+                        if event_type == "error":
+                            is_error = True
+                    elif line.startswith("status:"):
+                        status_code = line[len("status:") :]
+                        status_code = int(status_code.strip())
+                    elif line.startswith("data:"):
+                        line = line[len("data:") :]
+                        if event_type == "done":
+                            continue
+                        yield (is_error, status_code, line)
+                        if is_error:
+                            break
+                    else:
+                        continue  # ignore heartbeat...
+        except requests.exceptions.RequestException:
+            logger.exception(
+                "Stream response interrupted while reading SSE response, "
+                "status_code=%s, request_id=%s",
+                response.status_code,
+                response.headers.get("X-Request-Id"),
+            )
+            raise
 
     @classmethod
     def _handle_response(cls, response: requests.Response):
@@ -1569,7 +1582,7 @@ class StreamEventMixin:
         Args:
             target (str): The target to get, such as model_id.
             api_key (str, optional): The api api_key, if not present,
-                will get by default rule(TODO: api key doc). Defaults to None.
+                will use the default API key resolution rule. Defaults to None.
 
         Returns:
             DashScopeAPIResponse: The target outputs.
