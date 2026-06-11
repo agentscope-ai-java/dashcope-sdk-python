@@ -246,6 +246,7 @@ class TestAsyncTaskWaitTimeout:
             api_key="api-key",
             wait_timeout_seconds=10,
             custom_param="custom-value",
+            task="custom-task",
         )
 
         assert response.output["task_id"] == "task-id"
@@ -257,6 +258,11 @@ class TestAsyncTaskWaitTimeout:
             TimeoutCallTestAsyncApi.captured_async_call_kwargs["custom_param"]
             == "custom-value"
         )
+        assert (
+            TimeoutCallTestAsyncApi.captured_async_call_kwargs["task"]
+            == "custom-task"
+        )
+        assert "task" not in TimeoutCallTestAsyncApi.captured_wait_kwargs
         assert (
             TimeoutCallTestAsyncApi.captured_wait_kwargs[
                 "wait_timeout_seconds"
