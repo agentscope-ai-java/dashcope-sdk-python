@@ -20,12 +20,7 @@ from dashscope.common.constants import (
     TaskStatus,
     HTTPMethod,
 )
-from dashscope.common.error import (
-    InvalidParameter,
-    InvalidTask,
-    ModelRequired,
-    TimeoutException,
-)
+from dashscope.common.error import InvalidParameter, InvalidTask, ModelRequired
 from dashscope.common.logging import logger
 from dashscope.common.utils import (
     _handle_http_failed_response,
@@ -153,7 +148,6 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         workspace: str = None,
         **kwargs,
     ) -> DashScopeAPIResponse:
-        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
         # call request service.
         response = await BaseAsyncAioApi.async_call(
             model,
@@ -165,14 +159,11 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             workspace,
             **kwargs,
         )
-        wait_kwargs = kwargs.copy()
-        if wait_timeout_seconds is not None:
-            wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = await BaseAsyncAioApi.wait(
             response,
             api_key=api_key,
             workspace=workspace,
-            **wait_kwargs,
+            **kwargs,
         )
         return response
 
@@ -211,8 +202,6 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         Returns:
             DashScopeAPIResponse: The async task information.
         """
-        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
-        start_time = time.monotonic()
         task_id = cls._get_task_id(task)
         wait_seconds = 1
         max_wait_seconds = 5
@@ -247,12 +236,6 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
-                    if (
-                        wait_timeout_seconds is not None
-                        and time.monotonic() - start_time
-                        >= wait_timeout_seconds
-                    ):
-                        raise TimeoutException(f"Wait task {task_id} timeout.")
                     await asyncio.sleep(wait_seconds)  # 异步等待
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
@@ -263,11 +246,6 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
-                if (
-                    wait_timeout_seconds is not None
-                    and time.monotonic() - start_time >= wait_timeout_seconds
-                ):
-                    raise TimeoutException(f"Wait task {task_id} timeout.")
                 await asyncio.sleep(wait_seconds)  # 异步等待
             else:
                 return rsp
@@ -621,21 +599,16 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Call service and get result."""
-        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
         task_response = cls.async_call(  # type: ignore[misc]
             *args,
             api_key=api_key,
             workspace=workspace,
             **kwargs,
         )
-        wait_kwargs = {}
-        if wait_timeout_seconds is not None:
-            wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = cls.wait(
             task_response,
             api_key=api_key,
             workspace=workspace,
-            **wait_kwargs,
         )
         return response
 
@@ -805,8 +778,6 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         Returns:
             DashScopeAPIResponse: The async task information.
         """
-        wait_timeout_seconds = kwargs.pop("wait_timeout_seconds", None)
-        start_time = time.monotonic()
         task_id = cls._get_task_id(task)
         wait_seconds = 1
         max_wait_seconds = 5
@@ -837,12 +808,6 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
-                    if (
-                        wait_timeout_seconds is not None
-                        and time.monotonic() - start_time
-                        >= wait_timeout_seconds
-                    ):
-                        raise TimeoutException(f"Wait task {task_id} timeout.")
                     time.sleep(wait_seconds)
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
@@ -853,11 +818,6 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
-                if (
-                    wait_timeout_seconds is not None
-                    and time.monotonic() - start_time >= wait_timeout_seconds
-                ):
-                    raise TimeoutException(f"Wait task {task_id} timeout.")
                 time.sleep(wait_seconds)
             else:
                 return rsp
