@@ -36,23 +36,6 @@ from dashscope.common.utils import (
 )
 
 
-def _get_wait_sleep_seconds(
-    task_id: str,
-    wait_seconds: int,
-    wait_timeout_seconds,
-    start_time: float,
-):
-    if wait_timeout_seconds is None:
-        return wait_seconds
-
-    remaining_timeout_seconds = wait_timeout_seconds - (
-        time.monotonic() - start_time
-    )
-    if remaining_timeout_seconds <= 0:
-        raise TimeoutException(f"Wait task {task_id} timeout.")
-    return min(wait_seconds, remaining_timeout_seconds)
-
-
 class AsyncAioTaskGetMixin:
     @classmethod
     async def _get(
@@ -266,14 +249,13 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
-                    await asyncio.sleep(
-                        _get_wait_sleep_seconds(
-                            task_id,
-                            wait_seconds,
-                            wait_timeout_seconds,
-                            start_time,
-                        ),
-                    )  # 异步等待
+                    if (
+                        wait_timeout_seconds is not None
+                        and time.monotonic() - start_time
+                        >= wait_timeout_seconds
+                    ):
+                        raise TimeoutException(f"Wait task {task_id} timeout.")
+                    await asyncio.sleep(wait_seconds)  # 异步等待
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
                     "Get task: %s temporary failure, "
@@ -283,14 +265,12 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
-                await asyncio.sleep(
-                    _get_wait_sleep_seconds(
-                        task_id,
-                        wait_seconds,
-                        wait_timeout_seconds,
-                        start_time,
-                    ),
-                )  # 异步等待
+                if (
+                    wait_timeout_seconds is not None
+                    and time.monotonic() - start_time >= wait_timeout_seconds
+                ):
+                    raise TimeoutException(f"Wait task {task_id} timeout.")
+                await asyncio.sleep(wait_seconds)  # 异步等待
             else:
                 return rsp
 
@@ -861,14 +841,13 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
-                    time.sleep(
-                        _get_wait_sleep_seconds(
-                            task_id,
-                            wait_seconds,
-                            wait_timeout_seconds,
-                            start_time,
-                        ),
-                    )
+                    if (
+                        wait_timeout_seconds is not None
+                        and time.monotonic() - start_time
+                        >= wait_timeout_seconds
+                    ):
+                        raise TimeoutException(f"Wait task {task_id} timeout.")
+                    time.sleep(wait_seconds)
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
                     "Get task: %s temporary failure, "
@@ -878,14 +857,12 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
-                time.sleep(
-                    _get_wait_sleep_seconds(
-                        task_id,
-                        wait_seconds,
-                        wait_timeout_seconds,
-                        start_time,
-                    ),
-                )
+                if (
+                    wait_timeout_seconds is not None
+                    and time.monotonic() - start_time >= wait_timeout_seconds
+                ):
+                    raise TimeoutException(f"Wait task {task_id} timeout.")
+                time.sleep(wait_seconds)
             else:
                 return rsp
 
@@ -1530,9 +1507,6 @@ class StreamEventMixin:
                 if line:
                     line = line.decode("utf8")
                     line = line.rstrip("\n").rstrip("\r")
-                    if not line:
-                        event_type = None
-                        continue
                     if line.startswith("event:"):
                         event_type = line[len("event:") :].strip()
                         if event_type == "error":
@@ -1549,8 +1523,6 @@ class StreamEventMixin:
                             break
                     else:
                         continue  # ignore heartbeat...
-                else:
-                    event_type = None
         except requests.exceptions.RequestException:
             logger.exception(
                 "Stream response interrupted while reading SSE response, "

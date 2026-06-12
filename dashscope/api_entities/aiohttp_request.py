@@ -117,9 +117,6 @@ class AioHttpRequest(AioBaseRequest):
                 if line:
                     line = line.decode("utf8")
                     line = line.rstrip("\n").rstrip("\r")
-                    if not line:
-                        event_type = None
-                        continue
                     if line.startswith("event:"):
                         event_type = line[len("event:") :].strip()
                         if event_type == "error":
@@ -136,8 +133,6 @@ class AioHttpRequest(AioBaseRequest):
                             break
                     else:
                         continue  # ignore heartbeat...
-                else:
-                    event_type = None
         except (aiohttp.ClientError, asyncio.TimeoutError):
             logger.exception(
                 "Stream response interrupted while reading aiohttp SSE "
