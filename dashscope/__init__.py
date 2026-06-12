@@ -28,7 +28,6 @@ from dashscope.common.env import (
     base_compatible_api_url,
     base_http_api_url,
     base_websocket_api_url,
-    trust_env,
 )
 from dashscope.finetune.deployments import Deployments
 from dashscope.finetune.finetunes import FineTunes
@@ -75,7 +74,6 @@ __all__ = [
     "base_websocket_api_url",
     "api_key",
     "api_key_file_path",
-    "trust_env",
     "save_api_key",
     "AioGeneration",
     "Conversation",

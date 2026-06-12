@@ -18,7 +18,6 @@ from dashscope.common.constants import (
     HTTPMethod,
 )
 from dashscope.common.error import UnsupportedHTTPMethod
-from dashscope.common.env import get_trust_env
 from dashscope.common.logging import logger
 from dashscope.common.utils import (
     _handle_aio_stream,
@@ -177,7 +176,6 @@ class HttpRequest(AioBaseRequest):
                     connector=connector,
                     timeout=aiohttp.ClientTimeout(total=self.timeout),
                     headers=self.headers,
-                    trust_env=get_trust_env(),
                 )
                 should_close = True
 
