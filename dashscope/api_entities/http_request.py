@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
-import asyncio
 import datetime
 import json
 import ssl
@@ -226,7 +225,7 @@ class HttpRequest(AioBaseRequest):
                 # Only close if we created the session
                 if should_close:
                     await session.close()
-        except (aiohttp.ClientError, asyncio.TimeoutError):
+        except aiohttp.ClientError:
             logger.exception(
                 "Aio HTTP request failed, url=%s, method=%s, stream=%s, "
                 "timeout=%s",
