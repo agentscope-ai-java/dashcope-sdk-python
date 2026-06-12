@@ -131,12 +131,8 @@ class OssUtils(GetMixin):
 
 def _resolve_file_uri_path(file_uri: str):
     parse_result = urlparse(file_uri)
-    netloc = parse_result.netloc
-    if netloc.lower() in ("localhost", "127.0.0.1"):
-        netloc = ""
-
-    if netloc:
-        file_path = netloc + unquote_plus(parse_result.path)
+    if parse_result.netloc:
+        file_path = parse_result.netloc + unquote_plus(parse_result.path)
     else:
         file_path = unquote_plus(parse_result.path)
 
@@ -171,7 +167,7 @@ def upload_file(
                 )
             return file_url
         else:
-            raise InvalidInput(f"The file: {file_path} does not exist!")
+            raise InvalidInput(f"The file: {file_path} is not exists!")
     return None
 
 
@@ -214,7 +210,7 @@ def check_and_upload_local(
                     f"Uploading file: {content} failed",
                 )
             return True, file_url, cert
-        raise InvalidInput(f"The file: {file_path} does not exist!")
+        raise InvalidInput(f"The file: {file_path} is not exists!")
     if content.startswith("oss://"):
         return True, content, upload_certificate
     if not content.startswith("http"):
