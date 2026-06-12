@@ -650,7 +650,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             workspace=workspace,
             **kwargs,
         )
-        wait_kwargs = kwargs.copy()
+        wait_kwargs = {}
         if wait_timeout_seconds is not None:
             wait_kwargs["wait_timeout_seconds"] = wait_timeout_seconds
         response = cls.wait(

@@ -263,10 +263,6 @@ class TestAsyncTaskWaitTimeout:
             ]
             == 10
         )
-        assert (
-            TimeoutCallTestAsyncApi.captured_wait_kwargs["custom_param"]
-            == "custom-value"
-        )
 
     @pytest.mark.asyncio
     async def test_base_async_aio_call_excludes_wait_timeout_from_request(
