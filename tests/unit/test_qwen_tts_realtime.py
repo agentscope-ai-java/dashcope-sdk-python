@@ -11,11 +11,6 @@ from dashscope.audio.qwen_tts_realtime.qwen_tts_realtime import (
 )
 
 
-QWEN_TTS_REALTIME_MODULE = (
-    "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime"
-)
-
-
 class FakeConnectedSock:
     connected = True
 
@@ -54,10 +49,7 @@ class NoopThread:
 
 @pytest.fixture(autouse=True)
 def set_api_key():
-    original_api_key = dashscope.api_key
     dashscope.api_key = "test-api-key"
-    yield
-    dashscope.api_key = original_api_key
 
 
 class TestQwenTtsRealtimeConnect:
@@ -65,13 +57,13 @@ class TestQwenTtsRealtimeConnect:
         realtime_client = QwenTtsRealtime(model="qwen-tts-realtime")
 
         with patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.websocket.WebSocketApp",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.websocket.WebSocketApp",
             FakeClosingWebSocketApp,
         ), patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.threading.Thread",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.threading.Thread",
             ImmediateThread,
         ), patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.time.sleep",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.time.sleep",
         ) as sleep_mock:
             with pytest.raises(TimeoutError):
                 realtime_client.connect()
@@ -86,16 +78,16 @@ class TestQwenTtsRealtimeConnect:
             sleep_durations.append(duration)
 
         with patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.websocket.WebSocketApp",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.websocket.WebSocketApp",
             FakeWebSocketApp,
         ), patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.threading.Thread",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.threading.Thread",
             NoopThread,
         ), patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.time.monotonic",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.time.monotonic",
             side_effect=[100.0, 104.95, 105.0],
         ), patch(
-            f"{QWEN_TTS_REALTIME_MODULE}.time.sleep",
+            "dashscope.audio.qwen_tts_realtime.qwen_tts_realtime.time.sleep",
             side_effect=record_sleep,
         ):
             with pytest.raises(TimeoutError):
