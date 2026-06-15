@@ -7,7 +7,7 @@ import typer
 
 import dashscope
 from dashscope.utils.oss_utils import OssUtils
-from dashscope.cli.common import console, error, handle_sdk_error, success
+from dashscope.cli.common import console, error, success
 
 app = typer.Typer(
     name="oss",
@@ -25,7 +25,6 @@ def callback(ctx: typer.Context):
 
 
 @app.command("upload")
-@handle_sdk_error("OSS upload failed")
 def upload(
     file: str = typer.Option(
         ...,

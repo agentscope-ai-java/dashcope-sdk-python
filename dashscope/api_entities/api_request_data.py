@@ -158,6 +158,9 @@ class ApiRequestData:
 
     def _only_parameters(self) -> str:
         obj = {"model": self.model, "parameters": self.parameters, "input": {}}
+        parameters = self.parameters.copy()
+        if "raw_input" in parameters:
+            obj["input"] = parameters.pop("raw_input")
         if self.task is not None:
             obj["task"] = self.task
         if self.task_group is not None:
