@@ -8,7 +8,6 @@ is created once and shared across all sessions.
 """
 import asyncio
 import ssl
-import threading
 import weakref
 from typing import Optional
 
@@ -17,16 +16,14 @@ import certifi
 
 _shared_ssl_context: Optional[ssl.SSLContext] = None
 _aio_sessions: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
-_lock = threading.RLock()
 
 
 def get_ssl_context() -> ssl.SSLContext:
     global _shared_ssl_context
-    with _lock:
-        if _shared_ssl_context is None:
-            _shared_ssl_context = ssl.create_default_context(
-                cafile=certifi.where(),
-            )
+    if _shared_ssl_context is None:
+        _shared_ssl_context = ssl.create_default_context(
+            cafile=certifi.where(),
+        )
     return _shared_ssl_context
 
 
@@ -39,21 +36,19 @@ async def get_shared_aio_session() -> aiohttp.ClientSession:
     """
     loop = asyncio.get_running_loop()
 
-    with _lock:
-        session = _aio_sessions.get(loop)
-        if session is not None and not session.closed:
-            return session
+    session = _aio_sessions.get(loop)
+    if session is not None and not session.closed:
+        return session
 
-        connector = aiohttp.TCPConnector(ssl=get_ssl_context())
-        session = aiohttp.ClientSession(connector=connector)
-        _aio_sessions[loop] = session
+    connector = aiohttp.TCPConnector(ssl=get_ssl_context())
+    session = aiohttp.ClientSession(connector=connector)
+    _aio_sessions[loop] = session
     return session
 
 
 async def close_shared_aio_session() -> None:
     """Close the shared session for the current event loop."""
     loop = asyncio.get_running_loop()
-    with _lock:
-        session = _aio_sessions.pop(loop, None)
+    session = _aio_sessions.pop(loop, None)
     if session is not None and not session.closed:
         await session.close()
