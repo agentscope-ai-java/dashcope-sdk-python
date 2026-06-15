@@ -19,6 +19,7 @@ _shared_ssl_context: Optional[ssl.SSLContext] = None
 _aio_sessions: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
 _lock = threading.RLock()
 
+
 def get_ssl_context() -> ssl.SSLContext:
     global _shared_ssl_context
     with _lock:
