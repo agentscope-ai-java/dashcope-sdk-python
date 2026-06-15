@@ -161,21 +161,20 @@ class HttpRequest(AioBaseRequest):
             return result
 
     async def _handle_aio_request(self):  # pylint: disable=too-many-branches
-        try:
-            # Use external aio_session if provided,
-            # otherwise use shared session with connection pooling
-            if self._external_aio_session is not None:
-                session = self._external_aio_session
-            else:
-                session = await get_shared_aio_session()
+        # Use external aio_session if provided,
+        # otherwise use shared session with connection pooling
+        if self._external_aio_session is not None:
+            session = self._external_aio_session
+        else:
+            session = await get_shared_aio_session()
 
-            if self.stream:
-                request_timeout = aiohttp.ClientTimeout(
-                    total=None,
-                    sock_read=self.timeout,
-                )
-            else:
-                request_timeout = aiohttp.ClientTimeout(total=self.timeout)
+        if self.stream:
+            request_timeout = aiohttp.ClientTimeout(
+                total=None,
+                sock_read=self.timeout,
+            )
+        else:
+            request_timeout = aiohttp.ClientTimeout(total=self.timeout)
 
         logger.debug("Starting request: %s", self.url)
         if self.method == HTTPMethod.POST:
