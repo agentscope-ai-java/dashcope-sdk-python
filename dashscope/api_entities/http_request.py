@@ -462,7 +462,9 @@ class HttpRequest(AioBaseRequest):
 
         try:
             if self.method == HTTPMethod.POST:
-                is_form, form, obj = self.data.get_http_payload()
+                is_form, form, obj = False, None, {}
+                if hasattr(self, "data") and self.data is not None:
+                    is_form, form, obj = self.data.get_http_payload()
                 if is_form:
                     headers = {**self.headers}
                     headers.pop("Content-Type")
@@ -483,9 +485,12 @@ class HttpRequest(AioBaseRequest):
                         timeout=self.timeout,
                     )
             elif self.method == HTTPMethod.GET:
+                params = {}
+                if hasattr(self, "data") and self.data is not None:
+                    params = getattr(self.data, "parameters", {})
                 response = session.get(
                     url=self.url,
-                    params=self.data.parameters,
+                    params=params,
                     headers=self.headers,
                     timeout=self.timeout,
                 )

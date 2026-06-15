@@ -251,7 +251,9 @@ class AioHttpRequest(AioBaseRequest):
         ) as session:
             logger.debug("Starting request: %s", self.url)
             if self.method == HTTPMethod.POST:
-                is_form, obj = self.data.get_aiohttp_payload()
+                is_form, obj = False, {}
+                if hasattr(self, "data") and self.data is not None:
+                    is_form, obj = self.data.get_aiohttp_payload()
                 if is_form:
                     headers = {**self.headers, **obj.headers}
                     response = await session.post(
@@ -267,9 +269,12 @@ class AioHttpRequest(AioBaseRequest):
                         headers=self.headers,
                     )
             elif self.method == HTTPMethod.GET:
+                params = {}
+                if hasattr(self, "data") and self.data is not None:
+                    params = getattr(self.data, "parameters", {})
                 response = await session.get(
                     url=self.url,
-                    params=self.data.parameters,
+                    params=params,
                     headers=self.headers,
                 )
             else:
