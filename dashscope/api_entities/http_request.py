@@ -218,10 +218,7 @@ class HttpRequest(AioBaseRequest):
             async with response:
                 async for rsp in self._handle_aio_response(response):
                     yield rsp
-        except aiohttp.ClientConnectorError as e:
-            logger.error(e)
-            raise e
-        except BaseException as e:
+        except Exception as e:
             logger.error(e)
             raise e
 
@@ -507,6 +504,6 @@ class HttpRequest(AioBaseRequest):
                 # Only close if we created the session
                 if should_close:
                     session.close()
-        except BaseException as e:
+        except Exception as e:
             logger.error(e)
             raise e

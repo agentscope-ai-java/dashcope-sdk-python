@@ -297,9 +297,6 @@ class AioHttpRequest(AioBaseRequest):
             async with response:
                 async for rsp in self._handle_response(response):
                     yield rsp
-        except aiohttp.ClientConnectorError as e:
-            logger.error(e)
-            raise e
         except Exception as e:
             logger.error(e)
             raise e
