@@ -452,7 +452,7 @@ class HttpRequest(AioBaseRequest):
         else:
             yield _handle_http_failed_response(response)
 
-    def _handle_request(self):
+    def _handle_request(self):  # pylint: disable=too-many-branches
         try:
             # Use external session if provided,
             # otherwise create temporary session
