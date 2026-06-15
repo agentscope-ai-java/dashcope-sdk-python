@@ -160,75 +160,68 @@ class HttpRequest(AioBaseRequest):
             return result
 
     async def _handle_aio_request(self):  # pylint: disable=too-many-branches
-        try:
-            # Use external aio_session if provided,
-            # otherwise create temporary session
-            if self._external_aio_session is not None:
-                session = self._external_aio_session
-                should_close = False
-            else:
-                connector = aiohttp.TCPConnector(
-                    ssl=ssl.create_default_context(
-                        cafile=certifi.where(),
-                    ),
-                )
-                session = aiohttp.ClientSession(
-                    connector=connector,
-                    timeout=aiohttp.ClientTimeout(total=self.timeout),
-                    headers=self.headers,
-                )
-                should_close = True
+        # Use external aio_session if provided,
+        # otherwise create temporary session
+        if self._external_aio_session is not None:
+            session = self._external_aio_session
+            should_close = False
+        else:
+            connector = aiohttp.TCPConnector(
+                ssl=ssl.create_default_context(
+                    cafile=certifi.where(),
+                ),
+            )
+            session = aiohttp.ClientSession(
+                connector=connector,
+                timeout=aiohttp.ClientTimeout(total=self.timeout),
+                headers=self.headers,
+            )
+            should_close = True
 
-            try:
-                logger.debug("Starting request: %s", self.url)
-                if self.method == HTTPMethod.POST:
-                    is_form, obj = False, {}
-                    if hasattr(self, "data") and self.data is not None:
-                        is_form, obj = self.data.get_aiohttp_payload()
-                    if is_form:
-                        headers = {**self.headers, **obj.headers}
-                        response = await session.post(
-                            url=self.url,
-                            data=obj,
-                            headers=headers,
-                        )
-                    else:
-                        response = await session.request(
-                            "POST",
-                            url=self.url,
-                            json=obj,
-                            headers=self.headers,
-                        )
-                elif self.method == HTTPMethod.GET:
-                    # 添加条件判断
-                    params = {}
-                    if hasattr(self, "data") and self.data is not None:
-                        params = getattr(self.data, "parameters", {})
-                    if params:
-                        params = self.__handle_parameters(params)
-                    response = await session.get(
+        try:
+            logger.debug("Starting request: %s", self.url)
+            if self.method == HTTPMethod.POST:
+                is_form, obj = False, {}
+                if hasattr(self, "data") and self.data is not None:
+                    is_form, obj = self.data.get_aiohttp_payload()
+                if is_form:
+                    headers = {**self.headers, **obj.headers}
+                    response = await session.post(
                         url=self.url,
-                        params=params,
-                        headers=self.headers,
+                        data=obj,
+                        headers=headers,
                     )
                 else:
-                    raise UnsupportedHTTPMethod(
-                        f"Unsupported http method: {self.method}",
+                    response = await session.request(
+                        "POST",
+                        url=self.url,
+                        json=obj,
+                        headers=self.headers,
                     )
-                logger.debug("Response returned: %s", self.url)
-                async with response:
-                    async for rsp in self._handle_aio_response(response):
-                        yield rsp
-            finally:
-                # Only close if we created the session
-                if should_close:
-                    await session.close()
-        except aiohttp.ClientConnectorError as e:
-            logger.error(e)
-            raise e
-        except BaseException as e:
-            logger.error(e)
-            raise e
+            elif self.method == HTTPMethod.GET:
+                # 添加条件判断
+                params = {}
+                if hasattr(self, "data") and self.data is not None:
+                    params = getattr(self.data, "parameters", {})
+                if params:
+                    params = self.__handle_parameters(params)
+                response = await session.get(
+                    url=self.url,
+                    params=params,
+                    headers=self.headers,
+                )
+            else:
+                raise UnsupportedHTTPMethod(
+                    f"Unsupported http method: {self.method}",
+                )
+            logger.debug("Response returned: %s", self.url)
+            async with response:
+                async for rsp in self._handle_aio_response(response):
+                    yield rsp
+        finally:
+            # Only close if we created the session
+            if should_close:
+                await session.close()
 
     @staticmethod
     def __handle_parameters(params: dict) -> dict:
@@ -458,55 +451,51 @@ class HttpRequest(AioBaseRequest):
             yield _handle_http_failed_response(response)
 
     def _handle_request(self):
-        try:
-            # Use external session if provided,
-            # otherwise create temporary session
-            if self._external_session is not None:
-                session = self._external_session
-                should_close = False
-            else:
-                session = requests.Session()
-                should_close = True
+        # Use external session if provided,
+        # otherwise create temporary session
+        if self._external_session is not None:
+            session = self._external_session
+            should_close = False
+        else:
+            session = requests.Session()
+            should_close = True
 
-            try:
-                if self.method == HTTPMethod.POST:
-                    is_form, form, obj = self.data.get_http_payload()
-                    if is_form:
-                        headers = {**self.headers}
-                        headers.pop("Content-Type")
-                        response = session.post(
-                            url=self.url,
-                            data=obj,
-                            files=form,
-                            headers=headers,
-                            timeout=self.timeout,
-                        )
-                    else:
-                        logger.debug("Request body: %s", obj)
-                        response = session.post(
-                            url=self.url,
-                            stream=self.stream,
-                            json=obj,
-                            headers={**self.headers},
-                            timeout=self.timeout,
-                        )
-                elif self.method == HTTPMethod.GET:
-                    response = session.get(
+        try:
+            if self.method == HTTPMethod.POST:
+                is_form, form, obj = self.data.get_http_payload()
+                if is_form:
+                    headers = {**self.headers}
+                    headers.pop("Content-Type")
+                    response = session.post(
                         url=self.url,
-                        params=self.data.parameters,
-                        headers=self.headers,
+                        data=obj,
+                        files=form,
+                        headers=headers,
                         timeout=self.timeout,
                     )
                 else:
-                    raise UnsupportedHTTPMethod(
-                        f"Unsupported http method: {self.method}",
+                    logger.debug("Request body: %s", obj)
+                    response = session.post(
+                        url=self.url,
+                        stream=self.stream,
+                        json=obj,
+                        headers={**self.headers},
+                        timeout=self.timeout,
                     )
-                for rsp in self._handle_response(response):
-                    yield rsp
-            finally:
-                # Only close if we created the session
-                if should_close:
-                    session.close()
-        except BaseException as e:
-            logger.error(e)
-            raise e
+            elif self.method == HTTPMethod.GET:
+                response = session.get(
+                    url=self.url,
+                    params=self.data.parameters,
+                    headers=self.headers,
+                    timeout=self.timeout,
+                )
+            else:
+                raise UnsupportedHTTPMethod(
+                    f"Unsupported http method: {self.method}",
+                )
+            for rsp in self._handle_response(response):
+                yield rsp
+        finally:
+            # Only close if we created the session
+            if should_close:
+                session.close()
