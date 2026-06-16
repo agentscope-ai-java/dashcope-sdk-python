@@ -3,6 +3,7 @@
 
 import json
 from http import HTTPStatus
+from typing import Optional
 
 import aiohttp
 
@@ -31,6 +32,7 @@ class AioHttpRequest(AioBaseRequest):
         timeout: int = DEFAULT_REQUEST_TIMEOUT_SECONDS,
         task_id: str = None,
         user_agent: str = "",
+        session: Optional[aiohttp.ClientSession] = None,
     ) -> None:
         """HttpSSERequest, processing http server sent event stream.
 
@@ -45,16 +47,20 @@ class AioHttpRequest(AioBaseRequest):
                 Defaults to DEFAULT_REQUEST_TIMEOUT_SECONDS.
             user_agent (str, optional): Additional user agent string to
                 append. Defaults to ''.
+            session (aiohttp.ClientSession, optional): External aiohttp
+                session to use instead of the shared session. The caller is
+                responsible for closing it. Defaults to None.
         """
 
         super().__init__(user_agent=user_agent)
         self.url = url
         self.async_request = async_request
+        self._external_aio_session = session
         self.headers = {
             "Accept": "application/json",
             "Authorization": f"Bearer {api_key}",
             "Cache-Control": "no-cache",
-            **self.headers,
+            **self.headers,  # type: ignore[has-type]
         }
         self.query = query
         if self.async_request and self.query is False:
@@ -247,9 +253,16 @@ class AioHttpRequest(AioBaseRequest):
                     message=msg.decode("utf-8"),
                 )
 
+    # pylint: disable=too-many-branches
     async def _handle_request(self):
         try:
-            session = await get_shared_aio_session()
+            if self._external_aio_session is not None:
+                session = self._external_aio_session
+                should_close = False
+            else:
+                session = await get_shared_aio_session()
+                should_close = False
+
             if self.stream:
                 request_timeout = aiohttp.ClientTimeout(
                     total=None,
@@ -258,45 +271,49 @@ class AioHttpRequest(AioBaseRequest):
             else:
                 request_timeout = aiohttp.ClientTimeout(total=self.timeout)
 
-            logger.debug("Starting request: %s", self.url)
-            if self.method == HTTPMethod.POST:
-                is_form, obj = False, {}
-                if hasattr(self, "data") and self.data is not None:
-                    is_form, obj = self.data.get_aiohttp_payload()
-                if is_form:
-                    headers = {**self.headers, **obj.headers}
-                    response = await session.post(
+            try:
+                logger.debug("Starting request: %s", self.url)
+                if self.method == HTTPMethod.POST:
+                    is_form, obj = False, {}
+                    if hasattr(self, "data") and self.data is not None:
+                        is_form, obj = self.data.get_aiohttp_payload()
+                    if is_form:
+                        headers = {**self.headers, **obj.headers}
+                        response = await session.post(
+                            url=self.url,
+                            data=obj,
+                            headers=headers,
+                            timeout=request_timeout,
+                        )
+                    else:
+                        response = await session.request(
+                            "POST",
+                            url=self.url,
+                            json=obj,
+                            headers=self.headers,
+                            timeout=request_timeout,
+                        )
+                elif self.method == HTTPMethod.GET:
+                    params = {}
+                    if hasattr(self, "data") and self.data is not None:
+                        params = getattr(self.data, "parameters", {})
+                    response = await session.get(
                         url=self.url,
-                        data=obj,
-                        headers=headers,
-                        timeout=request_timeout,
-                    )
-                else:
-                    response = await session.request(
-                        "POST",
-                        url=self.url,
-                        json=obj,
+                        params=params,
                         headers=self.headers,
                         timeout=request_timeout,
                     )
-            elif self.method == HTTPMethod.GET:
-                params = {}
-                if hasattr(self, "data") and self.data is not None:
-                    params = getattr(self.data, "parameters", {})
-                response = await session.get(
-                    url=self.url,
-                    params=params,
-                    headers=self.headers,
-                    timeout=request_timeout,
-                )
-            else:
-                raise UnsupportedHTTPMethod(
-                    f"Unsupported http method: {self.method}",
-                )
-            logger.debug("Response returned: %s", self.url)
-            async with response:
-                async for rsp in self._handle_response(response):
-                    yield rsp
+                else:
+                    raise UnsupportedHTTPMethod(
+                        f"Unsupported http method: {self.method}",
+                    )
+                logger.debug("Response returned: %s", self.url)
+                async with response:
+                    async for rsp in self._handle_response(response):
+                        yield rsp
+            finally:
+                if should_close:
+                    await session.close()
         except Exception as e:
-            logger.error(e)
+            logger.debug(e)
             raise e

@@ -21,6 +21,7 @@ from dashscope.audio.http_tts.http_speech_synthesizer import (
     HttpSpeechSynthesizer,
 )
 from dashscope.audio.tts.speech_synthesizer import SpeechSynthesizer
+from dashscope.api_entities.aio_session import close_shared_aio_session
 from dashscope.common.api_key import save_api_key
 from dashscope.common.env import (
     api_key,
@@ -75,6 +76,7 @@ __all__ = [
     "api_key",
     "api_key_file_path",
     "save_api_key",
+    "close_shared_aio_session",
     "AioGeneration",
     "Conversation",
     "Generation",
