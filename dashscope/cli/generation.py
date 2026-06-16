@@ -6,7 +6,11 @@ from typing import Optional
 import typer
 
 from dashscope.aigc import Generation
-from dashscope.cli.common import console, print_failed_message
+from dashscope.cli.common import (
+    console,
+    handle_sdk_error,
+    print_failed_message,
+)
 
 app = typer.Typer(
     name="generation",
@@ -24,6 +28,7 @@ def callback(ctx: typer.Context):
 
 
 @app.command("create")
+@handle_sdk_error("Generation request failed")
 def create(
     prompt: str = typer.Option(..., "-p", "--prompt", help="Input prompt"),
     model: str = typer.Option(..., "-m", "--model", help="The model to call"),
@@ -46,13 +51,17 @@ def create(
         for rsp in response:
             if rsp.status_code == HTTPStatus.OK:
                 console.print(rsp.output)
-                console.print(rsp.usage)
+                usage = getattr(rsp, "usage", None)
+                if usage:
+                    console.print(usage)
             else:
                 print_failed_message(rsp)
     else:
         if response.status_code == HTTPStatus.OK:
             console.print(response.output)
-            console.print(response.usage)
+            usage = getattr(response, "usage", None)
+            if usage:
+                console.print(usage)
         else:
             print_failed_message(response)
             raise typer.Exit(1)

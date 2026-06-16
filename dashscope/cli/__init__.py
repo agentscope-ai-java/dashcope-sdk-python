@@ -7,6 +7,7 @@ sub-modules (generation, fine_tunes, files, etc.).
 """
 import sys
 import warnings
+from typing import Optional
 
 # Suppress urllib3 NotOpenSSLWarning on systems with LibreSSL
 warnings.filterwarnings(
@@ -18,12 +19,34 @@ warnings.filterwarnings(
 import typer  # noqa: E402
 
 import dashscope  # noqa: E402
+from dashscope.cli.common import err_console  # noqa: E402
+from dashscope.common.error import AuthenticationError  # noqa: E402
 from dashscope.cli import (  # noqa: E402
+    application,
+    assistant_files,
+    assistants,
+    code_generation,
     deployments,
+    embeddings,
     files,
     fine_tunes,
     generation,
+    image_generation,
+    image_synthesis,
+    messages,
+    models,
+    multimodal_conversation,
+    multimodal_embedding,
     oss,
+    rerank,
+    runs,
+    speech_synthesis,
+    steps,
+    threads,
+    tokenization,
+    transcription,
+    understanding,
+    video_synthesis,
 )
 
 
@@ -69,6 +92,56 @@ _PARAM_MAP = {
     "--page_size": "--page-size",
 }
 
+_TOP_LEVEL_COMMANDS = {
+    "generation",
+    "ft",
+    "fine-tunes",
+    "files",
+    "deployments",
+    "oss",
+    "rerank",
+    "embeddings",
+    "tokenization",
+    "models",
+    "understanding",
+    "application",
+    "code-generation",
+    "image-synthesis",
+    "video-synthesis",
+    "image-generation",
+    "multimodal-conversation",
+    "multimodal-embedding",
+    "transcription",
+    "speech-synthesis",
+    "assistants",
+    "assistant-files",
+    "threads",
+    "messages",
+    "runs",
+    "steps",
+    "rl",
+    "agentic-rl",
+}
+
+
+_COMMANDS_WITH_LOCAL_API_KEY = {"oss", "rl", "agentic-rl"}
+_LEGACY_COMMANDS_WITH_SIZE_OPTION = {
+    "files.list",
+    "fine_tunes.list",
+    "deployments.list",
+}
+
+
+def _translate_param_name(arg):
+    """Translate legacy underscore option names to Typer hyphen names."""
+    if arg in _PARAM_MAP:
+        return _PARAM_MAP[arg]
+    if arg.startswith("--") and "=" in arg:
+        option_name, option_value = arg.split("=", 1)
+        if option_name in _PARAM_MAP:
+            return f"{_PARAM_MAP[option_name]}={option_value}"
+    return arg
+
 
 def _translate_legacy_args(argv):
     """Translate legacy argparse command format to Typer format.
@@ -81,59 +154,95 @@ def _translate_legacy_args(argv):
     if len(argv) < 2:
         return argv
 
-    new_argv = [argv[0]]  # Keep program name
-    i = 1
+    is_legacy_command = argv[1] in _COMMAND_MAP
+    if not is_legacy_command:
+        return [argv[0]] + [_translate_param_name(arg) for arg in argv[1:]]
 
-    # Check if first arg is a legacy command
-    if i < len(argv) and argv[i] in _COMMAND_MAP:
-        # Split "fine_tunes.call" into ["fine-tunes", "call"]
-        new_cmd = _COMMAND_MAP[argv[i]].split()
-        new_argv.extend(new_cmd)
-        i += 1
-
-    # Process remaining args
+    command_args = _COMMAND_MAP[argv[1]].split()
+    top_level_args = []
+    translated_args = []
+    i = 2
     while i < len(argv):
         arg = argv[i]
+        translated_arg = _translate_param_name(arg)
+        if argv[1] in _LEGACY_COMMANDS_WITH_SIZE_OPTION:
+            if translated_arg == "--page-size":
+                translated_arg = "--size"
+            elif translated_arg.startswith("--page-size="):
+                translated_arg = translated_arg.replace(
+                    "--page-size=",
+                    "--size=",
+                    1,
+                )
 
-        # Translate parameter names
-        if arg in _PARAM_MAP:
-            new_argv.append(_PARAM_MAP[arg])
-        elif arg.startswith("--") and "=" in arg:
-            opt, val = arg.split("=", 1)
-            if opt in _PARAM_MAP:
-                new_argv.append(f"{_PARAM_MAP[opt]}={val}")
+        if translated_arg == "--api-key":
+            top_level_args.append("--api-key")
+            if i + 1 < len(argv):
+                top_level_args.append(argv[i + 1])
+                i += 2
             else:
-                new_argv.append(arg)
-        else:
-            new_argv.append(arg)
+                i += 1
+            continue
 
+        if translated_arg.startswith("--api-key="):
+            top_level_args.append(translated_arg)
+            i += 1
+            continue
+
+        translated_args.append(translated_arg)
         i += 1
 
-    return new_argv
+    return [argv[0]] + top_level_args + command_args + translated_args
+
+
+def _exit_missing_api_key_value(option_name):
+    err_console.print(
+        f"[red]Error:[/red] Option '{option_name}' requires an argument.",
+    )
+    sys.exit(2)
 
 
 def _extract_global_api_key(argv):
     """Extract global -k/--api-key from argv and set dashscope.api_key.
 
-    Returns modified argv with api-key args removed.
+    For backward compatibility, global api-key can appear before or after most
+    command names. Commands that define their own local api-key option are left
+    untouched once their command name has been reached.
     """
     new_argv = []
     i = 0
+    current_command = None
     while i < len(argv):
         arg = argv[i]
 
-        # Check for -k or --api-key
+        if i > 0 and current_command is None and arg in _TOP_LEVEL_COMMANDS:
+            current_command = arg
+
+        should_parse_global_api_key = (
+            current_command not in _COMMANDS_WITH_LOCAL_API_KEY
+        )
+
         if arg in ("-k", "--api-key"):
-            # Next arg should be the key value
-            if i + 1 < len(argv):
-                dashscope.api_key = argv[i + 1]
-                i += 2  # Skip both -k and the value
+            if i + 1 >= len(argv):
+                _exit_missing_api_key_value(arg)
+            next_arg = argv[i + 1]
+            if not next_arg or next_arg.startswith("-"):
+                _exit_missing_api_key_value(arg)
+            if should_parse_global_api_key:
+                if next_arg in _TOP_LEVEL_COMMANDS:
+                    _exit_missing_api_key_value(arg)
+                dashscope.api_key = next_arg
+                i += 2
                 continue
-        elif arg.startswith("--api-key="):
-            # Handle --api-key=value format
-            dashscope.api_key = arg.split("=", 1)[1]
-            i += 1
-            continue
+
+        if arg.startswith("--api-key="):
+            api_key = arg.split("=", 1)[1]
+            if not api_key:
+                _exit_missing_api_key_value("--api-key")
+            if should_parse_global_api_key:
+                dashscope.api_key = api_key
+                i += 1
+                continue
 
         new_argv.append(arg)
         i += 1
@@ -153,6 +262,21 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 
+
+@app.callback()
+def callback(
+    api_key: Optional[str] = typer.Option(
+        None,
+        "-k",
+        "--api-key",
+        help="DashScope API Key.",
+    ),
+):
+    """Configure global CLI options."""
+    if api_key:
+        dashscope.api_key = api_key
+
+
 # Register sub-command groups
 app.add_typer(generation.app)
 app.add_typer(fine_tunes.app, name="ft")
@@ -160,6 +284,26 @@ app.add_typer(fine_tunes.app, name="fine-tunes", hidden=True)
 app.add_typer(files.app)
 app.add_typer(deployments.app)
 app.add_typer(oss.app)
+app.add_typer(rerank.app)
+app.add_typer(embeddings.app)
+app.add_typer(tokenization.app)
+app.add_typer(models.app)
+app.add_typer(understanding.app)
+app.add_typer(application.app)
+app.add_typer(code_generation.app)
+app.add_typer(image_synthesis.app)
+app.add_typer(video_synthesis.app)
+app.add_typer(image_generation.app)
+app.add_typer(multimodal_conversation.app)
+app.add_typer(multimodal_embedding.app)
+app.add_typer(transcription.app)
+app.add_typer(speech_synthesis.app)
+app.add_typer(assistants.app)
+app.add_typer(assistant_files.app)
+app.add_typer(threads.app)
+app.add_typer(messages.app)
+app.add_typer(runs.app)
+app.add_typer(steps.app)
 
 
 def _register_rl_app():
@@ -176,10 +320,22 @@ def _register_rl_app():
             name="rl",
             help="🚀 Agentic RL fine-tuning commands",
         )
-    except ImportError:
-        pass
-    except Exception:
-        pass
+        app.add_typer(
+            rl_app,
+            name="agentic-rl",
+            help="🚀 Agentic RL fine-tuning commands",
+            hidden=True,
+        )
+    except ImportError as exception:
+        err_console.print(
+            "[yellow]Warning:[/yellow] Failed to register rl command: "
+            f"{exception}",
+        )
+    except Exception as exception:
+        err_console.print(
+            "[yellow]Warning:[/yellow] Failed to register rl command: "
+            f"{exception}",
+        )
 
 
 _register_rl_app()
@@ -187,13 +343,18 @@ _register_rl_app()
 
 def main():
     """Entry point for the ``dashscope`` console script."""
-    # Extract global api-key parameter FIRST
-    argv = _extract_global_api_key(sys.argv)
+    # Translate legacy command format first so legacy --api_key can be treated
+    # as the global --api-key option.
+    argv = _translate_legacy_args(sys.argv)
 
-    # Then translate legacy command format
-    argv = _translate_legacy_args(argv)
+    # Extract global api-key parameter after legacy argument normalization.
+    argv = _extract_global_api_key(argv)
 
     # Update sys.argv for Typer
     sys.argv = argv
 
-    app()
+    try:
+        app()
+    except AuthenticationError as exception:
+        err_console.print(f"[red]Error:[/red] {exception}")
+        sys.exit(1)

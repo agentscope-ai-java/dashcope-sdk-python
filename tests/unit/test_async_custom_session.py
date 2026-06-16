@@ -134,11 +134,11 @@ class TestAsyncSessionUsage:
         mock_session.close.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_shared_aio_session_is_used_when_no_custom_session(
+    async def test_temporary_aio_session_is_created_when_no_custom_session(
         self,
     ):
-        """测试没有自定义 aio_session 时使用共享 session（不被关闭）"""
-        # 创建 mock shared session
+        """测试没有自定义 aio_session 时会创建临时 aio_session"""
+        # 创建 mock session
         mock_session = AsyncMock()
         mock_response = AsyncMock()
         mock_response.status = 200
@@ -172,10 +172,7 @@ class TestAsyncSessionUsage:
         async def mock_handle_response(_response):
             yield mock_response
 
-        with patch(
-            "dashscope.api_entities.http_request.get_shared_aio_session",
-            return_value=mock_session,
-        ):
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             with patch.object(
                 http_request,
                 "_handle_aio_response",
@@ -183,8 +180,8 @@ class TestAsyncSessionUsage:
             ):
                 _ = await http_request.aio_call()
 
-        # 共享 session 不应被关闭（由 aio_session 模块管理生命周期）
-        mock_session.close.assert_not_called()
+        # 验证临时 aio_session 被关闭
+        mock_session.close.assert_called_once()
 
 
 class TestAsyncSessionResourceManagement:
@@ -240,8 +237,8 @@ class TestAsyncSessionResourceManagement:
         custom_session.close.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_shared_aio_session_not_closed_on_success(self):
-        """测试共享 aio_session 在成功后不被关闭（由模块管理生命周期）"""
+    async def test_temporary_aio_session_closed_on_success(self):
+        """测试临时 aio_session 在成功后被关闭"""
         mock_session = AsyncMock()
         mock_response = AsyncMock()
         mock_response.status = 200
@@ -272,10 +269,7 @@ class TestAsyncSessionResourceManagement:
         async def mock_handle_response(_response):
             yield mock_response
 
-        with patch(
-            "dashscope.api_entities.http_request.get_shared_aio_session",
-            return_value=mock_session,
-        ):
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             with patch.object(
                 http_request,
                 "_handle_aio_response",
@@ -283,12 +277,12 @@ class TestAsyncSessionResourceManagement:
             ):
                 _ = await http_request.aio_call()
 
-        # 共享 session 不应被关闭
-        mock_session.close.assert_not_called()
+        # 验证临时 aio_session 被关闭
+        mock_session.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_shared_aio_session_not_closed_on_exception(self):
-        """测试共享 aio_session 在异常时也不被关闭"""
+    async def test_temporary_aio_session_closed_on_exception(self):
+        """测试临时 aio_session 在异常时也被关闭"""
         mock_session = AsyncMock()
 
         # Make request() raise an exception
@@ -317,15 +311,12 @@ class TestAsyncSessionResourceManagement:
         http_request.data = request_data
 
         # 执行请求应该抛出异常
-        with patch(
-            "dashscope.api_entities.http_request.get_shared_aio_session",
-            return_value=mock_session,
-        ):
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             with pytest.raises(Exception, match="Network error"):
                 _ = await http_request.aio_call()
 
-        # 共享 session 仍然不应被关闭（由模块管理生命周期）
-        mock_session.close.assert_not_called()
+        # 验证临时 aio_session 仍然被关闭
+        mock_session.close.assert_called_once()
 
 
 class TestAsyncSessionWithCustomConfiguration:
@@ -542,8 +533,8 @@ class TestAsyncBackwardCompatibility:
         assert http_request.method == HTTPMethod.POST
 
     @pytest.mark.asyncio
-    async def test_default_behavior_uses_shared_session(self):
-        """测试默认行为使用共享 session（不被关闭）"""
+    async def test_default_behavior_unchanged(self):
+        """测试默认行为未改变"""
         mock_session = AsyncMock()
         mock_response = AsyncMock()
         mock_response.status = 200
@@ -575,10 +566,7 @@ class TestAsyncBackwardCompatibility:
         async def mock_handle_response(_response):
             yield mock_response
 
-        with patch(
-            "dashscope.api_entities.http_request.get_shared_aio_session",
-            return_value=mock_session,
-        ):
+        with patch("aiohttp.ClientSession", return_value=mock_session):
             with patch.object(
                 http_request,
                 "_handle_aio_response",
@@ -586,8 +574,8 @@ class TestAsyncBackwardCompatibility:
             ):
                 _ = await http_request.aio_call()
 
-        # 共享 session 不应被关闭（生命周期由 aio_session 模块管理）
-        mock_session.close.assert_not_called()
+        # 验证临时 aio_session 被关闭（原有行为）
+        mock_session.close.assert_called_once()
 
 
 class TestAsyncSessionLifecycle:
