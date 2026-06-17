@@ -160,14 +160,13 @@ class Application(BaseApi):
         if to_merge_incremental_output:
             kwargs["incremental_output"] = True
 
-        # Pass incremental_to_full flag via user-agent (append)
-        if "headers" not in kwargs:
-            kwargs["headers"] = {}
+        # Pass incremental_to_full flag via user_agent parameter to avoid
+        # overwriting the default SDK user-agent
         flag = "1" if to_merge_incremental_output else "0"
-        existing_ua = kwargs["headers"].get("user-agent", "")
+        existing_ua = kwargs.get("user_agent", "")
         new_ua = f"incremental_to_full/{flag}"
-        kwargs["headers"]["user-agent"] = (
-            f"{existing_ua} {new_ua}".strip() if existing_ua else new_ua
+        kwargs["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
         )
 
         (
@@ -273,6 +272,11 @@ class Application(BaseApi):
 
         for rsp in response:
             parsed_response = ApplicationResponse.from_api_response(rsp)
+            if parsed_response.output and not hasattr(
+                parsed_response.output,
+                "choices",
+            ):
+                parsed_response.output.choices = None
             result = merge_single_response(
                 parsed_response,
                 accumulated_data,

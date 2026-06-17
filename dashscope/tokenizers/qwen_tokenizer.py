@@ -138,11 +138,19 @@ class QwenTokenizer(Tokenizer):
                     parts.append(piece[j : j + chunk_size])
 
         chunks: List[str] = []
+        current_chunk: List[str] = []
+        current_len = 0
         for part in parts:
-            if chunks and len(chunks[-1]) + len(part) <= chunk_size:
-                chunks[-1] += part
+            if current_len + len(part) <= chunk_size:
+                current_chunk.append(part)
+                current_len += len(part)
             else:
-                chunks.append(part)
+                if current_chunk:
+                    chunks.append("".join(current_chunk))
+                current_chunk = [part]
+                current_len = len(part)
+        if current_chunk:
+            chunks.append("".join(current_chunk))
         return chunks
 
     def decode(

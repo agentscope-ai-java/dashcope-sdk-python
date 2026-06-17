@@ -371,7 +371,7 @@ class OmniRealtimeConversation:
         # if the server returned an error or timed out, close the connection
         if error is not None:
             self.close()
-            return
+            raise RuntimeError(f"Session ended with error: {error}")
         if not finish_success:
             self.close()
             raise TimeoutError(
