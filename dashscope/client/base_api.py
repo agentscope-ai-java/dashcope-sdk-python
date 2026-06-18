@@ -374,7 +374,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             **_workspace_header(workspace),
             **default_headers(api_key),
         }
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(trust_env=True) as session:
             response = await session.get(
                 url,
                 params=params,

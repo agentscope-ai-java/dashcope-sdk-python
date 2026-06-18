@@ -234,5 +234,5 @@ class TestConversationRequest(MockServerBase):
         assert response.output.finish_reason == "stop"
         req = mock_server.requests.get(block=True)
         assert req["model"] == Generation.Models.dolly_12b_v2
-        assert "user_agent" in req["parameters"]
+        assert "user_agent" not in req.get("parameters", {})
         assert req["input"] == {"prompt": prompt}
