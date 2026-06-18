@@ -107,7 +107,7 @@ class ImageGeneration(BaseApi, BaseAsyncApi):
             f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
         )
         if kwargs.get("is_async", False):
-            kwargs["headers"]["X-DashScope-Async"] = "enable"
+            kwargs.setdefault("headers", {})["X-DashScope-Async"] = "enable"
             task = cls.async_task
         else:
             task = cls.sync_task
@@ -425,7 +425,7 @@ class AioImageGeneration(BaseAioApi, BaseAsyncAioApi):
             f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
         )
         if kwargs.get("is_async", False):
-            kwargs["headers"]["X-DashScope-Async"] = "enable"
+            kwargs.setdefault("headers", {})["X-DashScope-Async"] = "enable"
             task = cls.async_task
         else:
             task = cls.sync_task
