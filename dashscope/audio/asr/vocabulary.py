@@ -69,7 +69,7 @@ class VocabularyService(BaseApi):
                     **self._kwargs,
                 )
             except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
-                logger.error(e)
+                logger.debug(e)
                 try_count += 1
                 if try_count <= VocabularyService.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)

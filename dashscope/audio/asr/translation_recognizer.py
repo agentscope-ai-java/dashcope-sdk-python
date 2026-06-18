@@ -582,7 +582,7 @@ class TranslationRecognizerRealtime(BaseApi):
             f.close()
             self._stop_stream_timestamp = time.time() * 1000
         except Exception as e:
-            logger.error(e)
+            logger.debug(e)
             raise e
 
         if not self._stream_data.empty():

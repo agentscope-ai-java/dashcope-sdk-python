@@ -149,7 +149,7 @@ class Transcription(BaseAsyncApi):
                     **kwargs,
                 )
             except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
-                logger.error(e)
+                logger.debug(e)
                 try_count += 1
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
@@ -231,7 +231,7 @@ class Transcription(BaseAsyncApi):
                     **kwargs,
                 )
             except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
-                logger.error(e)
+                logger.debug(e)
                 try_count += 1
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
