@@ -43,7 +43,9 @@ def _get_protocol_params(kwargs):
     if headers and "user-agent" in headers:
         header_ua = headers.pop("user-agent")
         if user_agent:
-            user_agent = f"{header_ua}; {user_agent}" if header_ua else user_agent
+            user_agent = (
+                f"{header_ua}; {user_agent}" if header_ua else user_agent
+            )
         else:
             user_agent = header_ua
 
