@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import asyncio
 import time
 from typing import List
 
-import aiohttp
+import requests
 
 from dashscope.client.base_api import BaseApi
 from dashscope.common.constants import ApiProtocol, HTTPMethod
@@ -71,7 +70,7 @@ class VoiceEnrollmentService(BaseApi):
                     workspace=self._workspace,
                     **self._kwargs,
                 )
-            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+            except (requests.Timeout, requests.ConnectionError) as e:
                 logger.debug(e)
                 try_count += 1
                 if try_count <= VoiceEnrollmentService.MAX_QUERY_TRY_COUNT:
