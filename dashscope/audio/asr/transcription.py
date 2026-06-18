@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import asyncio
 import time
 from typing import List, Union
 
-import aiohttp
+import requests
 
 from dashscope.api_entities.dashscope_response import (
     DashScopeAPIResponse,
@@ -148,7 +147,7 @@ class Transcription(BaseAsyncApi):
                     workspace=workspace,
                     **kwargs,
                 )
-            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+            except (requests.Timeout, requests.ConnectionError) as e:
                 logger.debug(e)
                 try_count += 1
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
@@ -230,7 +229,7 @@ class Transcription(BaseAsyncApi):
                     workspace=workspace,
                     **kwargs,
                 )
-            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+            except (requests.Timeout, requests.ConnectionError) as e:
                 logger.debug(e)
                 try_count += 1
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
