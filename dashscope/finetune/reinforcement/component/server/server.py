@@ -496,11 +496,12 @@ async def handle_endpoint(request: Request) -> JSONResponse:
         )
     finally:
         # Cancel the disconnect listener if still running
-        disconnect_listener.cancel()
-        try:
-            await disconnect_listener
-        except asyncio.CancelledError:
-            pass
+        if disconnect_listener is not None:
+            disconnect_listener.cancel()
+            try:
+                await disconnect_listener
+            except asyncio.CancelledError:
+                pass
 
         # Clean up trace context
         await _cleanup_trace_context(_otel_ctx_token, _upstream_tokens)
