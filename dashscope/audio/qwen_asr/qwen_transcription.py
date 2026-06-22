@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import asyncio
 import time
 from typing import Union
 
-import requests
+import aiohttp
 
 from dashscope.api_entities.dashscope_response import (
     DashScopeAPIResponse,
@@ -107,8 +108,8 @@ class QwenTranscription(BaseAsyncApi):
                     workspace=workspace,
                     **kwargs,
                 )
-            except (requests.Timeout, requests.ConnectionError) as e:
-                logger.debug(e)
+            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+                logger.error(e)
                 try_count += 1
                 if try_count <= QwenTranscription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
@@ -126,7 +127,6 @@ class QwenTranscription(BaseAsyncApi):
         task: Union[str, TranscriptionResponse],  # type: ignore[override]
         api_key: str = None,
         workspace: str = None,
-        wait_timeout: int = -1,
         **kwargs,
     ) -> TranscriptionResponse:
         """Poll task until the final results of transcription is obtained.
@@ -135,8 +135,6 @@ class QwenTranscription(BaseAsyncApi):
             task (Union[str, TranscriptionResponse]): The task_id or
                 response including task_id returned from async_call().
             workspace (str): The dashscope workspace id.
-            wait_timeout (int, optional): The maximum seconds to wait.
-                Default is -1 (no timeout).
 
         Returns:
             TranscriptionResponse: The result of batch transcription.
@@ -145,7 +143,6 @@ class QwenTranscription(BaseAsyncApi):
             task,
             api_key=api_key,
             workspace=workspace,
-            wait_timeout=wait_timeout,
             **kwargs,
         )
         return TranscriptionResponse.from_api_response(response)
@@ -185,8 +182,8 @@ class QwenTranscription(BaseAsyncApi):
                     workspace=workspace,
                     **kwargs,
                 )
-            except (requests.Timeout, requests.ConnectionError) as e:
-                logger.debug(e)
+            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+                logger.error(e)
                 try_count += 1
                 if try_count <= QwenTranscription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)

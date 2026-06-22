@@ -21,7 +21,6 @@ from dashscope.audio.http_tts.http_speech_synthesizer import (
     HttpSpeechSynthesizer,
 )
 from dashscope.audio.tts.speech_synthesizer import SpeechSynthesizer
-from dashscope.api_entities.aio_session import close_shared_aio_session
 from dashscope.common.api_key import save_api_key
 from dashscope.common.env import (
     api_key,
@@ -47,7 +46,7 @@ from dashscope.embeddings.text_embedding import TextEmbedding
 from dashscope.files import Files
 from dashscope.models import Models
 from dashscope.nlp.understanding import Understanding
-from dashscope.rerank import AioTextReRank, TextReRank
+from dashscope.rerank.text_rerank import TextReRank
 from dashscope.threads import (
     MessageFile,
     Messages,
@@ -76,7 +75,6 @@ __all__ = [
     "api_key",
     "api_key_file_path",
     "save_api_key",
-    "close_shared_aio_session",
     "AioGeneration",
     "Conversation",
     "Generation",
@@ -108,7 +106,6 @@ __all__ = [
     "list_tokenizers",
     "Application",
     "TextReRank",
-    "AioTextReRank",
     "Assistants",
     "Threads",
     "Messages",
