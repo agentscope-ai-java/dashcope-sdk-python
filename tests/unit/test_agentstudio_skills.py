@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=protected-access
 """Skill resource shape & auto-upload compatibility.
 
 Tests create a client with a mocked transport and patch Files.upload
@@ -23,27 +24,32 @@ class _Tx:
     def request(self, method, path, **kwargs):
         self.calls.append({"method": method, "path": path, **kwargs})
         if "/versions" in path:
-            return APIResponse(data={"id": "skv_1", "skill_id": "skl_1", "version": 1}, request_id="req_2")
+            return APIResponse(
+                data={"id": "skv_1", "skill_id": "skl_1", "version": 1},
+                request_id="req_2",
+            )
         if path == "/skills":
-            return APIResponse(data={"id": "skl_1", "name": "demo"}, request_id="req_1")
+            return APIResponse(
+                data={"id": "skl_1", "name": "demo"}, request_id="req_1"
+            )
         return APIResponse(data={}, request_id=None)
 
 
-@pytest.fixture
-def client():
+@pytest.fixture(name="client")
+def _client_fixture():
     """Create a client with a recording transport."""
     c = Client(api_key="test-key")
     c._transport = _Tx()
     return c
 
 
-@pytest.fixture
-def fake_upload(client, monkeypatch):
+@pytest.fixture(name="fake_upload")
+def _fake_upload_fixture(client, monkeypatch):
     """Patch Files.upload on the client's files instance to record calls."""
     calls: List[Dict[str, Any]] = []
     file_id_holder = {"id": "file_auto"}
 
-    def _upload(self_files, file, *, mime_type=None, **kwargs):
+    def _upload(_self_files, file, *, mime_type=None, **_kwargs):
         calls.append({"file": file, "mime_type": mime_type})
 
         class _F:
@@ -111,7 +117,9 @@ def test_skill_versions_create_with_file_id_no_upload(client, fake_upload):
     assert body == {"file_id": "file_existing"}
 
 
-def test_skill_versions_create_explicit_mime_type_overrides(client, fake_upload):
+def test_skill_versions_create_explicit_mime_type_overrides(
+    client, fake_upload
+):
     upload_calls, _ = fake_upload
 
     sv = SkillVersions(client)
