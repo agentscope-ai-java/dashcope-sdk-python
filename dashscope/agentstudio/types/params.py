@@ -1,0 +1,457 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) Alibaba, Inc. and its affiliates.
+"""Per-resource API request parameter definitions.
+
+Each resource group (Agents, Environments, Sessions, …) defines the
+request-body structures for its write endpoints.  All classes inherit
+from :class:`~dashscope.agentstudio.types.models.BaseModel` so that
+``.to_dict()`` produces a ready-to-send wire-format dict.
+
+The ``__init__`` signature uses **user-friendly** parameter names
+(e.g. ``system_prompt``) while the ``super().__init__()`` call passes
+**wire-format** field names (e.g. ``system``).
+
+Python 3.8+ compatible.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Mapping, Optional, Sequence
+
+from dashscope.agentstudio.types.models import BaseModel
+
+
+# ===========================================================================
+# Agents
+# ===========================================================================
+
+
+class AgentCreateParams(BaseModel):
+    """Request body for ``POST /agents``.
+
+    Maps to :meth:`Agents.create`.  The SDK method exposes
+    ``model`` as a plain string and ``system_prompt`` as a keyword arg,
+    but the wire format uses ``model: {"id": "…"}`` and ``system``.
+    """
+
+    _fields = ("name", "model", "description", "system", "tools",
+               "mcp_servers", "skills", "metadata")
+
+    def __init__(
+        self, *,
+        name: str,
+        model: str,
+        description: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        tools: Optional[Sequence[Mapping[str, Any]]] = None,
+        mcp_servers: Optional[Sequence[Mapping[str, Any]]] = None,
+        skills: Optional[Sequence[Mapping[str, Any]]] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            name=name,
+            model={"id": model},
+            description=description,
+            system=system_prompt,
+            tools=[dict(t) for t in tools] if tools is not None else None,
+            mcp_servers=[dict(s) for s in mcp_servers] if mcp_servers is not None else None,
+            skills=[dict(s) for s in skills] if skills is not None else None,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+
+
+class AgentUpdateParams(BaseModel):
+    """Request body for ``POST /agents/{id}`` (update latest version)."""
+
+    _fields = ("version", "name", "model", "description", "system",
+               "tools", "mcp_servers", "skills", "metadata")
+
+    def __init__(
+        self, *,
+        version: int,
+        name: Optional[str] = None,
+        model: Optional[str] = None,
+        description: Optional[str] = None,
+        system_prompt: Optional[str] = None,
+        tools: Optional[Sequence[Mapping[str, Any]]] = None,
+        mcp_servers: Optional[Sequence[Mapping[str, Any]]] = None,
+        skills: Optional[Sequence[Mapping[str, Any]]] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            version=version,
+            name=name,
+            model={"id": model} if model is not None else None,
+            description=description,
+            system=system_prompt,
+            tools=[dict(t) for t in tools] if tools is not None else None,
+            mcp_servers=[dict(s) for s in mcp_servers] if mcp_servers is not None else None,
+            skills=[dict(s) for s in skills] if skills is not None else None,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+
+
+class AgentListParams(BaseModel):
+    """Query params for ``GET /agents``.
+
+    ``include_archived`` is a Python bool mapped to the wire-format
+    string ``"true"`` / ``"false"``.
+    """
+
+    _fields = ("limit", "page", "include_archived")
+
+    def __init__(
+        self, *,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+        include_archived: Optional[bool] = None,
+    ) -> None:
+        super().__init__(
+            limit=limit,
+            page=page,
+            include_archived=str(include_archived).lower() if include_archived is not None else None,
+        )
+
+
+class AgentVersionListParams(BaseModel):
+    """Query params for ``GET /agents/{id}/versions``."""
+
+    _fields = ("limit", "page")
+
+    def __init__(
+        self, *,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            limit=limit,
+            page=page,
+        )
+
+
+# ===========================================================================
+# Environments
+# ===========================================================================
+
+
+class EnvironmentCreateParams(BaseModel):
+    """Request body for ``POST /environments``."""
+
+    _fields = ("name", "config", "description", "scope", "metadata")
+
+    def __init__(
+        self, *,
+        name: str,
+        config: Mapping[str, Any],
+        description: Optional[str] = None,
+        scope: Optional[str] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            name=name,
+            config=dict(config),
+            description=description,
+            scope=scope,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+
+
+class EnvironmentUpdateParams(BaseModel):
+    """Request body for ``POST /environments/{id}``."""
+
+    _fields = ("name", "description", "config", "scope", "metadata")
+
+    def __init__(
+        self, *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        config: Optional[Mapping[str, Any]] = None,
+        scope: Optional[str] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            name=name,
+            description=description,
+            config=dict(config) if config is not None else None,
+            scope=scope,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+
+
+class EnvironmentListParams(BaseModel):
+    """Query params for ``GET /environments``.
+
+    ``include_archived`` is a Python bool mapped to the wire-format
+    string ``"true"`` / ``"false"``.
+    """
+
+    _fields = ("limit", "page", "include_archived")
+
+    def __init__(
+        self, *,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+        include_archived: Optional[bool] = None,
+    ) -> None:
+        super().__init__(
+            limit=limit,
+            page=page,
+            include_archived=str(include_archived).lower() if include_archived is not None else None,
+        )
+
+
+# ===========================================================================
+# Sessions
+# ===========================================================================
+
+
+class SessionCreateParams(BaseModel):
+    """Request body for ``POST /sessions``.
+
+    ``agent`` is the agent ID string (not the full agent object).
+    """
+
+    _fields = ("agent", "environment_id", "title", "metadata")
+
+    def __init__(
+        self, *,
+        agent: str,
+        environment_id: Optional[str] = None,
+        title: Optional[str] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            agent=agent,
+            environment_id=environment_id,
+            title=title,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+
+
+class SessionUpdateParams(BaseModel):
+    """Request body for ``POST /sessions/{id}``."""
+
+    _fields = ("title", "metadata")
+
+    def __init__(
+        self, *,
+        title: Optional[str] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> None:
+        super().__init__(
+            title=title,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+
+
+class SessionListParams(BaseModel):
+    """Query params for ``GET /sessions``.
+
+    ``statuses`` is a list of session status strings such as
+    ``"idle"``, ``"running"``, ``"terminated"``.
+
+    Python-friendly parameter names (``statuses``, ``created_at_gt``, …)
+    are mapped to wire-format keys (``statuses[]``, ``created_at[gt]``, …)
+    inside ``__init__``.
+    """
+
+    _fields = ("limit", "page", "agent_id", "statuses[]",
+               "created_at[gt]", "created_at[gte]",
+               "created_at[lt]", "created_at[lte]")
+
+    def __init__(
+        self, *,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        statuses: Optional[Sequence[str]] = None,
+        created_at_gt: Optional[str] = None,
+        created_at_gte: Optional[str] = None,
+        created_at_lt: Optional[str] = None,
+        created_at_lte: Optional[str] = None,
+    ) -> None:
+        kwargs = {}
+        kwargs["limit"] = limit
+        kwargs["page"] = page
+        kwargs["agent_id"] = agent_id
+        if statuses is not None:
+            kwargs["statuses[]"] = list(statuses)
+        if created_at_gt is not None:
+            kwargs["created_at[gt]"] = created_at_gt
+        if created_at_gte is not None:
+            kwargs["created_at[gte]"] = created_at_gte
+        if created_at_lt is not None:
+            kwargs["created_at[lt]"] = created_at_lt
+        if created_at_lte is not None:
+            kwargs["created_at[lte]"] = created_at_lte
+        super().__init__(**kwargs)
+
+
+# ===========================================================================
+# SessionEvents
+# ===========================================================================
+
+
+class SessionEventSendParams(BaseModel):
+    """Request body for ``POST /sessions/{id}/events``.
+
+    The ``input`` array must contain at least one event.
+    """
+
+    _fields = ("input",)
+
+    def __init__(
+        self, *,
+        input: Sequence[Mapping[str, Any]],
+    ) -> None:
+        super().__init__(
+            input=[dict(e) for e in input],
+        )
+
+
+class SessionEventListParams(BaseModel):
+    """Query params for ``GET /sessions/{id}/events``.
+
+    ``types`` is a list of event type strings joined by comma in the
+    wire format.  ``created_at_*`` parameters are mapped to the
+    bracket-based wire keys ``created_at[gt]`` etc.
+    """
+
+    _fields = ("types", "created_at[gt]", "created_at[gte]",
+               "created_at[lt]", "created_at[lte]", "limit", "order", "page")
+
+    def __init__(
+        self, *,
+        types: Optional[Sequence[str]] = None,
+        created_at_gt: Optional[str] = None,
+        created_at_gte: Optional[str] = None,
+        created_at_lt: Optional[str] = None,
+        created_at_lte: Optional[str] = None,
+        limit: Optional[int] = None,
+        order: Optional[str] = None,
+        page: Optional[str] = None,
+    ) -> None:
+        kwargs = {}
+        if types is not None:
+            kwargs["types"] = ",".join(types)
+        if created_at_gt is not None:
+            kwargs["created_at[gt]"] = created_at_gt
+        if created_at_gte is not None:
+            kwargs["created_at[gte]"] = created_at_gte
+        if created_at_lt is not None:
+            kwargs["created_at[lt]"] = created_at_lt
+        if created_at_lte is not None:
+            kwargs["created_at[lte]"] = created_at_lte
+        kwargs["limit"] = limit
+        kwargs["order"] = order
+        kwargs["page"] = page
+        super().__init__(**kwargs)
+
+
+# ===========================================================================
+# Files
+# ===========================================================================
+
+
+class FileListParams(BaseModel):
+    """Query params for ``GET /files``.
+
+    File upload uses multipart form data and is therefore not
+    represented as a param class.
+    """
+
+    _fields = ("limit", "page", "scope_id", "after_id", "before_id")
+
+    def __init__(
+        self, *,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+        scope_id: Optional[str] = None,
+        after_id: Optional[str] = None,
+        before_id: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            limit=limit,
+            page=page,
+            scope_id=scope_id,
+            after_id=after_id,
+            before_id=before_id,
+        )
+
+
+# ===========================================================================
+# Skills
+# ===========================================================================
+
+
+class SkillCreateParams(BaseModel):
+    """Request body for ``POST /skills``.
+
+    ``file_id`` references a file previously uploaded via the Files API.
+    The server extracts ``name`` and ``description`` from the zip's
+    ``SKILL.md``; they are not client-settable.
+    """
+
+    _fields = ("file_id",)
+
+    def __init__(
+        self, *,
+        file_id: str,
+    ) -> None:
+        super().__init__(file_id=file_id)
+
+
+class SkillListParams(BaseModel):
+    """Query params for ``GET /skills``."""
+
+    _fields = ("source", "limit", "page")
+
+    def __init__(
+        self, *,
+        source: Optional[str] = None,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            source=source,
+            limit=limit,
+            page=page,
+        )
+
+
+# ===========================================================================
+# SkillVersions
+# ===========================================================================
+
+
+class SkillVersionCreateParams(BaseModel):
+    """Request body for ``POST /skills/{skill_id}/versions``."""
+
+    _fields = ("file_id",)
+
+    def __init__(
+        self, *,
+        file_id: str,
+    ) -> None:
+        super().__init__(
+            file_id=file_id,
+        )
+
+
+class SkillVersionListParams(BaseModel):
+    """Query params for ``GET /skills/{skill_id}/versions``."""
+
+    _fields = ("limit", "page")
+
+    def __init__(
+        self, *,
+        limit: Optional[int] = None,
+        page: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            limit=limit,
+            page=page,
+        )
+
+
+
