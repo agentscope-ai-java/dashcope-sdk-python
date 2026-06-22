@@ -23,8 +23,16 @@ class AgenticRLError(Exception):
             root = root.__cause__
         return root
 
+    def _format_cause(self) -> str:
+        """Format root cause information if available."""
+        if self.__cause__ is not None and self is not self.root_cause:
+            root = self.root_cause
+            cause_msg = str(root).split("\n")[0][:100]
+            return f" (caused by: {type(root).__name__}: {cause_msg})"
+        return ""
+
     def __str__(self):
-        return f"[{self.error_code}] {self.message} (at {self.timestamp})"
+        return f"[{self.error_code}] {self.message} (at {self.timestamp}){self._format_cause()}"
 
 
 class IOErrorWithCode(AgenticRLError):
@@ -58,8 +66,16 @@ class RuntimeErrorWithCode(RuntimeError):
             root = root.__cause__
         return root
 
+    def _format_cause(self) -> str:
+        """Format root cause information if available."""
+        if self.__cause__ is not None and self is not self.root_cause:
+            root = self.root_cause
+            cause_msg = str(root).split("\n")[0][:100]
+            return f" (caused by: {type(root).__name__}: {cause_msg})"
+        return ""
+
     def __str__(self):
-        return f"[{self.error_code}] {self.message}"
+        return f"[{self.error_code}] {self.message}{self._format_cause()}"
 
 
 class ValueErrorWithCode(ValueError):
@@ -78,8 +94,16 @@ class ValueErrorWithCode(ValueError):
             root = root.__cause__
         return root
 
+    def _format_cause(self) -> str:
+        """Format root cause information if available."""
+        if self.__cause__ is not None and self is not self.root_cause:
+            root = self.root_cause
+            cause_msg = str(root).split("\n")[0][:100]
+            return f" (caused by: {type(root).__name__}: {cause_msg})"
+        return ""
+
     def __str__(self):
-        return f"[{self.error_code}] {self.message}"
+        return f"[{self.error_code}] {self.message}{self._format_cause()}"
 
 
 class InputError(AgenticRLError):
