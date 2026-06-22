@@ -16,7 +16,10 @@ Usage::
 """
 
 from dashscope.agentstudio.resources.agents import Agents, AsyncAgents
-from dashscope.agentstudio.resources.environments import Environments, AsyncEnvironments
+from dashscope.agentstudio.resources.environments import (
+    Environments,
+    AsyncEnvironments,
+)
 from dashscope.agentstudio.resources.files import Files, AsyncFiles
 from dashscope.agentstudio.resources.session_events import (
     AsyncSessionEvents,

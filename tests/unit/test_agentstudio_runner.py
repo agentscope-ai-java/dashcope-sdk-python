@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tests for SessionToolRunner and AsyncSessionToolRunner using mocked client."""
+"""Tests for SessionToolRunner and AsyncSessionToolRunner."""
 
 from __future__ import annotations
 
@@ -10,7 +10,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from dashscope.agentstudio import Client, AsyncClient
-from dashscope.agentstudio.tools import SessionToolRunner, AsyncSessionToolRunner, tool
+from dashscope.agentstudio.tools import (
+    SessionToolRunner,
+    AsyncSessionToolRunner,
+    tool,
+)
 from dashscope.agentstudio.types import (
     AgentCustomToolUseEvent,
     SessionStatusIdleEvent,
@@ -20,6 +24,7 @@ from dashscope.agentstudio.types import (
 # ---------------------------------------------------------------------------
 # Sync helpers
 # ---------------------------------------------------------------------------
+
 
 class _FakeStream:
     def __init__(self, events: List[Any]):
@@ -45,6 +50,7 @@ def _make_client():
 # ---------------------------------------------------------------------------
 # Async helpers
 # ---------------------------------------------------------------------------
+
 
 class _FakeAsyncStream:
     def __init__(self, events: List[Any]):
@@ -75,6 +81,7 @@ def _make_async_client():
 # Sync runner tests
 # ---------------------------------------------------------------------------
 
+
 def test_runner_dispatches_custom_tool_and_posts_result():
     @tool
     def add(a: int, b: int) -> int:
@@ -83,21 +90,47 @@ def test_runner_dispatches_custom_tool_and_posts_result():
 
     server_events = [
         AgentCustomToolUseEvent(
-            id="evt_1", type="tool_call",
-            content=[{"type": "data", "name": "add", "custom_tool_use_id": "ctu_1", "arguments": {"a": 2, "b": 3}}],
+            id="evt_1",
+            type="tool_call",
+            content=[
+                {
+                    "type": "data",
+                    "name": "add",
+                    "custom_tool_use_id": "ctu_1",
+                    "arguments": {"a": 2, "b": 3},
+                },
+            ],
         ),
         SessionStatusIdleEvent(
-            id="evt_2", type="session_status",
-            content=[{"type": "data", "data": {"session_status": "idle", "stop_reason": "end_turn"}}],
+            id="evt_2",
+            type="session_status",
+            content=[
+                {
+                    "type": "data",
+                    "data": {
+                        "session_status": "idle",
+                        "stop_reason": "end_turn",
+                    },
+                },
+            ],
         ),
     ]
 
     sent: List[Dict[str, Any]] = []
     client = _make_client()
-    client.sessions.events.stream = MagicMock(return_value=_FakeStream(server_events))
-    client.sessions.events.send = MagicMock(side_effect=lambda sid, evts, **kw: sent.extend(evts))
+    client.sessions.events.stream = MagicMock(
+        return_value=_FakeStream(server_events),
+    )
+    client.sessions.events.send = MagicMock(
+        side_effect=lambda sid, evts, **kw: sent.extend(evts),
+    )
 
-    runner = SessionToolRunner(client=client, session_id="sesn_1", tools=[add], max_idle_seconds=0)
+    runner = SessionToolRunner(
+        client=client,
+        session_id="sesn_1",
+        tools=[add],
+        max_idle_seconds=0,
+    )
     records = list(runner)
 
     assert len(records) == 1
@@ -114,21 +147,47 @@ def test_runner_dispatches_custom_tool_and_posts_result():
 def test_runner_reports_unknown_tool_as_error():
     server_events = [
         AgentCustomToolUseEvent(
-            id="evt_1", type="tool_call",
-            content=[{"type": "data", "name": "missing", "custom_tool_use_id": "ctu_2", "arguments": {}}],
+            id="evt_1",
+            type="tool_call",
+            content=[
+                {
+                    "type": "data",
+                    "name": "missing",
+                    "custom_tool_use_id": "ctu_2",
+                    "arguments": {},
+                },
+            ],
         ),
         SessionStatusIdleEvent(
-            id="evt_2", type="session_status",
-            content=[{"type": "data", "data": {"session_status": "idle", "stop_reason": "end_turn"}}],
+            id="evt_2",
+            type="session_status",
+            content=[
+                {
+                    "type": "data",
+                    "data": {
+                        "session_status": "idle",
+                        "stop_reason": "end_turn",
+                    },
+                },
+            ],
         ),
     ]
 
     sent: List[Dict[str, Any]] = []
     client = _make_client()
-    client.sessions.events.stream = MagicMock(return_value=_FakeStream(server_events))
-    client.sessions.events.send = MagicMock(side_effect=lambda sid, evts, **kw: sent.extend(evts))
+    client.sessions.events.stream = MagicMock(
+        return_value=_FakeStream(server_events),
+    )
+    client.sessions.events.send = MagicMock(
+        side_effect=lambda sid, evts, **kw: sent.extend(evts),
+    )
 
-    runner = SessionToolRunner(client=client, session_id="sesn_2", tools=[], max_idle_seconds=0)
+    runner = SessionToolRunner(
+        client=client,
+        session_id="sesn_2",
+        tools=[],
+        max_idle_seconds=0,
+    )
     records = list(runner)
 
     assert len(records) == 1
@@ -141,6 +200,7 @@ def test_runner_reports_unknown_tool_as_error():
 # Async runner tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_async_runner_dispatches_custom_tool_and_posts_result():
     @tool
@@ -150,21 +210,47 @@ async def test_async_runner_dispatches_custom_tool_and_posts_result():
 
     server_events = [
         AgentCustomToolUseEvent(
-            id="evt_1", type="tool_call",
-            content=[{"type": "data", "name": "add", "custom_tool_use_id": "ctu_1", "arguments": {"a": 2, "b": 3}}],
+            id="evt_1",
+            type="tool_call",
+            content=[
+                {
+                    "type": "data",
+                    "name": "add",
+                    "custom_tool_use_id": "ctu_1",
+                    "arguments": {"a": 2, "b": 3},
+                },
+            ],
         ),
         SessionStatusIdleEvent(
-            id="evt_2", type="session_status",
-            content=[{"type": "data", "data": {"session_status": "idle", "stop_reason": "end_turn"}}],
+            id="evt_2",
+            type="session_status",
+            content=[
+                {
+                    "type": "data",
+                    "data": {
+                        "session_status": "idle",
+                        "stop_reason": "end_turn",
+                    },
+                },
+            ],
         ),
     ]
 
     sent: List[Dict[str, Any]] = []
     client = _make_async_client()
-    client.sessions.events.stream = AsyncMock(return_value=_FakeAsyncStream(server_events))
-    client.sessions.events.send = AsyncMock(side_effect=lambda sid, evts, **kw: sent.extend(evts))
+    client.sessions.events.stream = AsyncMock(
+        return_value=_FakeAsyncStream(server_events),
+    )
+    client.sessions.events.send = AsyncMock(
+        side_effect=lambda sid, evts, **kw: sent.extend(evts),
+    )
 
-    runner = AsyncSessionToolRunner(client=client, session_id="sesn_1", tools=[add], max_idle_seconds=0)
+    runner = AsyncSessionToolRunner(
+        client=client,
+        session_id="sesn_1",
+        tools=[add],
+        max_idle_seconds=0,
+    )
     records = [record async for record in runner]
 
     assert len(records) == 1
@@ -182,21 +268,47 @@ async def test_async_runner_dispatches_custom_tool_and_posts_result():
 async def test_async_runner_reports_unknown_tool_as_error():
     server_events = [
         AgentCustomToolUseEvent(
-            id="evt_1", type="tool_call",
-            content=[{"type": "data", "name": "missing", "custom_tool_use_id": "ctu_2", "arguments": {}}],
+            id="evt_1",
+            type="tool_call",
+            content=[
+                {
+                    "type": "data",
+                    "name": "missing",
+                    "custom_tool_use_id": "ctu_2",
+                    "arguments": {},
+                },
+            ],
         ),
         SessionStatusIdleEvent(
-            id="evt_2", type="session_status",
-            content=[{"type": "data", "data": {"session_status": "idle", "stop_reason": "end_turn"}}],
+            id="evt_2",
+            type="session_status",
+            content=[
+                {
+                    "type": "data",
+                    "data": {
+                        "session_status": "idle",
+                        "stop_reason": "end_turn",
+                    },
+                },
+            ],
         ),
     ]
 
     sent: List[Dict[str, Any]] = []
     client = _make_async_client()
-    client.sessions.events.stream = AsyncMock(return_value=_FakeAsyncStream(server_events))
-    client.sessions.events.send = AsyncMock(side_effect=lambda sid, evts, **kw: sent.extend(evts))
+    client.sessions.events.stream = AsyncMock(
+        return_value=_FakeAsyncStream(server_events),
+    )
+    client.sessions.events.send = AsyncMock(
+        side_effect=lambda sid, evts, **kw: sent.extend(evts),
+    )
 
-    runner = AsyncSessionToolRunner(client=client, session_id="sesn_2", tools=[], max_idle_seconds=0)
+    runner = AsyncSessionToolRunner(
+        client=client,
+        session_id="sesn_2",
+        tools=[],
+        max_idle_seconds=0,
+    )
     records = [record async for record in runner]
 
     assert len(records) == 1
@@ -210,12 +322,12 @@ async def test_async_runner_parallel_send_and_stream():
     stream_opened = asyncio.Event()
     send_started = asyncio.Event()
 
-    async def _fake_stream(*args, **kwargs):
+    async def _fake_stream(*_args, **_kwargs):
         stream_opened.set()
         await asyncio.sleep(0.1)
         return _FakeAsyncStream([])
 
-    async def _fake_send(*args, **kwargs):
+    async def _fake_send(*_args, **_kwargs):
         send_started.set()
 
     client = _make_async_client()
@@ -223,8 +335,16 @@ async def test_async_runner_parallel_send_and_stream():
     client.sessions.events.send = _fake_send
 
     runner = AsyncSessionToolRunner(
-        client=client, session_id="sesn_3", tools=[],
-        events=[{"role": "user", "type": "message", "content": [{"type": "text", "text": "hi"}]}],
+        client=client,
+        session_id="sesn_3",
+        tools=[],
+        events=[
+            {
+                "role": "user",
+                "type": "message",
+                "content": [{"type": "text", "text": "hi"}],
+            },
+        ],
         max_idle_seconds=0,
     )
     async for _ in runner:
@@ -238,10 +358,10 @@ async def test_async_runner_parallel_send_and_stream():
 async def test_async_runner_with_events_parameter():
     captured_events: List[Any] = []
 
-    async def _fake_stream(*args, **kwargs):
+    async def _fake_stream(*_args, **_kwargs):
         return _FakeAsyncStream([])
 
-    async def _fake_send(session_id, events, **kwargs):
+    async def _fake_send(_session_id, events, **_kwargs):
         captured_events.extend(list(events))
 
     client = _make_async_client()
@@ -249,8 +369,16 @@ async def test_async_runner_with_events_parameter():
     client.sessions.events.send = _fake_send
 
     runner = AsyncSessionToolRunner(
-        client=client, session_id="sesn_4", tools=[],
-        events=[{"role": "user", "type": "message", "content": [{"type": "text", "text": "hello"}]}],
+        client=client,
+        session_id="sesn_4",
+        tools=[],
+        events=[
+            {
+                "role": "user",
+                "type": "message",
+                "content": [{"type": "text", "text": "hello"}],
+            },
+        ],
         max_idle_seconds=0,
     )
     async for _ in runner:

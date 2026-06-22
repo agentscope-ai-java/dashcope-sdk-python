@@ -7,7 +7,9 @@ API.  All resource classes are accessed through a client instance::
 
     from dashscope.agentstudio import Client
     from dashscope.agentstudio import tool
-    from dashscope.agentstudio.types import user_message, user_custom_tool_result
+    from dashscope.agentstudio.types import (
+        user_message, user_custom_tool_result,
+    )
 
 Example
 -------

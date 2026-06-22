@@ -6,9 +6,23 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, BinaryIO, Callable, Dict, IO, Mapping, Optional, Tuple, Union
+from typing import (
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    IO,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
-from dashscope.agentstudio.pagination import AsyncIdCursorPage, IdCursorPage, build_page
+from dashscope.agentstudio.pagination import (
+    AsyncIdCursorPage,
+    IdCursorPage,
+    build_page,
+)
 from dashscope.agentstudio.resources._helpers import (
     _coerce_file,
 )
@@ -18,8 +32,8 @@ from dashscope.agentstudio.types.params import FileListParams
 
 _PATH_FILES = "/files"
 
+# (bytes_read, total_bytes_or_-1) -- called after every chunk.
 ProgressCallback = Callable[[int, int], None]
-"""``(bytes_read, total_bytes_or_-1)`` – called after every chunk."""
 
 
 def _open_file(
@@ -39,7 +53,12 @@ def _open_file(
 class _ProgressFile:
     """Wrap a file-like object so callers can observe upload progress."""
 
-    def __init__(self, fileobj: IO[bytes], total: int, callback: ProgressCallback) -> None:
+    def __init__(
+        self,
+        fileobj: IO[bytes],
+        total: int,
+        callback: ProgressCallback,
+    ) -> None:
         self._fileobj = fileobj
         self._total = total
         self._read = 0
@@ -91,7 +110,7 @@ def _file_size(fileobj: IO[bytes]) -> int:
 
 
 class Files:
-    """File upload / list / delete — instance methods backed by a shared client."""
+    """File upload / list / delete."""
 
     def __init__(self, client) -> None:
         self._client = client
@@ -116,10 +135,17 @@ class Files:
             else:
                 payload_obj = fileobj
             multipart: Dict[str, Any] = {
-                "file": (filename, payload_obj, mime_type or "application/octet-stream")
+                "file": (
+                    filename,
+                    payload_obj,
+                    mime_type or "application/octet-stream",
+                ),
             }
-            resp = self._client._transport.request(
-                "POST", _PATH_FILES, files=multipart, extra_headers=extra_headers,
+            resp = self._client.transport.request(
+                "POST",
+                _PATH_FILES,
+                files=multipart,
+                extra_headers=extra_headers,
             )
             return _coerce_file(resp.data)
         finally:
@@ -130,42 +156,62 @@ class Files:
                     pass
 
     def retrieve(self, file_id: str) -> File:
-        resp = self._client._transport.request("GET", f"{_PATH_FILES}/{file_id}")
+        resp = self._client.transport.request(
+            "GET",
+            f"{_PATH_FILES}/{file_id}",
+        )
         return _coerce_file(resp.data)
 
     # Alias: get() delegates to retrieve()
     get = retrieve  # type: ignore[assignment]
 
     def list(
-        self, *, limit: Optional[int] = None,
+        self,
+        *,
+        limit: Optional[int] = None,
         page: Optional[str] = None,
         scope_id: Optional[str] = None,
         after_id: Optional[str] = None,
         before_id: Optional[str] = None,
     ) -> IdCursorPage[File]:
         params = FileListParams(
-            limit=limit, page=page, scope_id=scope_id,
-            after_id=after_id, before_id=before_id,
+            limit=limit,
+            page=page,
+            scope_id=scope_id,
+            after_id=after_id,
+            before_id=before_id,
         ).to_dict()
-        resp = self._client._transport.request("GET", _PATH_FILES, params=params)
+        resp = self._client.transport.request(
+            "GET",
+            _PATH_FILES,
+            params=params,
+        )
 
         def fetch_next(token: str) -> IdCursorPage[File]:
             return self.list(
-                limit=limit, page=token, scope_id=scope_id,
+                limit=limit,
+                page=token,
+                scope_id=scope_id,
             )
 
         return build_page(
-            payload=resp.data, item_factory=_coerce_file, request_id=resp.request_id,
-            page_cls=IdCursorPage, fetch_next=fetch_next,
+            payload=resp.data,
+            item_factory=_coerce_file,
+            request_id=resp.request_id,
+            page_cls=IdCursorPage,
+            fetch_next=fetch_next,
         )
 
     def delete(self, file_id: str) -> DeleteResponse:
-        resp = self._client._transport.request("DELETE", f"{_PATH_FILES}/{file_id}")
+        resp = self._client.transport.request(
+            "DELETE",
+            f"{_PATH_FILES}/{file_id}",
+        )
         return DeleteResponse(**resp.data)
 
 
 class AsyncFiles:
-    """Async File upload / list / delete — instance methods backed by a shared client."""
+    """Async file upload / list / delete."""
 
     def __init__(self, client) -> None:
         self._client = client
@@ -190,10 +236,17 @@ class AsyncFiles:
             else:
                 payload_obj = fileobj
             multipart: Dict[str, Any] = {
-                "file": (filename, payload_obj, mime_type or "application/octet-stream")
+                "file": (
+                    filename,
+                    payload_obj,
+                    mime_type or "application/octet-stream",
+                ),
             }
-            resp = await self._client._transport.request(
-                "POST", _PATH_FILES, files=multipart, extra_headers=extra_headers,
+            resp = await self._client.transport.request(
+                "POST",
+                _PATH_FILES,
+                files=multipart,
+                extra_headers=extra_headers,
             )
             return _coerce_file(resp.data)
         finally:
@@ -204,35 +257,55 @@ class AsyncFiles:
                     pass
 
     async def retrieve(self, file_id: str) -> File:
-        resp = await self._client._transport.request("GET", f"{_PATH_FILES}/{file_id}")
+        resp = await self._client.transport.request(
+            "GET",
+            f"{_PATH_FILES}/{file_id}",
+        )
         return _coerce_file(resp.data)
 
     # Alias: get() delegates to retrieve()
     get = retrieve  # type: ignore[assignment]
 
     async def list(
-        self, *, limit: Optional[int] = None,
+        self,
+        *,
+        limit: Optional[int] = None,
         page: Optional[str] = None,
         scope_id: Optional[str] = None,
         after_id: Optional[str] = None,
         before_id: Optional[str] = None,
     ) -> AsyncIdCursorPage[File]:
         params = FileListParams(
-            limit=limit, page=page, scope_id=scope_id,
-            after_id=after_id, before_id=before_id,
+            limit=limit,
+            page=page,
+            scope_id=scope_id,
+            after_id=after_id,
+            before_id=before_id,
         ).to_dict()
-        resp = await self._client._transport.request("GET", _PATH_FILES, params=params)
+        resp = await self._client.transport.request(
+            "GET",
+            _PATH_FILES,
+            params=params,
+        )
 
         async def fetch_next(token: str) -> AsyncIdCursorPage[File]:
             return await self.list(
-                limit=limit, page=token, scope_id=scope_id,
+                limit=limit,
+                page=token,
+                scope_id=scope_id,
             )
 
         return build_page(
-            payload=resp.data, item_factory=_coerce_file, request_id=resp.request_id,
-            page_cls=AsyncIdCursorPage, fetch_next=fetch_next,
+            payload=resp.data,
+            item_factory=_coerce_file,
+            request_id=resp.request_id,
+            page_cls=AsyncIdCursorPage,
+            fetch_next=fetch_next,
         )
 
     async def delete(self, file_id: str) -> DeleteResponse:
-        resp = await self._client._transport.request("DELETE", f"{_PATH_FILES}/{file_id}")
+        resp = await self._client.transport.request(
+            "DELETE",
+            f"{_PATH_FILES}/{file_id}",
+        )
         return DeleteResponse(**resp.data)

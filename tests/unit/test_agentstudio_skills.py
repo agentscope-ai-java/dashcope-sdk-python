@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=protected-access
 """Skill resource shape & auto-upload compatibility.
 
 Tests create a client with a mocked transport and patch Files.upload
@@ -30,7 +29,8 @@ class _Tx:
             )
         if path == "/skills":
             return APIResponse(
-                data={"id": "skl_1", "name": "demo"}, request_id="req_1"
+                data={"id": "skl_1", "name": "demo"},
+                request_id="req_1",
             )
         return APIResponse(data={}, request_id=None)
 
@@ -39,7 +39,7 @@ class _Tx:
 def _client_fixture():
     """Create a client with a recording transport."""
     c = Client(api_key="test-key")
-    c._transport = _Tx()
+    c.transport = _Tx()
     return c
 
 
@@ -66,7 +66,7 @@ def test_skill_create_with_file_id_does_not_call_upload(client, fake_upload):
     client.skills.create(file_id="file_existing", name="demo")
 
     assert upload_calls == []
-    body = client._transport.calls[0]["json"]
+    body = client.transport.calls[0]["json"]
     assert body == {"file_id": "file_existing", "name": "demo"}
 
 
@@ -79,7 +79,7 @@ def test_skill_create_with_file_path_auto_uploads_first(client, fake_upload):
     assert len(upload_calls) == 1
     assert upload_calls[0]["file"] == "/tmp/skill.zip"
     assert upload_calls[0]["mime_type"] == "application/zip"
-    body = client._transport.calls[0]["json"]
+    body = client.transport.calls[0]["json"]
     assert body["file_id"] == "file_uploaded"
 
 
@@ -102,7 +102,7 @@ def test_skill_versions_create_auto_upload(client, fake_upload):
 
     assert len(upload_calls) == 1
     assert upload_calls[0]["file"] == "/tmp/v2.zip"
-    body = client._transport.calls[0]["json"]
+    body = client.transport.calls[0]["json"]
     assert body == {"file_id": "file_v2"}
 
 
@@ -113,12 +113,13 @@ def test_skill_versions_create_with_file_id_no_upload(client, fake_upload):
     sv.create("skl_1", file_id="file_existing")
 
     assert upload_calls == []
-    body = client._transport.calls[0]["json"]
+    body = client.transport.calls[0]["json"]
     assert body == {"file_id": "file_existing"}
 
 
 def test_skill_versions_create_explicit_mime_type_overrides(
-    client, fake_upload
+    client,
+    fake_upload,
 ):
     upload_calls, _ = fake_upload
 

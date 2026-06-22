@@ -1,27 +1,50 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
-"""SessionEvents and AsyncSessionEvents resource classes, plus typed stream wrappers."""
+"""SessionEvents and AsyncSessionEvents resource classes."""
 
 from __future__ import annotations
 
-from typing import Any, AsyncIterator, Dict, Iterator, Mapping, Optional, Sequence
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterator,
+    Mapping,
+    Optional,
+    Sequence,
+)
 
 from dashscope.agentstudio import exceptions
-from dashscope.agentstudio.pagination import AsyncCursorPage, CursorPage, build_page
+from dashscope.agentstudio.pagination import (
+    AsyncCursorPage,
+    CursorPage,
+    build_page,
+)
 from dashscope.agentstudio.resources._helpers import (
     _coerce_event,
     _events_path,
     _stream_path,
 )
 from dashscope.agentstudio.streaming import AsyncEventStream, EventStream
-from dashscope.agentstudio.tools import AsyncSessionToolRunner, SessionToolRunner
+from dashscope.agentstudio.tools import (
+    AsyncSessionToolRunner,
+    SessionToolRunner,
+)
 from dashscope.agentstudio.types import ServerEvent
-from dashscope.agentstudio.types.params import SessionEventListParams, SessionEventSendParams
-from dashscope.agentstudio.constants import AGENTSTUDIO_DEFAULT_TIMEOUT, SSEEventType, BlockType, SessionStatus
+from dashscope.agentstudio.types.params import (
+    SessionEventListParams,
+    SessionEventSendParams,
+)
+from dashscope.agentstudio.constants import (
+    AGENTSTUDIO_DEFAULT_TIMEOUT,
+    BlockType,
+    SessionStatus,
+    SSEEventType,
+)
 
 
 class SessionEvents:
-    """Session event send / list / stream — instance methods backed by a shared client."""
+    """Session event send / list / stream."""
 
     def __init__(self, client) -> None:
         self._client = client
@@ -35,12 +58,18 @@ class SessionEvents:
 
         Returns the server response dict::
 
-            result = client.sessions.events.send(session.id, [user_message("hello")])
+            result = client.sessions.events.send(
+                session.id, [user_message("hello")],
+            )
         """
         if not events:
             raise ValueError("events must contain at least 1 entry")
         body = SessionEventSendParams(input=events).to_dict()
-        resp = self._client._transport.request("POST", _events_path(session_id), json=body)
+        resp = self._client.transport.request(
+            "POST",
+            _events_path(session_id),
+            json=body,
+        )
         return resp.data
 
     def list(
@@ -57,22 +86,38 @@ class SessionEvents:
         page: Optional[str] = None,
     ) -> CursorPage[ServerEvent]:
         params = SessionEventListParams(
-            types=types, created_at_gt=created_at_gt,
-            created_at_gte=created_at_gte, created_at_lt=created_at_lt,
-            created_at_lte=created_at_lte, limit=limit, order=order, page=page,
+            types=types,
+            created_at_gt=created_at_gt,
+            created_at_gte=created_at_gte,
+            created_at_lt=created_at_lt,
+            created_at_lte=created_at_lte,
+            limit=limit,
+            order=order,
+            page=page,
         ).to_dict()
-        resp = self._client._transport.request("GET", _events_path(session_id), params=params)
+        resp = self._client.transport.request(
+            "GET",
+            _events_path(session_id),
+            params=params,
+        )
 
         def fetch_next(nxt: str) -> CursorPage[ServerEvent]:
             return self.list(
-                session_id, types=types,
-                created_at_gt=created_at_gt, created_at_gte=created_at_gte,
-                created_at_lt=created_at_lt, created_at_lte=created_at_lte,
-                limit=limit, order=order, page=nxt,
+                session_id,
+                types=types,
+                created_at_gt=created_at_gt,
+                created_at_gte=created_at_gte,
+                created_at_lt=created_at_lt,
+                created_at_lte=created_at_lte,
+                limit=limit,
+                order=order,
+                page=nxt,
             )
 
         return build_page(
-            payload=resp.data, item_factory=_coerce_event, request_id=resp.request_id,
+            payload=resp.data,
+            item_factory=_coerce_event,
+            request_id=resp.request_id,
             fetch_next=fetch_next,
         )
 
@@ -84,10 +129,12 @@ class SessionEvents:
     ) -> "_TypedEventStream":
         """Open the SSE stream and return an iterator of typed events."""
 
-        resp = self._client._transport.request(
-            "GET", _stream_path(session_id),
+        resp = self._client.transport.request(
+            "GET",
+            _stream_path(session_id),
             extra_headers={"Accept": "text/event-stream"},
-            stream=True, timeout=timeout or AGENTSTUDIO_DEFAULT_TIMEOUT,
+            stream=True,
+            timeout=timeout or AGENTSTUDIO_DEFAULT_TIMEOUT,
         )
         if resp.status_code >= 400:
             try:
@@ -97,13 +144,17 @@ class SessionEvents:
                 body = {"raw": resp.text}
             try:
                 raise exceptions.from_response(
-                    status_code=resp.status_code, body=body, headers=resp.headers
+                    status_code=resp.status_code,
+                    body=body,
+                    headers=resp.headers,
                 )
             finally:
                 resp.close()
-        # Transport is shared with the client — stream close only closes the
-        # response, NOT the transport.
-        return _TypedEventStream(EventStream(response=resp))
+        # Transport is shared -- stream close only closes
+        # the response, NOT the transport.
+        return _TypedEventStream(
+            EventStream(response=resp),
+        )
 
     def tool_runner(
         self,
@@ -127,6 +178,7 @@ class SessionEvents:
             max_idle_seconds=max_idle_seconds,
             max_concurrent=max_concurrent,
         )
+
 
 class _TypedEventStream:
     """Wrap :class:`EventStream` so iterating yields :class:`ServerEvent`."""
@@ -153,17 +205,18 @@ class _TypedEventStream:
         ``session_status`` events manually.
         """
         for event in self:
-            if getattr(event, 'type', None) == SSEEventType.MESSAGE:
-                for block in (event.content or []):
-                    if getattr(block, 'type', None) == BlockType.TEXT:
-                        text = getattr(block, 'text', '')
+            if getattr(event, "type", None) == SSEEventType.MESSAGE:
+                for block in event.content or []:
+                    if getattr(block, "type", None) == BlockType.TEXT:
+                        text = getattr(block, "text", "")
                         if text:
                             yield text
-            elif getattr(event, 'type', None) == SSEEventType.SESSION_STATUS:
+            elif getattr(event, "type", None) == SSEEventType.SESSION_STATUS:
                 block = event.content[0] if event.content else None
-                d = getattr(block, 'data', None) or {}
-                if d.get('session_status') in (
-                    SessionStatus.IDLE, SessionStatus.TERMINATED,
+                d = getattr(block, "data", None) or {}
+                if d.get("session_status") in (
+                    SessionStatus.IDLE,
+                    SessionStatus.TERMINATED,
                     SessionStatus.RESCHEDULING,
                 ):
                     return
@@ -173,7 +226,7 @@ class _TypedEventStream:
 
 
 class AsyncSessionEvents:
-    """Async session event operations — instance methods backed by a shared client."""
+    """Async session event operations."""
 
     def __init__(self, client) -> None:
         self._client = client
@@ -187,12 +240,18 @@ class AsyncSessionEvents:
 
         Returns the server response dict::
 
-            result = await client.sessions.events.send(session.id, [user_message("hello")])
+            result = await client.sessions.events.send(
+                session.id, [user_message("hello")],
+            )
         """
         if not events:
             raise ValueError("events must contain at least 1 entry")
         body = SessionEventSendParams(input=events).to_dict()
-        resp = await self._client._transport.request("POST", _events_path(session_id), json=body)
+        resp = await self._client.transport.request(
+            "POST",
+            _events_path(session_id),
+            json=body,
+        )
         return resp.data
 
     async def list(
@@ -209,23 +268,42 @@ class AsyncSessionEvents:
         page: Optional[str] = None,
     ) -> AsyncCursorPage[ServerEvent]:
         params = SessionEventListParams(
-            types=types, created_at_gt=created_at_gt,
-            created_at_gte=created_at_gte, created_at_lt=created_at_lt,
-            created_at_lte=created_at_lte, limit=limit, order=order, page=page,
+            types=types,
+            created_at_gt=created_at_gt,
+            created_at_gte=created_at_gte,
+            created_at_lt=created_at_lt,
+            created_at_lte=created_at_lte,
+            limit=limit,
+            order=order,
+            page=page,
         ).to_dict()
-        resp = await self._client._transport.request("GET", _events_path(session_id), params=params)
+        resp = await self._client.transport.request(
+            "GET",
+            _events_path(session_id),
+            params=params,
+        )
 
-        async def fetch_next(nxt: str) -> AsyncCursorPage[ServerEvent]:
+        async def fetch_next(
+            nxt: str,
+        ) -> AsyncCursorPage[ServerEvent]:
             return await self.list(
-                session_id, types=types,
-                created_at_gt=created_at_gt, created_at_gte=created_at_gte,
-                created_at_lt=created_at_lt, created_at_lte=created_at_lte,
-                limit=limit, order=order, page=nxt,
+                session_id,
+                types=types,
+                created_at_gt=created_at_gt,
+                created_at_gte=created_at_gte,
+                created_at_lt=created_at_lt,
+                created_at_lte=created_at_lte,
+                limit=limit,
+                order=order,
+                page=nxt,
             )
 
         return build_page(
-            payload=resp.data, item_factory=_coerce_event, request_id=resp.request_id,
-            page_cls=AsyncCursorPage, fetch_next=fetch_next,
+            payload=resp.data,
+            item_factory=_coerce_event,
+            request_id=resp.request_id,
+            page_cls=AsyncCursorPage,
+            fetch_next=fetch_next,
         )
 
     async def stream(
@@ -236,10 +314,12 @@ class AsyncSessionEvents:
     ) -> "_AioTypedEventStream":
         """Open the SSE stream and return an async iterator of typed events."""
 
-        resp = await self._client._transport.request(
-            "GET", _stream_path(session_id),
+        resp = await self._client.transport.request(
+            "GET",
+            _stream_path(session_id),
             extra_headers={"Accept": "text/event-stream"},
-            stream=True, timeout=timeout or AGENTSTUDIO_DEFAULT_TIMEOUT,
+            stream=True,
+            timeout=timeout or AGENTSTUDIO_DEFAULT_TIMEOUT,
         )
         if resp.status_code >= 400:
             try:
@@ -249,13 +329,17 @@ class AsyncSessionEvents:
                 body = {"raw": resp.text}
             try:
                 raise exceptions.from_response(
-                    status_code=resp.status_code, body=body, headers=resp.headers
+                    status_code=resp.status_code,
+                    body=body,
+                    headers=resp.headers,
                 )
             finally:
                 await resp.aclose()
-        # Transport is shared with the client — stream close only closes the
-        # response, NOT the transport.
-        return _AioTypedEventStream(AsyncEventStream(response=resp))
+        # Transport is shared -- stream close only closes
+        # the response, NOT the transport.
+        return _AioTypedEventStream(
+            AsyncEventStream(response=resp),
+        )
 
     def tool_runner(
         self,
@@ -312,17 +396,18 @@ class _AioTypedEventStream:
         ``session_status`` events manually.
         """
         async for event in self:
-            if getattr(event, 'type', None) == SSEEventType.MESSAGE:
-                for block in (event.content or []):
-                    if getattr(block, 'type', None) == BlockType.TEXT:
-                        text = getattr(block, 'text', '')
+            if getattr(event, "type", None) == SSEEventType.MESSAGE:
+                for block in event.content or []:
+                    if getattr(block, "type", None) == BlockType.TEXT:
+                        text = getattr(block, "text", "")
                         if text:
                             yield text
-            elif getattr(event, 'type', None) == SSEEventType.SESSION_STATUS:
+            elif getattr(event, "type", None) == SSEEventType.SESSION_STATUS:
                 block = event.content[0] if event.content else None
-                d = getattr(block, 'data', None) or {}
-                if d.get('session_status') in (
-                    SessionStatus.IDLE, SessionStatus.TERMINATED,
+                d = getattr(block, "data", None) or {}
+                if d.get("session_status") in (
+                    SessionStatus.IDLE,
+                    SessionStatus.TERMINATED,
                     SessionStatus.RESCHEDULING,
                 ):
                     return

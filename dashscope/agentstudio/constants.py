@@ -2,14 +2,25 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 """AgentStudio wire-protocol and configuration constants."""
 
+import enum
+import sys
+
 import httpx
-from enum import StrEnum
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+
+    class StrEnum(str, enum.Enum):  # type: ignore[no-redef]
+        """Minimal StrEnum shim for Python < 3.11."""
+
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-AGENTSTUDIO_BASE_URL_TEMPLATE = "https://{workspace}.cn-beijing.maas.aliyuncs.com/api/v1/agentstudio"
+_HOST = "https://{workspace}.cn-beijing.maas.aliyuncs.com"
+AGENTSTUDIO_BASE_URL_TEMPLATE = _HOST + "/api/v1/agentstudio"
 AGENTSTUDIO_DEFAULT_WORKSPACE = "trial"
 AGENTSTUDIO_DEFAULT_TIMEOUT = httpx.Timeout(600.0, connect=10.0)
 AGENTSTUDIO_MAX_RETRIES = 2
@@ -19,6 +30,7 @@ AGENTSTUDIO_MAX_RETRIES = 2
 # Wire-protocol enums
 # ---------------------------------------------------------------------------
 
+
 class SSEEventType(StrEnum):
     """Server-sent event types (the value of ``event.type`` in SSE payloads).
 
@@ -26,6 +38,7 @@ class SSEEventType(StrEnum):
     FUNCTION_CALL_OUTPUT, TOOL_CALL_OUTPUT, DEFINE_OUTCOME.
     Server-emitted: all types.
     """
+
     # Client-sendable
     MESSAGE = "message"
     INTERRUPT = "interrupt"
@@ -55,13 +68,15 @@ class SSEEventType(StrEnum):
 
 class MessageRole(StrEnum):
     """Roles used in message/event payloads."""
+
     USER = "user"
     ASSISTANT = "assistant"
     TOOL = "tool"
 
 
 class BlockType(StrEnum):
-    """Content block types (the value of ``block.type`` in message content arrays)."""
+    """Content block types (``block.type`` values)."""
+
     TEXT = "text"
     IMAGE = "image"
     AUDIO = "audio"
@@ -72,7 +87,8 @@ class BlockType(StrEnum):
 
 
 class SessionStatus(StrEnum):
-    """Session run-status values (the value of ``data.session_status`` in session_status events)."""
+    """Session run-status values (``session_status``)."""
+
     IDLE = "idle"
     RUNNING = "running"
     RESCHEDULING = "rescheduling"

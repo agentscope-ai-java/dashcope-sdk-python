@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import functools
 import inspect
 import json
 import re
@@ -50,7 +51,9 @@ _PRIMITIVE_MAP: Dict[Any, str] = {
 }
 
 
-def _python_type_to_schema(py_type: Any) -> Dict[str, Any]:
+def _python_type_to_schema(  # pylint: disable=too-many-return-statements
+    py_type: Any,
+) -> Dict[str, Any]:
     if py_type is inspect.Parameter.empty or py_type is Any:
         return {}
     origin = get_origin(py_type)
@@ -72,7 +75,9 @@ def _python_type_to_schema(py_type: Any) -> Dict[str, Any]:
     return {"type": "object"}
 
 
-def _parse_docstring(doc: str) -> Tuple[str, Dict[str, str]]:
+def _parse_docstring(  # pylint: disable=too-many-branches
+    doc: str,
+) -> Tuple[str, Dict[str, str]]:
     """Split a docstring into (summary, {param: description})."""
     if not doc:
         return "", {}
@@ -99,7 +104,10 @@ def _parse_docstring(doc: str) -> Tuple[str, Dict[str, str]]:
         return "\n".join(lines[:summary_end]).strip(), descs
 
     # Google / Napoleon ``Args:`` style
-    section_re = re.compile(r"^\s*(Args|Arguments|Parameters)\s*:\s*$", flags=re.IGNORECASE)
+    section_re = re.compile(
+        r"^\s*(Args|Arguments|Parameters)\s*:\s*$",
+        flags=re.IGNORECASE,
+    )
     section_idx: Optional[int] = None
     for idx, line in enumerate(lines):
         if section_re.match(line):
@@ -129,6 +137,7 @@ def _parse_docstring(doc: str) -> Tuple[str, Dict[str, str]]:
 # ---------------------------------------------------------------------------
 # ToolSpec
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ToolSpec:
@@ -161,7 +170,10 @@ class ToolSpec:
     ) -> "ToolSpec":
         """Construct from a hand-written descriptor."""
         if "name" not in descriptor or "input_schema" not in descriptor:
-            raise ValueError("ToolSpec.from_dict requires at least 'name' and 'input_schema'")
+            raise ValueError(
+                "ToolSpec.from_dict requires at least"
+                " 'name' and 'input_schema'",
+            )
         return cls(
             name=str(descriptor["name"]),
             description=str(descriptor.get("description", "")),
@@ -193,13 +205,16 @@ def tool(
                 inspect.Parameter.VAR_KEYWORD,
             ):
                 continue
-            schema = _python_type_to_schema(type_hints.get(pname, param.annotation))
+            schema = _python_type_to_schema(
+                type_hints.get(pname, param.annotation),
+            )
             schema = dict(schema or {"type": "string"})
             doc = param_docs.get(pname)
             if doc:
                 schema["description"] = doc
             if param.default is not inspect.Parameter.empty:
-                # Include default=None in schema so the API knows it is optional
+                # Include default=None so the API knows
+                # it is optional
                 schema["default"] = param.default
             properties[pname] = schema
             if param.default is inspect.Parameter.empty:
@@ -260,6 +275,7 @@ def collect_specs(items: Any) -> List[ToolSpec]:
 # Runners
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DispatchedTool:
     """Bookkeeping record emitted by a runner."""
@@ -278,18 +294,26 @@ def _coerce_args(raw: Any) -> Dict[str, Any]:
             return json.loads(raw)
         except json.JSONDecodeError:
             raise ValueError(
-                f"Tool arguments must be valid JSON, got: {raw!r}"
+                f"Tool arguments must be valid JSON, got: {raw!r}",
             ) from None
     return raw or {}
 
 
-def _extract_tool_call(event: AgentCustomToolUseEvent) -> Optional[Dict[str, Any]]:
+def _extract_tool_call(
+    event: AgentCustomToolUseEvent,
+) -> Optional[Dict[str, Any]]:
     content = event.content or []
     for block in content:
-        block_dict = block.to_dict() if hasattr(block, "to_dict") else dict(block)
+        block_dict = (
+            block.to_dict() if hasattr(block, "to_dict") else dict(block)
+        )
         # function_call events: data is nested inside a "data" key
         inner = block_dict.get("data") or {}
-        if isinstance(inner, dict) and inner.get("name") and inner.get("call_id"):
+        if (
+            isinstance(inner, dict)
+            and inner.get("name")
+            and inner.get("call_id")
+        ):
             return {
                 "name": inner["name"],
                 "custom_tool_use_id": inner["call_id"],
@@ -302,10 +326,16 @@ def _extract_tool_call(event: AgentCustomToolUseEvent) -> Optional[Dict[str, Any
                 "name": block_dict["name"],
                 "custom_tool_use_id": block_dict.get("custom_tool_use_id")
                 or block_dict.get("tool_use_id"),
-                "arguments": _coerce_args(block_dict.get("arguments") or block_dict.get("input")),
+                "arguments": _coerce_args(
+                    block_dict.get("arguments") or block_dict.get("input"),
+                ),
             }
     meta = event.metadata or {}
-    if isinstance(meta, dict) and meta.get("name") and meta.get("custom_tool_use_id"):
+    if (
+        isinstance(meta, dict)
+        and meta.get("name")
+        and meta.get("custom_tool_use_id")
+    ):
         return {
             "name": meta["name"],
             "custom_tool_use_id": meta["custom_tool_use_id"],
@@ -331,7 +361,9 @@ def _extract_session_status(event: Any) -> Optional[str]:
     """
     content = event.content or []
     for block in content:
-        block_dict = block.to_dict() if hasattr(block, "to_dict") else dict(block)
+        block_dict = (
+            block.to_dict() if hasattr(block, "to_dict") else dict(block)
+        )
         data = block_dict.get("data")
         if isinstance(data, dict):
             return data.get("session_status")
@@ -400,7 +432,8 @@ class SessionToolRunner:
         # Send events first (server now flushes headers immediately).
         if self._events:
             self._client.sessions.events.send(
-                self._session_id, events=self._events,
+                self._session_id,
+                events=self._events,
             )
             self._events = None
 
@@ -410,22 +443,39 @@ class SessionToolRunner:
                 timeout=self._max_idle,
             ) as stream:
                 for event in stream:
-                    if event.type in (SSEEventType.TOOL_CALL, SSEEventType.FUNCTION_CALL):
+                    if event.type in (
+                        SSEEventType.TOOL_CALL,
+                        SSEEventType.FUNCTION_CALL,
+                    ):
                         self._last_activity = time.monotonic()
                         call = _extract_tool_call(event)
                         if call is None:
-                            logger.warning("custom_tool_use without identifiable name/id; skipping")
+                            logger.warning(
+                                "custom_tool_use without"
+                                " identifiable name/id;"
+                                " skipping",
+                            )
                             continue
-                        future = self._executor.submit(self._dispatch_call, call)
+                        future = self._executor.submit(
+                            self._dispatch_call,
+                            call,
+                        )
                         pending[future] = call
                     elif event.type == SSEEventType.SESSION_STATUS:
                         session_status = _extract_session_status(event)
-                        if session_status in (SessionStatus.IDLE, SessionStatus.TERMINATED):
+                        if session_status in (
+                            SessionStatus.IDLE,
+                            SessionStatus.TERMINATED,
+                        ):
                             yield from self._drain(pending)
                             if session_status == SessionStatus.TERMINATED:
                                 return
                             if self._idle_exceeded():
-                                logger.debug("session idle for too long, stopping runner")
+                                logger.debug(
+                                    "session idle for"
+                                    " too long,"
+                                    " stopping runner",
+                                )
                                 return
                             return
                     yield from self._harvest(pending)
@@ -434,8 +484,6 @@ class SessionToolRunner:
 
     def _harvest(self, pending: Dict) -> Iterator[DispatchedTool]:
         """Yield records for any futures that have completed so far."""
-        from concurrent.futures import Future
-
         done = [f for f in list(pending) if f.done()]
         for future in done:
             pending.pop(future)
@@ -495,7 +543,11 @@ class SessionToolRunner:
         started = time.monotonic()
         try:
             if spec.func is None:
-                result = f"Tool '{name}' is a descriptor-only tool (no callable registered)"
+                result = (
+                    f"Tool '{name}' is a"
+                    " descriptor-only tool"
+                    " (no callable registered)"
+                )
                 is_error = True
             else:
                 result = spec.func(**call["arguments"])
@@ -521,7 +573,13 @@ class SessionToolRunner:
             duration_ms=duration_ms,
         )
 
-    def _post_result(self, *, custom_tool_use_id: str, output: Any, is_error: bool) -> None:
+    def _post_result(
+        self,
+        *,
+        custom_tool_use_id: str,
+        output: Any,
+        is_error: bool,
+    ) -> None:
         evt = user_custom_tool_result(
             custom_tool_use_id=custom_tool_use_id,
             content=output,
@@ -529,7 +587,8 @@ class SessionToolRunner:
         )
         try:
             self._client.sessions.events.send(
-                self._session_id, [evt],
+                self._session_id,
+                [evt],
             )
         except Exception:  # pragma: no cover
             logger.exception("failed to post tool result")
@@ -593,14 +652,17 @@ class AsyncSessionToolRunner:
         sem = asyncio.Semaphore(self._max_concurrent)
         self._pending_tasks.clear()
 
-        async def _guarded_dispatch(call: Dict[str, Any]) -> Optional[DispatchedTool]:
+        async def _guarded_dispatch(
+            call: Dict[str, Any],
+        ) -> Optional[DispatchedTool]:
             async with sem:
                 return await self._dispatch_call(call)
 
         # Send events first (server now flushes headers immediately).
         if self._events:
             await self._client.sessions.events.send(
-                self._session_id, events=self._events,
+                self._session_id,
+                events=self._events,
             )
             self._events = None
 
@@ -609,7 +671,10 @@ class AsyncSessionToolRunner:
             timeout=self._max_idle,
         ) as stream:
             async for event in stream:
-                if event.type in (SSEEventType.TOOL_CALL, SSEEventType.FUNCTION_CALL):
+                if event.type in (
+                    SSEEventType.TOOL_CALL,
+                    SSEEventType.FUNCTION_CALL,
+                ):
                     last_activity = loop.time()
                     call = _extract_tool_call(event)
                     if call is None:
@@ -618,7 +683,10 @@ class AsyncSessionToolRunner:
                     self._pending_tasks.add(task)
                 elif event.type == SSEEventType.SESSION_STATUS:
                     session_status = _extract_session_status(event)
-                    if session_status in (SessionStatus.IDLE, SessionStatus.TERMINATED):
+                    if session_status in (
+                        SessionStatus.IDLE,
+                        SessionStatus.TERMINATED,
+                    ):
                         # Drain pending tasks before exiting.
                         async for record in self._drain(self._pending_tasks):
                             yield record
@@ -649,8 +717,9 @@ class AsyncSessionToolRunner:
         import asyncio
 
         while pending:
-            done, still_pending = await asyncio.wait(
-                pending, return_when=asyncio.FIRST_COMPLETED,
+            done, _still_pending = await asyncio.wait(
+                pending,
+                return_when=asyncio.FIRST_COMPLETED,
             )
             for task in done:
                 pending.discard(task)
@@ -669,14 +738,21 @@ class AsyncSessionToolRunner:
             return None
         return await self._dispatch_call(call)
 
-    async def _dispatch_call(self, call: Dict[str, Any]) -> Optional[DispatchedTool]:
+    async def _dispatch_call(
+        self,
+        call: Dict[str, Any],
+    ) -> Optional[DispatchedTool]:
         import asyncio
 
         spec = self._specs.get(call["name"])
         if spec is None:
             await self._post_result(
                 call["custom_tool_use_id"],
-                output=f"Tool '{call['name']}' not registered with this runner.",
+                output=(
+                    f"Tool '{call['name']}'"
+                    " not registered with"
+                    " this runner."
+                ),
                 is_error=True,
             )
             return DispatchedTool(
@@ -692,14 +768,23 @@ class AsyncSessionToolRunner:
         started = loop.time()
         try:
             if spec.func is None:
-                result = f"Tool '{call['name']}' is a descriptor-only tool (no callable registered)"
+                result = (
+                    f"Tool '{call['name']}'"
+                    " is a descriptor-only"
+                    " tool (no callable"
+                    " registered)"
+                )
                 is_error = True
             elif spec.is_async:
                 result = await spec.func(**call["arguments"])
                 is_error = False
             else:
                 result = await loop.run_in_executor(
-                    None, lambda: spec.func(**call["arguments"])
+                    None,
+                    functools.partial(
+                        spec.func,
+                        **call["arguments"],
+                    ),
                 )
                 is_error = False
         except Exception as exc:  # noqa: BLE001
@@ -709,7 +794,9 @@ class AsyncSessionToolRunner:
         duration_ms = int((loop.time() - started) * 1000)
         formatted = _format_output(result)
         await self._post_result(
-            call["custom_tool_use_id"], output=formatted, is_error=is_error
+            call["custom_tool_use_id"],
+            output=formatted,
+            is_error=is_error,
         )
         return DispatchedTool(
             name=call["name"],
@@ -721,7 +808,11 @@ class AsyncSessionToolRunner:
         )
 
     async def _post_result(
-        self, custom_tool_use_id: str, *, output: Any, is_error: bool
+        self,
+        custom_tool_use_id: str,
+        *,
+        output: Any,
+        is_error: bool,
     ) -> None:
         evt = user_custom_tool_result(
             custom_tool_use_id=custom_tool_use_id,
@@ -730,7 +821,8 @@ class AsyncSessionToolRunner:
         )
         try:
             await self._client.sessions.events.send(
-                self._session_id, [evt],
+                self._session_id,
+                [evt],
             )
         except Exception:  # pragma: no cover
             logger.exception("failed to post tool result")

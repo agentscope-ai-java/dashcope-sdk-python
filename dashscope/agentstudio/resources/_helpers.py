@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping
 
 from dashscope.agentstudio.types import (
     Agent,
@@ -22,6 +22,7 @@ from dashscope.agentstudio.types import (
 # ---------------------------------------------------------------------------
 # Coerce helpers
 # ---------------------------------------------------------------------------
+
 
 def _coerce_agent(payload: Mapping[str, Any]) -> Agent:
     return Agent(**dict(payload))
@@ -58,6 +59,7 @@ def _coerce_session(payload: Mapping[str, Any]) -> Session:
 # ---------------------------------------------------------------------------
 # Path helpers
 # ---------------------------------------------------------------------------
+
 
 def _events_path(session_id: str) -> str:
     return f"/sessions/{session_id}/events"

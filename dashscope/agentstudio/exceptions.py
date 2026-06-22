@@ -175,7 +175,10 @@ _CODE_TO_CLASS: Dict[str, type] = {
 
 
 def from_response(
-    *, status_code: int, body: Any, headers: Optional[Mapping[str, str]] = None
+    *,
+    status_code: int,
+    body: Any,
+    headers: Optional[Mapping[str, str]] = None,
 ) -> AgentStudioError:
     """Build an :class:`AgentStudioError` instance from a HTTP response.
 
@@ -197,15 +200,23 @@ def from_response(
         request_id = headers.get("x-request-id")
 
     if isinstance(body, Mapping):
-        # Body request_id as fallback (snake_case is canonical, accept camelCase).
+        # Body request_id as fallback (snake_case canonical).
         if request_id is None:
-            request_id = body.get("request_id") or body.get("requestId")  # TODO(bma-fix)
+            request_id = body.get("request_id") or body.get(
+                "requestId",
+            )  # TODO(bma-fix)
         err = body.get("error")
         if isinstance(err, Mapping):
             code = err.get("code") or err.get("error_code")  # TODO(bma-fix)
-            message = err.get("message") or err.get("error_message")  # TODO(bma-fix)
+            message = err.get("message") or err.get(
+                "error_message",
+            )  # TODO(bma-fix)
         # Spring default fallback.
-        if message is None and "error" in body and isinstance(body["error"], str):
+        if (
+            message is None
+            and "error" in body
+            and isinstance(body["error"], str)
+        ):
             message = body["error"]
             code = body.get("error") or "api_error"
         if message is None:
@@ -214,9 +225,16 @@ def from_response(
     if message is None:
         message = f"HTTP {status_code}"
     if code is None:
-        code = _STATUS_TO_DEFAULT.get(status_code, APIStatusError).code  # type: ignore[attr-defined]
+        code = _STATUS_TO_DEFAULT.get(  # type: ignore[attr-defined]
+            status_code,
+            APIStatusError,
+        ).code
 
-    cls = _CODE_TO_CLASS.get(code) or _STATUS_TO_DEFAULT.get(status_code) or APIStatusError
+    cls = (
+        _CODE_TO_CLASS.get(code)
+        or _STATUS_TO_DEFAULT.get(status_code)
+        or APIStatusError
+    )
     return cls(
         message,
         code=code,

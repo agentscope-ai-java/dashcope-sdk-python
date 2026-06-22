@@ -142,7 +142,9 @@ def build_page(
     """Hydrate a page object from a normalized payload."""
 
     items_raw = payload.get("data") or []
-    items: List[T] = [item_factory(it) for it in items_raw if isinstance(it, dict)]
+    items: List[T] = [
+        item_factory(it) for it in items_raw if isinstance(it, dict)
+    ]
     next_page = payload.get("next_page")
     return page_cls(
         data=items,

@@ -10,7 +10,10 @@ from typing import Any, Optional, Tuple, Union
 import httpx
 
 from dashscope.agentstudio.resources.agents import Agents, AsyncAgents
-from dashscope.agentstudio.resources.environments import Environments, AsyncEnvironments
+from dashscope.agentstudio.resources.environments import (
+    Environments,
+    AsyncEnvironments,
+)
 from dashscope.agentstudio.resources.files import Files, AsyncFiles
 from dashscope.agentstudio.resources.sessions import Sessions, AsyncSessions
 from dashscope.agentstudio.resources.skills import Skills, AsyncSkills
@@ -24,21 +27,30 @@ from dashscope.agentstudio.transport import SyncTransport, AsyncTransport
 from dashscope.common.api_key import get_default_api_key
 
 
-def _resolve_base_url(explicit_url: Optional[str], workspace: Optional[str]) -> str:
+def _resolve_base_url(
+    explicit_url: Optional[str],
+    workspace: Optional[str],
+) -> str:
     """Resolve the base URL.
-    
+
     Priority:
-    1. explicit base_url parameter (user provides full URL)
-    2. DASHSCOPE_AGENTSTUDIO_URL / AGENTSTUDIO_URL env var
-    3. Build from workspace: https://{workspace}.cn-beijing.maas.aliyuncs.com/api/v1/agentstudio
+    1. explicit base_url parameter (full URL)
+    2. DASHSCOPE_AGENTSTUDIO_URL / AGENTSTUDIO_URL env
+    3. Build from workspace template
     """
     if explicit_url:
         return explicit_url
-    env_url = os.environ.get("DASHSCOPE_AGENTSTUDIO_URL") or os.environ.get("AGENTSTUDIO_URL")
+    env_url = os.environ.get("DASHSCOPE_AGENTSTUDIO_URL") or os.environ.get(
+        "AGENTSTUDIO_URL",
+    )
     if env_url:
         return env_url
     # Build from workspace
-    ws = workspace or os.environ.get("DASHSCOPE_WORKSPACE") or AGENTSTUDIO_DEFAULT_WORKSPACE
+    ws = (
+        workspace
+        or os.environ.get("DASHSCOPE_WORKSPACE")
+        or AGENTSTUDIO_DEFAULT_WORKSPACE
+    )
     return AGENTSTUDIO_BASE_URL_TEMPLATE.format(workspace=ws)
 
 
@@ -57,8 +69,7 @@ class Client:
 
         from dashscope.agentstudio import Client
 
-        client = Client(api_key="sk-xxx", workspace="my-workspace")
-        # URL: https://my-workspace.cn-beijing.maas.aliyuncs.com/api/v1/agentstudio
+        client = Client(api_key="sk-xxx", workspace="my-ws")
         agent = client.agents.create(name="demo", model="qwen-max")
         session = client.sessions.create(agent=agent.id)
         with client.sessions.events.stream(session.id) as stream:
@@ -73,13 +84,19 @@ class Client:
         workspace: Optional[str] = None,
         base_url: Optional[str] = None,
         uid: Optional[str] = None,
-        timeout: Optional[Union[float, httpx.Timeout, Tuple[float, float]]] = None,
+        timeout: Optional[
+            Union[float, httpx.Timeout, Tuple[float, float]]
+        ] = None,
         max_retries: int = AGENTSTUDIO_MAX_RETRIES,
         http_client: Optional[httpx.Client] = None,
     ) -> None:
-        resolved_workspace = workspace or os.environ.get("DASHSCOPE_WORKSPACE") or AGENTSTUDIO_DEFAULT_WORKSPACE
+        resolved_workspace = (
+            workspace
+            or os.environ.get("DASHSCOPE_WORKSPACE")
+            or AGENTSTUDIO_DEFAULT_WORKSPACE
+        )
         resolved_base = _resolve_base_url(base_url, resolved_workspace)
-        self._transport = SyncTransport(
+        self.transport = SyncTransport(
             base_url=resolved_base,
             api_key=api_key or get_default_api_key(),
             workspace=resolved_workspace,
@@ -96,7 +113,7 @@ class Client:
         self.skills = Skills(self)
 
     def close(self) -> None:
-        self._transport.close()
+        self.transport.close()
 
     def __enter__(self) -> "Client":
         return self
@@ -118,9 +135,10 @@ class AsyncClient:
 
         from dashscope.agentstudio import AsyncClient
 
-        client = AsyncClient(api_key="sk-xxx", workspace="my-workspace")
-        # URL: https://my-workspace.cn-beijing.maas.aliyuncs.com/api/v1/agentstudio
-        agent = await client.agents.create(name="demo", model="qwen-max")
+        client = AsyncClient(api_key="sk-xxx", workspace="my-ws")
+        agent = await client.agents.create(
+            name="demo", model="qwen-max",
+        )
         session = await client.sessions.create(agent=agent.id)
         async with client.sessions.events.stream(session.id) as stream:
             async for event in stream:
@@ -134,13 +152,19 @@ class AsyncClient:
         workspace: Optional[str] = None,
         base_url: Optional[str] = None,
         uid: Optional[str] = None,
-        timeout: Optional[Union[float, httpx.Timeout, Tuple[float, float]]] = None,
+        timeout: Optional[
+            Union[float, httpx.Timeout, Tuple[float, float]]
+        ] = None,
         max_retries: int = AGENTSTUDIO_MAX_RETRIES,
         http_client: Optional[httpx.AsyncClient] = None,
     ) -> None:
-        resolved_workspace = workspace or os.environ.get("DASHSCOPE_WORKSPACE") or AGENTSTUDIO_DEFAULT_WORKSPACE
+        resolved_workspace = (
+            workspace
+            or os.environ.get("DASHSCOPE_WORKSPACE")
+            or AGENTSTUDIO_DEFAULT_WORKSPACE
+        )
         resolved_base = _resolve_base_url(base_url, resolved_workspace)
-        self._transport = AsyncTransport(
+        self.transport = AsyncTransport(
             base_url=resolved_base,
             api_key=api_key or get_default_api_key(),
             workspace=resolved_workspace,
@@ -157,7 +181,7 @@ class AsyncClient:
         self.skills = AsyncSkills(self)
 
     async def aclose(self) -> None:
-        await self._transport.aclose()
+        await self.transport.aclose()
 
     async def __aenter__(self) -> "AsyncClient":
         return self
@@ -167,6 +191,6 @@ class AsyncClient:
 
     def __del__(self) -> None:
         try:
-            self._transport.close()
+            self.transport.close()
         except Exception:
             pass

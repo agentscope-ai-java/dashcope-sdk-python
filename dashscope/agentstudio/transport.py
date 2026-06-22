@@ -18,12 +18,11 @@ the resource modules so each endpoint can hydrate its own typed shapes.
 from __future__ import annotations
 
 import asyncio
-import json as _json
 import random
 import socket
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, IO, Mapping, Optional, Tuple, Union
 
 import httpx
@@ -33,8 +32,6 @@ from dashscope.agentstudio.constants import (
     AGENTSTUDIO_DEFAULT_TIMEOUT,
     AGENTSTUDIO_MAX_RETRIES,
 )
-from dashscope.common.logging import logger
-
 
 # ---------------------------------------------------------------------------
 # Base data classes (merged from _base.py)
@@ -73,6 +70,7 @@ class APIResponse:
     data: Dict[str, Any]
     request_id: Optional[str] = None
     status_code: int = 200
+
 
 # ---------------------------------------------------------------------------
 # Constants (merged from _constants.py)
@@ -119,7 +117,15 @@ def is_error_payload(payload: Any) -> bool:
         return True
     err = payload.get("error")
     if isinstance(err, dict):
-        return any(k in err for k in ("code", "message", "error_code", "error_message"))
+        return any(
+            k in err
+            for k in (
+                "code",
+                "message",
+                "error_code",
+                "error_message",
+            )
+        )
     return False
 
 
@@ -133,20 +139,25 @@ def _new_request_id() -> str:
     return "req_" + uuid.uuid4().hex[:26]
 
 
-def _resolve_timeout(timeout: Union[float, httpx.Timeout, Tuple[float, float], None]) -> httpx.Timeout:
+def _resolve_timeout(
+    timeout: Union[float, httpx.Timeout, Tuple[float, float], None],
+) -> httpx.Timeout:
     if timeout is None:
         return AGENTSTUDIO_DEFAULT_TIMEOUT
     if isinstance(timeout, httpx.Timeout):
         return timeout
     if isinstance(timeout, tuple):
         return httpx.Timeout(timeout[1], connect=timeout[0])
-    return httpx.Timeout(float(timeout), connect=AGENTSTUDIO_DEFAULT_TIMEOUT.connect)
+    return httpx.Timeout(
+        float(timeout),
+        connect=AGENTSTUDIO_DEFAULT_TIMEOUT.connect,
+    )
 
 
 def _backoff(attempt: int) -> float:
     """Capped jittered exponential backoff."""
 
-    base = min(2 ** attempt, 8.0)
+    base = min(2**attempt, 8.0)
     return base + random.random() * 0.25
 
 
@@ -269,17 +280,30 @@ class SyncTransport:
         if http_client is not None:
             self._client = http_client
         else:
-            socket_options = [(socket.SOL_SOCKET, socket.SO_KEEPALIVE, True)]
-            if hasattr(socket, 'TCP_KEEPINTVL'):
-                socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 60))
-            if hasattr(socket, 'TCP_KEEPIDLE'):
-                socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60))
-            if hasattr(socket, 'TCP_KEEPCNT'):
-                socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5))
-            transport = httpx.HTTPTransport(socket_options=socket_options)
+            socket_options = [
+                (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+            ]
+            if hasattr(socket, "TCP_KEEPINTVL"):
+                socket_options.append(
+                    (socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 60),
+                )
+            if hasattr(socket, "TCP_KEEPIDLE"):
+                socket_options.append(
+                    (socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60),
+                )
+            if hasattr(socket, "TCP_KEEPCNT"):
+                socket_options.append(
+                    (socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5),
+                )
+            transport = httpx.HTTPTransport(
+                socket_options=socket_options,
+            )
             self._client = httpx.Client(
                 timeout=_resolve_timeout(timeout),
-                limits=httpx.Limits(max_connections=1000, max_keepalive_connections=100),
+                limits=httpx.Limits(
+                    max_connections=1000,
+                    max_keepalive_connections=100,
+                ),
                 transport=transport,
             )
 
@@ -290,7 +314,7 @@ class SyncTransport:
             path = "/" + path
         return self.base_url + path
 
-    def request(
+    def request(  # pylint: disable=too-many-branches
         self,
         method: str,
         path: str,
@@ -314,13 +338,18 @@ class SyncTransport:
             uid=self.uid,
             user_agent=self.user_agent,
             extra=extra_headers,
-            json_body=files is None and method.upper() not in ("GET", "HEAD", "DELETE"),
+            json_body=(
+                files is None
+                and method.upper() not in ("GET", "HEAD", "DELETE")
+            ),
         )
         if files is not None:
             headers.pop("Content-Type", None)
 
         url = self._absolute_url(path)
-        req_timeout = _resolve_timeout(timeout if timeout is not None else self.timeout)
+        req_timeout = _resolve_timeout(
+            timeout if timeout is not None else self.timeout,
+        )
 
         attempt = 0
         last_exc: Optional[Exception] = None
@@ -349,7 +378,10 @@ class SyncTransport:
                 if attempt >= self.max_retries or not should_retry:
                     raise exceptions.APIConnectionError(str(exc)) from exc
             else:
-                if not stream and _should_retry(resp.status_code, resp.headers):
+                if not stream and _should_retry(
+                    resp.status_code,
+                    resp.headers,
+                ):
                     last_exc = exceptions.APIStatusError(
                         f"HTTP {resp.status_code}",
                         status_code=resp.status_code,
@@ -373,7 +405,9 @@ class SyncTransport:
                         resp.close()
             time.sleep(_backoff(attempt))
             attempt += 1
-        raise exceptions.APIConnectionError(str(last_exc) if last_exc else "unknown")
+        raise exceptions.APIConnectionError(
+            str(last_exc) if last_exc else "unknown",
+        )
 
     def _parse(self, resp: httpx.Response) -> APIResponse:
         header_rid = resp.headers.get("x-request-id")
@@ -382,7 +416,11 @@ class SyncTransport:
         if not ctype.startswith("application/json") and resp.status_code < 400:
             payload: Any = {"_binary": resp.content, "_content_type": ctype}
             data, rid = unwrap(payload)
-            return APIResponse(data=data, request_id=rid or header_rid, status_code=resp.status_code)
+            return APIResponse(
+                data=data,
+                request_id=rid or header_rid,
+                status_code=resp.status_code,
+            )
 
         try:
             payload = resp.json()
@@ -391,11 +429,17 @@ class SyncTransport:
 
         if resp.status_code >= 400 or is_error_payload(payload):
             raise exceptions.from_response(
-                status_code=resp.status_code, body=payload, headers=resp.headers
+                status_code=resp.status_code,
+                body=payload,
+                headers=resp.headers,
             )
 
         data, rid = unwrap(payload)
-        return APIResponse(data=data, request_id=rid or header_rid, status_code=resp.status_code)
+        return APIResponse(
+            data=data,
+            request_id=rid or header_rid,
+            status_code=resp.status_code,
+        )
 
     def close(self) -> None:
         if self._owns_client:
@@ -456,17 +500,30 @@ class AsyncTransport:
         if http_client is not None:
             self._client = http_client
         else:
-            socket_options = [(socket.SOL_SOCKET, socket.SO_KEEPALIVE, True)]
-            if hasattr(socket, 'TCP_KEEPINTVL'):
-                socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 60))
-            if hasattr(socket, 'TCP_KEEPIDLE'):
-                socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60))
-            if hasattr(socket, 'TCP_KEEPCNT'):
-                socket_options.append((socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5))
-            transport = httpx.AsyncHTTPTransport(socket_options=socket_options)
+            socket_options = [
+                (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+            ]
+            if hasattr(socket, "TCP_KEEPINTVL"):
+                socket_options.append(
+                    (socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 60),
+                )
+            if hasattr(socket, "TCP_KEEPIDLE"):
+                socket_options.append(
+                    (socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60),
+                )
+            if hasattr(socket, "TCP_KEEPCNT"):
+                socket_options.append(
+                    (socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 5),
+                )
+            transport = httpx.AsyncHTTPTransport(
+                socket_options=socket_options,
+            )
             self._client = httpx.AsyncClient(
                 timeout=_resolve_timeout(timeout),
-                limits=httpx.Limits(max_connections=1000, max_keepalive_connections=100),
+                limits=httpx.Limits(
+                    max_connections=1000,
+                    max_keepalive_connections=100,
+                ),
                 transport=transport,
             )
 
@@ -477,7 +534,7 @@ class AsyncTransport:
             path = "/" + path
         return self.base_url + path
 
-    async def request(
+    async def request(  # pylint: disable=too-many-branches
         self,
         method: str,
         path: str,
@@ -490,18 +547,26 @@ class AsyncTransport:
         timeout: Union[float, httpx.Timeout, Tuple[float, float], None] = None,
         stream: bool = False,
     ) -> Any:
-        """Issue an HTTP request. For ``stream=True`` returns raw ``httpx.Response``."""
+        """Issue an HTTP request.
+
+        For ``stream=True`` returns raw ``httpx.Response``.
+        """
 
         headers = build_headers(
             api_key=self.api_key,
             uid=self.uid,
             user_agent=self.user_agent,
             extra=extra_headers,
-            json_body=files is None and method.upper() not in ("GET", "HEAD", "DELETE"),
+            json_body=(
+                files is None
+                and method.upper() not in ("GET", "HEAD", "DELETE")
+            ),
         )
         if files is not None:
             headers.pop("Content-Type", None)
-        req_timeout = _resolve_timeout(timeout if timeout is not None else self.timeout)
+        req_timeout = _resolve_timeout(
+            timeout if timeout is not None else self.timeout,
+        )
         url = self._absolute_url(path)
 
         attempt = 0
@@ -531,7 +596,10 @@ class AsyncTransport:
                 if attempt >= self.max_retries or not should_retry:
                     raise exceptions.APIConnectionError(str(exc)) from exc
             else:
-                if not stream and _should_retry(resp.status_code, resp.headers):
+                if not stream and _should_retry(
+                    resp.status_code,
+                    resp.headers,
+                ):
                     last_exc = exceptions.APIStatusError(
                         f"HTTP {resp.status_code}",
                         status_code=resp.status_code,
@@ -555,7 +623,9 @@ class AsyncTransport:
                         await resp.aclose()
             await asyncio.sleep(_backoff(attempt))
             attempt += 1
-        raise exceptions.APIConnectionError(str(last_exc) if last_exc else "unknown")
+        raise exceptions.APIConnectionError(
+            str(last_exc) if last_exc else "unknown",
+        )
 
     async def _parse(self, resp: httpx.Response) -> APIResponse:
         header_rid = resp.headers.get("x-request-id")
@@ -564,7 +634,11 @@ class AsyncTransport:
         if not ctype.startswith("application/json") and resp.status_code < 400:
             content = await resp.aread()
             data, rid = unwrap({"_binary": content, "_content_type": ctype})
-            return APIResponse(data=data, request_id=rid or header_rid, status_code=resp.status_code)
+            return APIResponse(
+                data=data,
+                request_id=rid or header_rid,
+                status_code=resp.status_code,
+            )
 
         try:
             payload = resp.json()
@@ -573,11 +647,17 @@ class AsyncTransport:
 
         if resp.status_code >= 400 or is_error_payload(payload):
             raise exceptions.from_response(
-                status_code=resp.status_code, body=payload, headers=resp.headers
+                status_code=resp.status_code,
+                body=payload,
+                headers=resp.headers,
             )
 
         data, rid = unwrap(payload)
-        return APIResponse(data=data, request_id=rid or header_rid, status_code=resp.status_code)
+        return APIResponse(
+            data=data,
+            request_id=rid or header_rid,
+            status_code=resp.status_code,
+        )
 
     def close(self) -> None:
         """Best-effort synchronous close (for __del__ / GC safety)."""

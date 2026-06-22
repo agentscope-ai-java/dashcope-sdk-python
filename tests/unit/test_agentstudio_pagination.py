@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# pylint: disable=protected-access
 """Tests for cursor-based pagination."""
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ def test_cursor_page_has_next_and_get_next():
     ]
     call_idx = iter(range(1, 3))
 
-    def _fetch(token: str) -> CursorPage[int]:
+    def _fetch(_token: str) -> CursorPage[int]:
         return pages[next(call_idx)]
 
     pages[0]._fetch_next = _fetch
@@ -55,7 +56,7 @@ def test_cursor_page_iter_auto_paginates():
     ]
     call_idx = iter(range(1, 3))
 
-    def _fetch(token: str) -> CursorPage[int]:
+    def _fetch(_token: str) -> CursorPage[int]:
         return pages[next(call_idx)]
 
     pages[0]._fetch_next = _fetch
@@ -77,7 +78,7 @@ async def test_async_cursor_page_iter():
     ]
     call_idx = iter(range(1, 3))
 
-    async def _fetch(token: str) -> AsyncCursorPage[int]:
+    async def _fetch(_token: str) -> AsyncCursorPage[int]:
         return pages[next(call_idx)]
 
     pages[0]._fetch_next = _fetch

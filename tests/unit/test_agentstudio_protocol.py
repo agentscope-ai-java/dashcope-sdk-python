@@ -59,10 +59,10 @@ def test_error_legacy_underscored_fields_still_parsed():
 
 def test_is_error_payload_detects_both_shapes():
     assert is_error_payload(
-        {"type": "error", "error": {"code": "x", "message": "y"}}
+        {"type": "error", "error": {"code": "x", "message": "y"}},
     )
     assert is_error_payload(
-        {"type": "error", "error": {"error_code": "x", "error_message": "y"}}
+        {"type": "error", "error": {"error_code": "x", "error_message": "y"}},
     )
 
 
@@ -75,19 +75,28 @@ def test_client_event_keys_are_snake_case():
     """Every key the SDK emits in user.* events must be snake_case."""
     samples = [
         user_message(
-            "hi", session_thread_id="th_1", metadata={"k": "v"}
+            "hi",
+            session_thread_id="th_1",
+            metadata={"k": "v"},
         ),
         user_tool_confirmation(
-            tool_use_id="t_1", result="allow"
+            tool_use_id="t_1",
+            result="allow",
         ),
         user_tool_confirmation(
-            tool_use_id="t_1", result="deny", deny_message="nope"
+            tool_use_id="t_1",
+            result="deny",
+            deny_message="nope",
         ),
         user_custom_tool_result(
-            custom_tool_use_id="ctu_1", content="ok", is_error=False
+            custom_tool_use_id="ctu_1",
+            content="ok",
+            is_error=False,
         ),
         user_define_outcome(
-            description="desc", rubric="r", max_iterations=3
+            description="desc",
+            rubric="r",
+            max_iterations=3,
         ),
     ]
 
@@ -174,7 +183,9 @@ def test_user_tool_confirmation_validates_result():
     with pytest.raises(ValueError):
         user_tool_confirmation(tool_use_id="t_1", result="MAYBE")
     deny = user_tool_confirmation(
-        tool_use_id="t_1", result="deny", deny_message="nope"
+        tool_use_id="t_1",
+        result="deny",
+        deny_message="nope",
     )
     assert deny["role"] == "user"
     assert deny["type"] == "tool_confirmation"
@@ -198,7 +209,9 @@ def test_user_custom_tool_result_string_to_text():
 
 def test_user_custom_tool_result_dict_to_data_block():
     evt = user_custom_tool_result(
-        custom_tool_use_id="ctu_1", content={"x": 1}, is_error=True
+        custom_tool_use_id="ctu_1",
+        content={"x": 1},
+        is_error=True,
     )
     assert evt["role"] == "tool"
     assert evt["type"] == "function_call_output"
@@ -211,7 +224,9 @@ def test_user_custom_tool_result_dict_to_data_block():
 
 def test_user_define_outcome():
     evt = user_define_outcome(
-        description="task A", rubric="must be JSON", max_iterations=3
+        description="task A",
+        rubric="must be JSON",
+        max_iterations=3,
     )
     assert evt["role"] == "user"
     assert evt["type"] == "define_outcome"

@@ -34,11 +34,20 @@ class AgentCreateParams(BaseModel):
     but the wire format uses ``model: {"id": "…"}`` and ``system``.
     """
 
-    _fields = ("name", "model", "description", "system", "tools",
-               "mcp_servers", "skills", "metadata")
+    _fields = (
+        "name",
+        "model",
+        "description",
+        "system",
+        "tools",
+        "mcp_servers",
+        "skills",
+        "metadata",
+    )
 
     def __init__(
-        self, *,
+        self,
+        *,
         name: str,
         model: str,
         description: Optional[str] = None,
@@ -53,21 +62,35 @@ class AgentCreateParams(BaseModel):
             model={"id": model},
             description=description,
             system=system_prompt,
-            tools=[dict(t) for t in tools] if tools is not None else None,
-            mcp_servers=[dict(s) for s in mcp_servers] if mcp_servers is not None else None,
-            skills=[dict(s) for s in skills] if skills is not None else None,
-            metadata=dict(metadata) if metadata is not None else None,
+            tools=([dict(t) for t in tools] if tools is not None else None),
+            mcp_servers=(
+                [dict(s) for s in mcp_servers]
+                if mcp_servers is not None
+                else None
+            ),
+            skills=([dict(s) for s in skills] if skills is not None else None),
+            metadata=(dict(metadata) if metadata is not None else None),
         )
 
 
 class AgentUpdateParams(BaseModel):
     """Request body for ``POST /agents/{id}`` (update latest version)."""
 
-    _fields = ("version", "name", "model", "description", "system",
-               "tools", "mcp_servers", "skills", "metadata")
+    _fields = (
+        "version",
+        "name",
+        "model",
+        "description",
+        "system",
+        "tools",
+        "mcp_servers",
+        "skills",
+        "metadata",
+    )
 
     def __init__(
-        self, *,
+        self,
+        *,
         version: int,
         name: Optional[str] = None,
         model: Optional[str] = None,
@@ -81,13 +104,17 @@ class AgentUpdateParams(BaseModel):
         super().__init__(
             version=version,
             name=name,
-            model={"id": model} if model is not None else None,
+            model=({"id": model} if model is not None else None),
             description=description,
             system=system_prompt,
-            tools=[dict(t) for t in tools] if tools is not None else None,
-            mcp_servers=[dict(s) for s in mcp_servers] if mcp_servers is not None else None,
-            skills=[dict(s) for s in skills] if skills is not None else None,
-            metadata=dict(metadata) if metadata is not None else None,
+            tools=([dict(t) for t in tools] if tools is not None else None),
+            mcp_servers=(
+                [dict(s) for s in mcp_servers]
+                if mcp_servers is not None
+                else None
+            ),
+            skills=([dict(s) for s in skills] if skills is not None else None),
+            metadata=(dict(metadata) if metadata is not None else None),
         )
 
 
@@ -100,16 +127,22 @@ class AgentListParams(BaseModel):
 
     _fields = ("limit", "page", "include_archived")
 
-    def __init__(
-        self, *,
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
         limit: Optional[int] = None,
         page: Optional[str] = None,
         include_archived: Optional[bool] = None,
     ) -> None:
+        archived = (
+            str(include_archived).lower()
+            if include_archived is not None
+            else None
+        )
         super().__init__(
             limit=limit,
             page=page,
-            include_archived=str(include_archived).lower() if include_archived is not None else None,
+            include_archived=archived,
         )
 
 
@@ -117,16 +150,6 @@ class AgentVersionListParams(BaseModel):
     """Query params for ``GET /agents/{id}/versions``."""
 
     _fields = ("limit", "page")
-
-    def __init__(
-        self, *,
-        limit: Optional[int] = None,
-        page: Optional[str] = None,
-    ) -> None:
-        super().__init__(
-            limit=limit,
-            page=page,
-        )
 
 
 # ===========================================================================
@@ -139,8 +162,9 @@ class EnvironmentCreateParams(BaseModel):
 
     _fields = ("name", "config", "description", "scope", "metadata")
 
-    def __init__(
-        self, *,
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
         name: str,
         config: Mapping[str, Any],
         description: Optional[str] = None,
@@ -152,7 +176,7 @@ class EnvironmentCreateParams(BaseModel):
             config=dict(config),
             description=description,
             scope=scope,
-            metadata=dict(metadata) if metadata is not None else None,
+            metadata=(dict(metadata) if metadata is not None else None),
         )
 
 
@@ -161,8 +185,9 @@ class EnvironmentUpdateParams(BaseModel):
 
     _fields = ("name", "description", "config", "scope", "metadata")
 
-    def __init__(
-        self, *,
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
         name: Optional[str] = None,
         description: Optional[str] = None,
         config: Optional[Mapping[str, Any]] = None,
@@ -172,9 +197,9 @@ class EnvironmentUpdateParams(BaseModel):
         super().__init__(
             name=name,
             description=description,
-            config=dict(config) if config is not None else None,
+            config=(dict(config) if config is not None else None),
             scope=scope,
-            metadata=dict(metadata) if metadata is not None else None,
+            metadata=(dict(metadata) if metadata is not None else None),
         )
 
 
@@ -187,16 +212,22 @@ class EnvironmentListParams(BaseModel):
 
     _fields = ("limit", "page", "include_archived")
 
-    def __init__(
-        self, *,
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
         limit: Optional[int] = None,
         page: Optional[str] = None,
         include_archived: Optional[bool] = None,
     ) -> None:
+        archived = (
+            str(include_archived).lower()
+            if include_archived is not None
+            else None
+        )
         super().__init__(
             limit=limit,
             page=page,
-            include_archived=str(include_archived).lower() if include_archived is not None else None,
+            include_archived=archived,
         )
 
 
@@ -213,8 +244,9 @@ class SessionCreateParams(BaseModel):
 
     _fields = ("agent", "environment_id", "title", "metadata")
 
-    def __init__(
-        self, *,
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
         agent: str,
         environment_id: Optional[str] = None,
         title: Optional[str] = None,
@@ -224,7 +256,7 @@ class SessionCreateParams(BaseModel):
             agent=agent,
             environment_id=environment_id,
             title=title,
-            metadata=dict(metadata) if metadata is not None else None,
+            metadata=(dict(metadata) if metadata is not None else None),
         )
 
 
@@ -233,14 +265,15 @@ class SessionUpdateParams(BaseModel):
 
     _fields = ("title", "metadata")
 
-    def __init__(
-        self, *,
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
         title: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> None:
         super().__init__(
             title=title,
-            metadata=dict(metadata) if metadata is not None else None,
+            metadata=(dict(metadata) if metadata is not None else None),
         )
 
 
@@ -255,12 +288,20 @@ class SessionListParams(BaseModel):
     inside ``__init__``.
     """
 
-    _fields = ("limit", "page", "agent_id", "statuses[]",
-               "created_at[gt]", "created_at[gte]",
-               "created_at[lt]", "created_at[lte]")
+    _fields = (
+        "limit",
+        "page",
+        "agent_id",
+        "statuses[]",
+        "created_at[gt]",
+        "created_at[gte]",
+        "created_at[lt]",
+        "created_at[lte]",
+    )
 
     def __init__(
-        self, *,
+        self,
+        *,
         limit: Optional[int] = None,
         page: Optional[str] = None,
         agent_id: Optional[str] = None,
@@ -300,9 +341,12 @@ class SessionEventSendParams(BaseModel):
 
     _fields = ("input",)
 
-    def __init__(
-        self, *,
-        input: Sequence[Mapping[str, Any]],
+    def __init__(  # pylint: disable=useless-parent-delegation
+        self,
+        *,
+        input: Sequence[  # pylint: disable=redefined-builtin
+            Mapping[str, Any]
+        ],
     ) -> None:
         super().__init__(
             input=[dict(e) for e in input],
@@ -317,11 +361,20 @@ class SessionEventListParams(BaseModel):
     bracket-based wire keys ``created_at[gt]`` etc.
     """
 
-    _fields = ("types", "created_at[gt]", "created_at[gte]",
-               "created_at[lt]", "created_at[lte]", "limit", "order", "page")
+    _fields = (
+        "types",
+        "created_at[gt]",
+        "created_at[gte]",
+        "created_at[lt]",
+        "created_at[lte]",
+        "limit",
+        "order",
+        "page",
+    )
 
     def __init__(
-        self, *,
+        self,
+        *,
         types: Optional[Sequence[str]] = None,
         created_at_gt: Optional[str] = None,
         created_at_gte: Optional[str] = None,
@@ -362,22 +415,6 @@ class FileListParams(BaseModel):
 
     _fields = ("limit", "page", "scope_id", "after_id", "before_id")
 
-    def __init__(
-        self, *,
-        limit: Optional[int] = None,
-        page: Optional[str] = None,
-        scope_id: Optional[str] = None,
-        after_id: Optional[str] = None,
-        before_id: Optional[str] = None,
-    ) -> None:
-        super().__init__(
-            limit=limit,
-            page=page,
-            scope_id=scope_id,
-            after_id=after_id,
-            before_id=before_id,
-        )
-
 
 # ===========================================================================
 # Skills
@@ -394,29 +431,11 @@ class SkillCreateParams(BaseModel):
 
     _fields = ("file_id",)
 
-    def __init__(
-        self, *,
-        file_id: str,
-    ) -> None:
-        super().__init__(file_id=file_id)
-
 
 class SkillListParams(BaseModel):
     """Query params for ``GET /skills``."""
 
     _fields = ("source", "limit", "page")
-
-    def __init__(
-        self, *,
-        source: Optional[str] = None,
-        limit: Optional[int] = None,
-        page: Optional[str] = None,
-    ) -> None:
-        super().__init__(
-            source=source,
-            limit=limit,
-            page=page,
-        )
 
 
 # ===========================================================================
@@ -429,29 +448,8 @@ class SkillVersionCreateParams(BaseModel):
 
     _fields = ("file_id",)
 
-    def __init__(
-        self, *,
-        file_id: str,
-    ) -> None:
-        super().__init__(
-            file_id=file_id,
-        )
-
 
 class SkillVersionListParams(BaseModel):
     """Query params for ``GET /skills/{skill_id}/versions``."""
 
     _fields = ("limit", "page")
-
-    def __init__(
-        self, *,
-        limit: Optional[int] = None,
-        page: Optional[str] = None,
-    ) -> None:
-        super().__init__(
-            limit=limit,
-            page=page,
-        )
-
-
-

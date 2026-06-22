@@ -15,9 +15,23 @@ file organized into six sections:
 
 from __future__ import annotations
 
-from typing import Any, ClassVar, Dict, Iterable, List, Mapping, Optional, Sequence, Union
+from typing import (
+    Any,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
-from dashscope.agentstudio.constants import SSEEventType, MessageRole, BlockType, SessionStatus
+from dashscope.agentstudio.constants import (
+    SSEEventType,
+    MessageRole,
+    BlockType,
+)
 
 
 # ===========================================================================
@@ -45,7 +59,10 @@ class BaseModel:
         }
 
     @classmethod
-    def from_dict(cls, payload: Optional[Mapping[str, Any]]) -> Optional["BaseModel"]:
+    def from_dict(
+        cls,
+        payload: Optional[Mapping[str, Any]],
+    ) -> Optional["BaseModel"]:
         if payload is None:
             return None
         return cls(**dict(payload))
@@ -100,9 +117,6 @@ class Metadata(BaseModel):
     not validate these limits client-side – the server returns
     ``invalid_request_error`` if they are exceeded.
     """
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self._raw)
@@ -181,7 +195,9 @@ class ImageBlock(BaseModel):
         super().__init__(**kwargs)
 
     def __str__(self) -> str:
-        return f"[image] {getattr(self, 'image_url', '') or getattr(self, 'file_id', '') or ''}"
+        url = getattr(self, "image_url", "") or ""
+        fid = getattr(self, "file_id", "") or ""
+        return f"[image] {url or fid}"
 
 
 class AudioBlock(BaseModel):
@@ -220,14 +236,23 @@ class DataBlock(BaseModel):
 
 
 class FileBlock(BaseModel):
-    _fields = ("type", "file_url", "file_id", "file_data", "media_type", "filename")
+    _fields = (
+        "type",
+        "file_url",
+        "file_id",
+        "file_data",
+        "media_type",
+        "filename",
+    )
 
     def __init__(self, **kwargs: Any) -> None:
         kwargs.setdefault("type", "file")
         super().__init__(**kwargs)
 
     def __str__(self) -> str:
-        return f"[file] {getattr(self, 'filename', '') or getattr(self, 'file_id', '') or ''}"
+        name = getattr(self, "filename", "") or ""
+        fid = getattr(self, "file_id", "") or ""
+        return f"[file] {name or fid}"
 
 
 class RefusalBlock(BaseModel):
@@ -249,7 +274,9 @@ class ErrorBlock(BaseModel):
         super().__init__(**kwargs)
 
     def __str__(self) -> str:
-        return f"[error] {getattr(self, 'message', '') or getattr(self, 'error_code', '')}"
+        msg = getattr(self, "message", "") or ""
+        code = getattr(self, "error_code", "") or ""
+        return f"[error] {msg or code}"
 
 
 _CONTENT_REGISTRY: Dict[str, type] = {
@@ -271,7 +298,13 @@ _CONTENT_REGISTRY: Dict[str, type] = {
 }
 
 ContentBlock = Union[
-    TextBlock, ImageBlock, AudioBlock, DataBlock, FileBlock, RefusalBlock, ErrorBlock
+    TextBlock,
+    ImageBlock,
+    AudioBlock,
+    DataBlock,
+    FileBlock,
+    RefusalBlock,
+    ErrorBlock,
 ]
 
 
@@ -373,7 +406,7 @@ class Skill(BaseModel):
         "source",
         "status",
         "latest_version",
-        "version",          # backward compat alias
+        "version",  # backward compat alias
         "file_id",
         "scope",
         "created_at",
@@ -417,6 +450,7 @@ class Session(BaseModel):
         "updated_at",
         "request_id",
     )
+
 
 class SessionThread(BaseModel):
     _fields = (
@@ -517,10 +551,16 @@ def user_message(
     """
 
     if isinstance(text_or_blocks, str):
-        content: List[Dict[str, Any]] = [{"type": BlockType.TEXT, "text": text_or_blocks}]
+        content: List[Dict[str, Any]] = [
+            {"type": BlockType.TEXT, "text": text_or_blocks},
+        ]
     else:
         content = list(text_or_blocks)
-    evt: Dict[str, Any] = {"role": MessageRole.USER, "type": SSEEventType.MESSAGE, "content": content}
+    evt: Dict[str, Any] = {
+        "role": MessageRole.USER,
+        "type": SSEEventType.MESSAGE,
+        "content": content,
+    }
     if session_thread_id:
         evt["session_thread_id"] = session_thread_id
     if metadata:
@@ -535,7 +575,10 @@ def user_interrupt(
 ) -> Dict[str, Any]:
     """Cancel the agent's current turn (best-effort)."""
 
-    evt: Dict[str, Any] = {"role": MessageRole.USER, "type": SSEEventType.INTERRUPT}
+    evt: Dict[str, Any] = {
+        "role": MessageRole.USER,
+        "type": SSEEventType.INTERRUPT,
+    }
     if session_thread_id:
         evt["session_thread_id"] = session_thread_id
     if metadata:
@@ -595,10 +638,15 @@ def user_custom_tool_result(
     evt: Dict[str, Any] = {
         "role": MessageRole.TOOL,
         "type": SSEEventType.FUNCTION_CALL_OUTPUT,
-        "content": [{"type": "data", "data": {
-            "call_id": custom_tool_use_id,
-            "output": output,
-        }}],
+        "content": [
+            {
+                "type": "data",
+                "data": {
+                    "call_id": custom_tool_use_id,
+                    "output": output,
+                },
+            },
+        ],
         "is_error": bool(is_error),
     }
     if session_thread_id:
@@ -627,10 +675,15 @@ def user_tool_result(
     evt: Dict[str, Any] = {
         "role": MessageRole.TOOL,
         "type": SSEEventType.TOOL_CALL_OUTPUT,
-        "content": [{"type": "data", "data": {
-            "call_id": tool_use_id,
-            "output": output,
-        }}],
+        "content": [
+            {
+                "type": "data",
+                "data": {
+                    "call_id": tool_use_id,
+                    "output": output,
+                },
+            },
+        ],
         "is_error": bool(is_error),
     }
     if session_thread_id:
