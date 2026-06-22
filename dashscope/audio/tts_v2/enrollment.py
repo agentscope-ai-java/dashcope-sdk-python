@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import asyncio
 import time
 from typing import List
 
-import aiohttp
+import requests
 
 from dashscope.client.base_api import BaseApi
 from dashscope.common.constants import ApiProtocol, HTTPMethod
@@ -71,8 +70,8 @@ class VoiceEnrollmentService(BaseApi):
                     workspace=self._workspace,
                     **self._kwargs,
                 )
-            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
-                logger.error(e)
+            except (requests.Timeout, requests.ConnectionError) as e:
+                logger.debug(e)
                 try_count += 1
                 if try_count <= VoiceEnrollmentService.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
@@ -92,13 +91,15 @@ class VoiceEnrollmentService(BaseApi):
         **kwargs,
     ) -> str:
         """
-        创建新克隆音色
-        param: target_model 克隆音色对应的语音合成模型版本
-        param: prefix 音色自定义前缀，仅允许数字和小写字母，小于十个字符。
-        param: url 用于克隆的音频文件url
-        param: language_hints 克隆音色目标语言
-        param: max_prompt_audio_length 音频预处理输出的prompt audio最长长度。单位为秒。默认为10s。
-        param: kwargs 额外参数
+        Create a new cloned voice.
+        param: target_model TTS model version for the cloned voice
+        param: prefix Custom voice prefix, only digits and lowercase
+            letters allowed, less than 10 characters.
+        param: url Audio file URL for voice cloning
+        param: language_hints Target language for the cloned voice
+        param: max_prompt_audio_length Max length of prompt audio output
+            from audio preprocessing, in seconds. Default is 10s.
+        param: kwargs Additional parameters
         return: voice_id
         """
 
@@ -133,10 +134,11 @@ class VoiceEnrollmentService(BaseApi):
         page_size: int = 10,
     ) -> List[dict]:
         """
-        查询已创建的所有音色
-        param: page_index 查询的页索引
-        param: page_size 查询页大小
-        return: List[dict] 音色列表，包含每个音色的id，创建时间，修改时间，状态。
+        List all created voices.
+        param: page_index Page index for query
+        param: page_size Page size
+        return: List[dict] Voice list, including id, creation time,
+            modification time, and status for each voice.
         """
         if prefix:
             # pylint: disable=no-value-for-parameter
@@ -170,9 +172,9 @@ class VoiceEnrollmentService(BaseApi):
 
     def query_voice(self, voice_id: str) -> List[str]:
         """
-        查询已创建的所有音色
-        param: voice_id 需要查询的音色
-        return: bytes 注册音色使用的音频
+        Query voice details.
+        param: voice_id Voice ID to query
+        return: bytes Audio used for voice registration
         """
         # pylint: disable=no-value-for-parameter
         response = self.__call_with_input(
@@ -194,9 +196,9 @@ class VoiceEnrollmentService(BaseApi):
 
     def update_voice(self, voice_id: str, url: str) -> None:
         """
-        更新音色
-        param: voice_id 音色id
-        param: url 用于克隆的音频文件url
+        Update voice.
+        param: voice_id Voice ID
+        param: url Audio file URL for cloning
         """
         # pylint: disable=no-value-for-parameter
         response = self.__call_with_input(
@@ -219,8 +221,8 @@ class VoiceEnrollmentService(BaseApi):
 
     def delete_voice(self, voice_id: str) -> None:
         """
-        删除音色
-        param: voice_id 需要删除的音色
+        Delete voice.
+        param: voice_id Voice ID to delete
         """
         # pylint: disable=no-value-for-parameter
         response = self.__call_with_input(

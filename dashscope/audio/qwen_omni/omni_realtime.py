@@ -151,8 +151,9 @@ class OmniRealtimeConversation:
         self.last_first_text_delay = None
         self.last_first_audio_delay = None
         self.metrics = []
-        # 添加用于同步等待连接关闭的事件
+        # Add event for synchronously waiting on connection close
         self.disconnect_event = None
+        self._disconnect_error = None
 
     def _generate_event_id(self):
         """
@@ -189,13 +190,13 @@ class OmniRealtimeConversation:
         self.thread = threading.Thread(target=self.ws.run_forever)
         self.thread.daemon = True
         self.thread.start()
-        timeout = 5  # 最长等待时间（秒）
+        timeout = 5  # max wait time in seconds
         start_time = time.time()
         while (
             not (self.ws.sock and self.ws.sock.connected)
             and (time.time() - start_time) < timeout
         ):
-            time.sleep(0.1)  # 短暂休眠，避免密集轮询
+            time.sleep(0.1)  # Brief sleep to avoid busy polling
         if not (self.ws.sock and self.ws.sock.connected):
             raise TimeoutError(
                 "websocket connection could not established within 5s. "
@@ -350,6 +351,7 @@ class OmniRealtimeConversation:
 
         # create the event
         self.disconnect_event = threading.Event()
+        self._disconnect_error = None
 
         self.__send_str(
             json.dumps(
@@ -362,10 +364,14 @@ class OmniRealtimeConversation:
 
         # wait for the event to be set
         finish_success = self.disconnect_event.wait(timeout)
-        # clear the event
+        error = self._disconnect_error
         self.disconnect_event = None
+        self._disconnect_error = None
 
-        # if the event is not set, close the connection
+        # if the server returned an error or timed out, close the connection
+        if error is not None:
+            self.close()
+            raise RuntimeError(f"Session ended with error: {error}")
         if not finish_success:
             self.close()
             raise TimeoutError(
@@ -376,7 +382,7 @@ class OmniRealtimeConversation:
         """
         end session asynchronously. you need close the connection manually
         """
-        # 发送结束会话消息
+        # Send end session message
         self.__send_str(
             json.dumps(
                 {
@@ -511,7 +517,7 @@ class OmniRealtimeConversation:
         """
         self.ws.close()
 
-    # 监听消息的回调函数
+    # Callback for listening to messages
     def _on_message(  # pylint: disable=unused-argument,too-many-branches
         self,
         ws,
@@ -523,7 +529,7 @@ class OmniRealtimeConversation:
                 message[:1024],
             )
             try:
-                # 尝试将消息解析为JSON
+                # Attempt to parse message as JSON
                 json_data = json.loads(message)
                 self.last_message = json_data
                 self.callback.on_event(json_data)
@@ -535,6 +541,14 @@ class OmniRealtimeConversation:
                         # wait for the event to be set
                         logger.info("[omni realtime] session finished")
                         if self.disconnect_event is not None:
+                            self.disconnect_event.set()
+                    elif "error" == json_data.get("type"):
+                        if self.disconnect_event is not None:
+                            self._disconnect_error = json_data.get("error")
+                            logger.warning(
+                                "[omni realtime] error during end_session: %s",
+                                self._disconnect_error,
+                            )
                             self.disconnect_event.set()
                     if "response.created" == json_data["type"]:
                         self.last_response_id = json_data["response"]["id"]
@@ -574,7 +588,7 @@ class OmniRealtimeConversation:
                 # pylint: disable=broad-exception-raised,raise-missing-from
                 raise Exception("Failed to parse message as JSON.")
         elif isinstance(message, (bytes, bytearray)):
-            # 如果失败，认为是二进制消息
+            # If parsing fails, treat as binary message
             logger.error(
                 "should not receive binary message in omni realtime api",
             )
@@ -591,13 +605,13 @@ class OmniRealtimeConversation:
     ):
         self.callback.on_close(close_status_code, close_msg)
 
-    # WebSocket发生错误的回调函数
+    # Callback for WebSocket error
     def _on_error(self, ws, error):  # pylint: disable=unused-argument
         # pylint: disable=broad-exception-raised
         logger.error("websocket closed due to %s", error)
         raise Exception(f"websocket closed due to {error}")
 
-    # 获取上一个任务的taskId
+    # Get the taskId of the last task
     def get_session_id(self) -> str:
         return self.session_id  # type: ignore[return-value]
 
