@@ -1021,7 +1021,10 @@ def get_fc_request_id(request) -> str:
     """
     if request is None:
         return "unknown"
-    return request.headers.get("x-fc-request-id", "unknown")
+    headers = getattr(request, "headers", None)
+    if headers is not None and hasattr(headers, "get"):
+        return headers.get("x-fc-request-id", "unknown")
+    return "unknown"
 
 
 def get_business_summary(processor_input) -> str:
