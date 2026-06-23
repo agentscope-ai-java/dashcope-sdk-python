@@ -106,7 +106,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
             )
             logger.info("Function components registered")
         except Exception as e:
-            if hasattr(e, 'error_code'):
+            if hasattr(e, "error_code"):
                 raise
             raise RegistrationError(
                 "Function registration failed",
@@ -251,7 +251,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                 **kwargs,
             )
         except Exception as e:
-            if hasattr(e, 'error_code'):
+            if hasattr(e, "error_code"):
                 raise
             raise RuntimeErrorWithCode(
                 "Job submission failed",
@@ -316,7 +316,7 @@ class AgenticRL(AgenticRLTuning, CreateMixin):
                 **kwargs,
             )
         except Exception as e:
-            if hasattr(e, 'error_code'):
+            if hasattr(e, "error_code"):
                 raise
             raise RuntimeErrorWithCode(
                 "RL tuning workflow failed",

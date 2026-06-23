@@ -1245,7 +1245,7 @@ class TuningModel(Models, BaseModel):
                         )
 
         except Exception as e:
-            if hasattr(e, 'error_code'):
+            if hasattr(e, "error_code"):
                 raise
             raise RegistrationError(
                 "Function component registration failed",
