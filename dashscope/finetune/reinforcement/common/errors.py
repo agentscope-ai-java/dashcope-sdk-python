@@ -14,16 +14,21 @@ class _RootCauseMixin:
     @property
     def root_cause(self) -> "Exception":
         root: "Exception" = self  # type: ignore[assignment]
-        while root.__cause__:
+        seen = {id(root)}
+        while root.__cause__ and id(root.__cause__) not in seen:
             root = root.__cause__
+            seen.add(id(root))
         return root
 
     def _format_cause(self) -> str:
         """Format root cause information if available."""
-        if self.__cause__ is not None and self is not self.root_cause:
+        if self.__cause__ is not None:
             root = self.root_cause
-            cause_msg = str(root).split("\n", maxsplit=1)[0][:100]
-            return f" (caused by: {type(root).__name__}: {cause_msg})"
+            if self is not root:
+                cause_msg = str(root).split("\n", maxsplit=1)[0][:100].strip()
+                if cause_msg:
+                    return f" (caused by: {type(root).__name__}: {cause_msg})"
+                return f" (caused by: {type(root).__name__})"
         return ""
 
 
