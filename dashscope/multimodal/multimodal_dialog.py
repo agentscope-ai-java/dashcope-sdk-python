@@ -39,98 +39,98 @@ from dashscope.protocol.websocket import ActionType
 
 class MultiModalCallback:
     """
-    Voice chat callback class for handling various events during voice chat.
+    语音聊天回调类，用于处理语音聊天过程中的各种事件。
     """
 
     def on_started(self, dialog_id: str) -> None:
         """
-        Notify dialog started.
+        通知对话开始
 
-        :param dialog_id: Callback dialog ID
+        :param dialog_id: 回调对话ID
         """
 
     def on_stopped(self) -> None:
         """
-        Notify dialog stopped.
+        通知对话停止
         """
 
     def on_state_changed(self, state: "dialog_state.DialogState") -> None:
         """
-        Dialog state changed.
+        对话状态改变
 
-        :param state: New dialog state
+        :param state: 新的对话状态
         """
 
     def on_speech_audio_data(self, data: bytes) -> None:
         """
-        Synthesized audio data callback.
+        合成音频数据回调
 
-        :param data: Audio data
+        :param data: 音频数据
         """
 
     def on_error(self, error) -> None:
         """
-        Called when an error occurs.
+        发生错误时调用此方法。
 
-        :param error: Error message
+        :param error: 错误信息
         """
 
     def on_connected(self) -> None:
         """
-        Called after successfully connecting to the server.
+        成功连接到服务器后调用此方法。
         """
 
     def on_responding_started(self):
         """
-        Response started callback.
+        回复开始回调
         """
 
     def on_responding_ended(self, payload):
         """
-        Response ended.
+        回复结束
         """
 
     def on_speech_started(self):
         """
-        Speech input started.
+        检测到语音输入结束
         """
 
     def on_speech_ended(self):
         """
-        Speech input ended.
+        检测到语音输入结束
         """
 
     def on_speech_content(self, payload):
         """
-        Speech recognition text.
+        语音识别文本
 
         :param payload: text
         """
 
     def on_responding_content(self, payload):
         """
-        LLM response text.
+        大模型回复文本。
 
         :param payload: text
         """
 
     def on_request_accepted(self):
         """
-        Interrupt request accepted.
+        打断请求被接受。
         """
 
     def on_close(self, close_status_code, close_msg):
         """
-        Called when connection is closed.
+        连接关闭时调用此方法。
 
-        :param close_status_code: Close status code
-        :param close_msg: Close message
+        :param close_status_code: 关闭状态码
+        :param close_msg: 关闭消息
         """
 
 
 class MultiModalDialog:
     """
-    Service class for managing WebSocket connections for voice chat.
+    用于管理WebSocket连接以进行语音聊天的服务类。
     """
 
     def __init__(
@@ -145,22 +145,17 @@ class MultiModalDialog:
         model: str = None,
     ):
         """
-        Create a voice dialog session.
+        创建一个语音对话会话。
 
-        This method initializes a new voice_chat session, setting up
-        the necessary parameters to start interacting with the model.
-        :param workspace_id: Customer workspace_id, primary workspace ID,
-            optional field
-        :param app_id: Application ID created in the console, used to
-            determine which dialog system to use
-        :param request_params: Request parameter collection
-        :param url: (str) API URL address.
-        :param multimodal_callback: (MultimodalCallback) Callback object
-            for processing messages from server.
-        :param api_key: (str) Application unique access key
-        :param dialog_id: Dialog ID, if provided, continues the
-            conversation with previous context
-        :param model: Model
+        此方法用于初始化一个新的voice_chat会话，设置必要的参数以准备开始与模型的交互。
+        ：param workspace_id: 客户的workspace_id 主工作空间id,非必填字段
+        :param app_id: 客户在管控台创建的应用id，可以根据值规律确定使用哪个对话系统
+        :param request_params: 请求参数集合
+        :param url: (str) API的URL地址。
+        :param multimodal_callback: (MultimodalCallback) 回调对象，用于处理来自服务器的消息。
+        :param api_key: (str) 应用程序接入的唯一key
+        :param dialog_id:对话id，如果传入表示承接上下文继续聊
+        :param model: 模型
         """
         if request_params is None:
             raise InputRequired("request_params is required!")
@@ -186,7 +181,7 @@ class MultiModalDialog:
             self.dialog_state,
             self._callback,
             self.close,
-        )  # pass self.close as callback
+        )  # 传递 self.close 作为回调
 
     def _on_message(  # pylint: disable=unused-argument
         self,
@@ -232,15 +227,11 @@ class MultiModalDialog:
 
     def start(self, dialog_id, enable_voice_detection=False, task_id=None):
         """
-        Initialize WebSocket connection and send start request.
-        :param dialog_id: Context inheritance flag. Not needed for new
-            dialogs.
-               If inheriting previous dialog history, record and pass
-               the previous dialog_id
-        :param enable_voice_detection: Whether to enable voice detection,
-            optional, default False
-        :param task_id: DashScope request task ID, auto-generated by
-            default. You can specify this ID to track the request.
+        初始化WebSocket连接并发送启动请求
+        :param dialog_id: 上下位继承标志位。新对话无需设置。
+               如果继承之前的对话历史，则需要记录之前的dialog_id并传入
+        :param enable_voice_detection: 是否开启语音检测,可选参数 默认False
+        :param task_id: 百炼请求任务 Id，默认会自动生成。您可以指定此 ID 来跟踪请求。
         """
         self._voice_detection = enable_voice_detection
         self._connect(self.api_key)
@@ -252,7 +243,7 @@ class MultiModalDialog:
         )
 
     def start_speech(self):
-        """Start uploading speech data"""
+        """开始上传语音数据"""
         _send_speech_json = self.request.generate_common_direction_request(
             "SendSpeech",
             self.dialog_id,
@@ -260,11 +251,11 @@ class MultiModalDialog:
         self._send_text_frame(_send_speech_json)
 
     def send_audio_data(self, speech_data: bytes):
-        """Send speech data"""
+        """发送语音数据"""
         self.__send_binary_frame(speech_data)
 
     def stop_speech(self):
-        """Stop uploading speech data"""
+        """停止上传语音数据"""
         _send_speech_json = self.request.generate_common_direction_request(
             "StopSpeech",
             self.dialog_id,
@@ -272,7 +263,7 @@ class MultiModalDialog:
         self._send_text_frame(_send_speech_json)
 
     def interrupt(self):
-        """Request server to start speaking"""
+        """请求服务端开始说话"""
         _send_speech_json = self.request.generate_common_direction_request(
             "RequestToSpeak",
             self.dialog_id,
@@ -285,7 +276,7 @@ class MultiModalDialog:
         text: str,
         parameters: RequestToRespondParameters = None,
     ):
-        """Request server to synthesize speech from text directly"""
+        """请求服务端直接文本合成语音"""
         _send_speech_json = self.request.generate_request_to_response_json(
             direction_name="RequestToRespond",
             dialog_id=self.dialog_id,
@@ -297,11 +288,11 @@ class MultiModalDialog:
 
     @abstractmethod
     def request_to_respond_prompt(self, text):
-        """Request server to reply with text response via text request"""
+        """请求服务端通过文本请求回复文本答复"""
         return
 
     def local_responding_started(self):
-        """Local TTS playback started"""
+        """本地tts播放开始"""
         _send_speech_json = self.request.generate_common_direction_request(
             "LocalRespondingStarted",
             self.dialog_id,
@@ -309,7 +300,7 @@ class MultiModalDialog:
         self._send_text_frame(_send_speech_json)
 
     def local_responding_ended(self):
-        """Local TTS playback ended"""
+        """本地tts播放结束"""
         _send_speech_json = self.request.generate_common_direction_request(
             "LocalRespondingEnded",
             self.dialog_id,
@@ -317,7 +308,7 @@ class MultiModalDialog:
         self._send_text_frame(_send_speech_json)
 
     def send_heart_beat(self):
-        """Send heartbeat"""
+        """发送心跳"""
         _send_speech_json = self.request.generate_common_direction_request(
             "HeartBeat",
             self.dialog_id,
@@ -325,7 +316,7 @@ class MultiModalDialog:
         self._send_text_frame(_send_speech_json)
 
     def update_info(self, parameters: RequestToRespondParameters = None):
-        """Update information"""
+        """更新信息"""
         _send_speech_json = self.request.generate_update_info_json(
             direction_name="UpdateInfo",
             dialog_id=self.dialog_id,
@@ -350,7 +341,7 @@ class MultiModalDialog:
         """get mode of conversation: support tap2talk/push2talk/duplex"""
         return self.request_params.upstream.mode
 
-    """Internal methods"""  # pylint: disable=pointless-string-statement
+    """内部方法"""  # pylint: disable=pointless-string-statement
 
     def _send_start_request(
         self,
@@ -358,7 +349,7 @@ class MultiModalDialog:
         request_params: RequestParameters,
         task_id: str = None,
     ):
-        """Send 'Start' request"""
+        """发送'Start'请求"""
         _start_json = self.request.generate_start_request(
             workspace_id=self.workspace_id,
             direction_name="Start",
@@ -375,7 +366,7 @@ class MultiModalDialog:
         self.ws.run_forever(ping_interval=None, ping_timeout=None)
 
     def _connect(self, api_key: str):
-        """Initialize WebSocket connection and send startup request."""
+        """初始化WebSocket连接并发送启动请求。"""
         self.ws = websocket.WebSocketApp(
             self.url,
             header=self.request.get_websocket_header(api_key),
@@ -396,14 +387,14 @@ class MultiModalDialog:
         self.ws.close()
 
     def _wait_for_connection(self):
-        """Wait for WebSocket connection to be established"""
+        """等待WebSocket连接建立"""
         timeout = 5
         start_time = time.time()
         while (
             not (self.ws.sock and self.ws.sock.connected)
             and (time.time() - start_time) < timeout
         ):
-            time.sleep(0.1)  # Brief sleep to avoid busy polling
+            time.sleep(0.1)  # 短暂休眠，避免密集轮询
 
     def _send_text_frame(self, text: str):
         logger.info(">>>>>> send text frame : %s", text)
@@ -417,14 +408,14 @@ class MultiModalDialog:
         self.cleanup()
 
     def cleanup(self):
-        """Clean up all resources"""
+        """清理所有资源"""
         try:
             if self.ws:
                 self.ws.close()
             if self.thread and self.thread.is_alive():
-                # Set flag to notify thread to exit
+                # 设置标志位通知线程退出
                 self.thread.join(timeout=2)
-            # Clear references
+            # 清除引用
             self.ws = None
             self.thread = None
             self._callback = None
@@ -468,16 +459,15 @@ class _Request:
         task_id: str = None,
     ) -> str:
         """
-        Build startup request data for voice chat service.
-        :param app_id: Console application ID
-        :param request_params: Parameters in start request body
+        构建语音聊天服务的启动请求数据.
+        :param app_id: 管控台应用id
+        :param request_params: start请求body中的parameters
         :param direction_name:
-        :param dialog_id: Dialog ID.
-        :param workspace_id: Console workspace ID, optional field.
-        :param model: Model
-        :param task_id: DashScope request task ID, auto-generated by
-            default. You can specify this ID to track the request.
-        :return: Startup request dictionary.
+        :param dialog_id: 对话ID.
+        :param workspace_id: 管控台工作空间id, 非必填字段。
+        :param model: 模型
+        :param task_id: 百炼请求任务 Id，默认会自动生成。您可以指定此 ID 来跟踪请求。
+        :return: 启动请求字典.
         """
         self.task_id = task_id
         self._get_dash_request_header(ActionType.START)
@@ -502,10 +492,10 @@ class _Request:
         dialog_id: str,
     ) -> str:
         """
-        Build command request data for voice chat service.
-        :param direction_name: Command.
-        :param dialog_id: Dialog ID.
-        :return: Command request JSON.
+        构建语音聊天服务的命令请求数据.
+        :param direction_name: 命令.
+        :param dialog_id: 对话ID.
+        :return: 命令请求json.
         """
         self._get_dash_request_header(ActionType.CONTINUE)
         self._get_dash_request_payload(direction_name, dialog_id, self.app_id)
@@ -521,10 +511,10 @@ class _Request:
         dialog_id: str,
     ) -> str:
         """
-        Build stop request data for voice chat service.
-        :param direction_name: Directive name
-        :param dialog_id: Dialog ID.
-        :return: Stop request JSON.
+        构建语音聊天服务的启动请求数据.
+        :param direction_name:指令名称
+        :param dialog_id: 对话ID.
+        :return: 启动请求json.
         """
         self._get_dash_request_header(ActionType.FINISHED)
         self._get_dash_request_payload(direction_name, dialog_id, self.app_id)
@@ -544,15 +534,13 @@ class _Request:
         parameters: RequestToRespondParameters = None,
     ) -> str:
         """
-        Build command request data for voice chat service.
-        :param direction_name: Command.
-        :param dialog_id: Dialog ID.
-        :param request_type: Interaction type the service should adopt,
-            transcript means convert text to speech directly,
-            prompt means send text to LLM for response
-        :param text: Text.
-        :param parameters: Parameters in command request body
-        :return: Command request dictionary.
+        构建语音聊天服务的命令请求数据.
+        :param direction_name: 命令.
+        :param dialog_id: 对话ID.
+        :param request_type: 服务应该采取的交互类型，transcript 表示直接把文本转语音，prompt 表示把文本送大模型回答  # noqa: E501
+        :param text: 文本.
+        :param parameters: 命令请求body中的parameters
+        :return: 命令请求字典.
         """
         self._get_dash_request_header(ActionType.CONTINUE)
 
@@ -584,10 +572,10 @@ class _Request:
         parameters: RequestToRespondParameters = None,
     ) -> str:
         """
-        Build command request data for voice chat service.
-        :param direction_name: Command.
-        :param parameters: Parameters in command request body
-        :return: Command request dictionary.
+        构建语音聊天服务的命令请求数据.
+        :param direction_name: 命令.
+        :param parameters: 命令请求body中的parameters
+        :return: 命令请求字典.
         """
         self._get_dash_request_header(ActionType.CONTINUE)
 
@@ -612,9 +600,8 @@ class _Request:
 
     def _get_dash_request_header(self, action: str):
         """
-        Build request protocol header for multimodal dialog request.
-        :param action: ActionType DashScope protocol action, supports:
-            run-task, continue-task, finish-task
+        构建多模对话请求的请求协议Header
+        :param action: ActionType 百炼协议action 支持：run-task, continue-task, finish-task  # noqa: E501
         """
         if self.task_id is None:
             self.task_id = get_random_uuid()
@@ -631,13 +618,13 @@ class _Request:
         model: str = None,
     ):
         """
-        Build request protocol payload for multimodal dialog request.
-        :param direction_name: Internal directive name in dialog protocol
-        :param dialog_id: Dialog ID.
-        :param app_id: Console application ID
-        :param request_params: Parameters in start request body
-        :param custom_input: Custom input
-        :param model: Model
+        构建多模对话请求的请求协议payload
+        :param direction_name: 对话协议内部的指令名称
+        :param dialog_id: 对话ID.
+        :param app_id: 管控台应用id
+        :param request_params: start请求body中的parameters
+        :param custom_input: 自定义输入
+        :param model: 模型
         """
         if custom_input is not None:
             input = custom_input  # pylint: disable=redefined-builtin
@@ -664,20 +651,20 @@ class _Response:
         close_callback=None,
     ):
         super().__init__()
-        self.dialog_id = None  # Dialog ID
+        self.dialog_id = None  # 对话ID.
         self.dialog_state = state
         self._callback = callback
-        self._close_callback = close_callback  # Save close callback function
+        self._close_callback = close_callback  # 保存关闭回调函数
 
     # pylint: disable=inconsistent-return-statements
     def handle_text_response(self, response_json: str):
         """
-        Handle response data from voice chat service.
-        :param response_json: Original JSON string response from server.
+        处理语音聊天服务的响应数据.
+        :param response_json: 从服务接收到的原始JSON字符串响应。
         """
         logger.info("<<<<<< server response: %s", response_json)
         try:
-            # Attempt to parse message as JSON
+            # 尝试将消息解析为JSON
             json_data = json.loads(response_json)
             if (
                 "status_code" in json_data["header"]
@@ -773,8 +760,8 @@ class _Response:
 
     def _handle_state_changed(self, state: str):
         """
-        Handle voice chat state transitions.
-        :param state: State.
+        处理语音聊天状态流转.
+        :param state: 状态.
         """
         self.dialog_state.change_state(state)
         self._callback.on_state_changed(self.dialog_state.get_current_state())

@@ -2,13 +2,14 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import datetime
 import json
+import ssl
 from http import HTTPStatus
 from typing import Optional, Dict, Union
 
 import aiohttp
+import certifi
 import requests
 
-from dashscope.api_entities.aio_session import get_shared_aio_session
 from dashscope.api_entities.base_request import AioBaseRequest
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
 from dashscope.common.constants import (
@@ -52,9 +53,7 @@ class HttpRequest(AioBaseRequest):
             api_key (str): The api key.
             method (str): The http method(GET|POST).
             stream (bool, optional): Is stream request. Defaults to True.
-            timeout (int, optional): Request timeout in seconds. For streaming
-                requests, this is the idle timeout between chunks (sock_read);
-                for non-streaming requests, this is the total request timeout.
+            timeout (int, optional): Total request timeout.
                 Defaults to DEFAULT_REQUEST_TIMEOUT_SECONDS.
             user_agent (str, optional): Additional user agent string to
                 append. Defaults to ''.
@@ -163,23 +162,24 @@ class HttpRequest(AioBaseRequest):
     async def _handle_aio_request(self):  # pylint: disable=too-many-branches
         try:
             # Use external aio_session if provided,
-            # otherwise use shared session with connection pooling
+            # otherwise create temporary session
             if self._external_aio_session is not None:
                 session = self._external_aio_session
                 should_close = False
             else:
-                session = await get_shared_aio_session()
-                should_close = False
+                connector = aiohttp.TCPConnector(
+                    ssl=ssl.create_default_context(
+                        cafile=certifi.where(),
+                    ),
+                )
+                session = aiohttp.ClientSession(
+                    connector=connector,
+                    timeout=aiohttp.ClientTimeout(total=self.timeout),
+                    headers=self.headers,
+                )
+                should_close = True
 
             try:
-                if self.stream:
-                    request_timeout = aiohttp.ClientTimeout(
-                        total=None,
-                        sock_read=self.timeout,
-                    )
-                else:
-                    request_timeout = aiohttp.ClientTimeout(total=self.timeout)
-
                 logger.debug("Starting request: %s", self.url)
                 if self.method == HTTPMethod.POST:
                     is_form, obj = False, {}
@@ -191,7 +191,6 @@ class HttpRequest(AioBaseRequest):
                             url=self.url,
                             data=obj,
                             headers=headers,
-                            timeout=request_timeout,
                         )
                     else:
                         response = await session.request(
@@ -199,9 +198,9 @@ class HttpRequest(AioBaseRequest):
                             url=self.url,
                             json=obj,
                             headers=self.headers,
-                            timeout=request_timeout,
                         )
                 elif self.method == HTTPMethod.GET:
+                    # 添加条件判断
                     params = {}
                     if hasattr(self, "data") and self.data is not None:
                         params = getattr(self.data, "parameters", {})
@@ -211,7 +210,6 @@ class HttpRequest(AioBaseRequest):
                         url=self.url,
                         params=params,
                         headers=self.headers,
-                        timeout=request_timeout,
                     )
                 else:
                     raise UnsupportedHTTPMethod(
@@ -222,10 +220,14 @@ class HttpRequest(AioBaseRequest):
                     async for rsp in self._handle_aio_response(response):
                         yield rsp
             finally:
+                # Only close if we created the session
                 if should_close:
                     await session.close()
-        except Exception as e:
-            logger.debug(e)
+        except aiohttp.ClientConnectorError as e:
+            logger.error(e)
+            raise e
+        except BaseException as e:
+            logger.error(e)
             raise e
 
     @staticmethod
@@ -455,7 +457,7 @@ class HttpRequest(AioBaseRequest):
         else:
             yield _handle_http_failed_response(response)
 
-    def _handle_request(self):  # pylint: disable=too-many-branches
+    def _handle_request(self):
         try:
             # Use external session if provided,
             # otherwise create temporary session
@@ -468,9 +470,7 @@ class HttpRequest(AioBaseRequest):
 
             try:
                 if self.method == HTTPMethod.POST:
-                    is_form, form, obj = False, None, {}
-                    if hasattr(self, "data") and self.data is not None:
-                        is_form, form, obj = self.data.get_http_payload()
+                    is_form, form, obj = self.data.get_http_payload()
                     if is_form:
                         headers = {**self.headers}
                         headers.pop("Content-Type")
@@ -491,12 +491,9 @@ class HttpRequest(AioBaseRequest):
                             timeout=self.timeout,
                         )
                 elif self.method == HTTPMethod.GET:
-                    params = {}
-                    if hasattr(self, "data") and self.data is not None:
-                        params = getattr(self.data, "parameters", {})
                     response = session.get(
                         url=self.url,
-                        params=params,
+                        params=self.data.parameters,
                         headers=self.headers,
                         timeout=self.timeout,
                     )
@@ -510,6 +507,6 @@ class HttpRequest(AioBaseRequest):
                 # Only close if we created the session
                 if should_close:
                     session.close()
-        except Exception as e:
-            logger.debug(e)
+        except BaseException as e:
+            logger.error(e)
             raise e

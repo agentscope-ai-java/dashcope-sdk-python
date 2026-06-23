@@ -2,7 +2,9 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
-from dashscope.client.base_api import GetMixin, ListMixin
+from dashscope.client.base_api import GetMixin, ListMixin, _get
+from dashscope.common.utils import join_url
+import dashscope
 
 
 class Models(ListMixin, GetMixin):
@@ -25,7 +27,33 @@ class Models(ListMixin, GetMixin):
         Returns:
             DashScopeAPIResponse: The model information.
         """
-        return super().get(name, api_key, **kwargs)  # type: ignore
+        from http import HTTPStatus
+        
+        # Use query parameter to filter by model name on server side
+        # API endpoint: /api/v1/models?model={name}&page_no=1&page_size=1
+        url = join_url(dashscope.base_http_api_url, cls.SUB_PATH.lower())
+        params = {"model": name, "page_no": 1, "page_size": 1}
+        
+        response = _get(
+            url,
+            params=params,
+            api_key=api_key,
+            **kwargs,
+        )
+        
+        if response.status_code != HTTPStatus.OK:
+            return response
+        
+        output = response.output
+        if not output or "models" not in output or not output["models"]:
+            response.status_code = 404
+            response.message = f"Model '{name}' not found"
+            response.output = None
+            return response
+        
+        # Return the first (and only) model from the filtered list
+        response.output = output["models"][0]
+        return response
 
     @classmethod
     def list(  # type: ignore[override]

@@ -119,7 +119,6 @@ class WebSocketRequest(AioBaseRequest):
                 timeout=aiohttp.ClientTimeout(
                     total=self.timeout,
                 ),
-                trust_env=True,
             ) as session:
                 async with session.ws_connect(
                     self.url,

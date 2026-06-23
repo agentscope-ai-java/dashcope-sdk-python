@@ -115,69 +115,69 @@ class Encryption:
 
     @staticmethod
     def _encrypt_text_with_aes(plaintext, key, iv):
-        """Encrypt data with AES-GCM"""
+        """使用AES-GCM加密数据"""
 
-        # Create AES-GCM encryptor
+        # 创建AES-GCM加密器
         aes_gcm = Cipher(
             algorithms.AES(key),
             modes.GCM(iv, tag=None),
             backend=default_backend(),
         ).encryptor()
 
-        # Set associated data to empty (adjustable as needed)
+        # 关联数据设为空（根据需求可调整）
         aes_gcm.authenticate_additional_data(b"")
 
-        # Encrypt data
+        # 加密数据
         ciphertext = (
             aes_gcm.update(plaintext.encode("utf-8")) + aes_gcm.finalize()
         )
 
-        # Get authentication tag
+        # 获取认证标签
         tag = aes_gcm.tag
 
-        # Combine ciphertext and tag
+        # 组合密文和标签
         encrypted_data = ciphertext + tag
 
-        # Return Base64 encoded result
+        # 返回Base64编码结果
         return base64.b64encode(encrypted_data).decode("utf-8")
 
     @staticmethod
     def _decrypt_text_with_aes(base64_ciphertext, aes_key, iv):
-        """Decrypt response with AES-GCM"""
+        """使用AES-GCM解密响应"""
 
-        # Decode Base64 data
+        # 解码Base64数据
         encrypted_data = base64.b64decode(base64_ciphertext)
 
-        # Separate ciphertext and tag (tag length is 16 bytes)
+        # 分离密文和标签（标签长度16字节）
         ciphertext = encrypted_data[:-16]
         tag = encrypted_data[-16:]
 
-        # Create AES-GCM decryptor
+        # 创建AES-GCM解密器
         aes_gcm = Cipher(
             algorithms.AES(aes_key),
             modes.GCM(iv, tag),
             backend=default_backend(),
         ).decryptor()
 
-        # Verify associated data (same as during encryption)
+        # 验证关联数据（与加密时一致）
         aes_gcm.authenticate_additional_data(b"")
 
-        # Decrypt data
+        # 解密数据
         decrypted_bytes = aes_gcm.update(ciphertext) + aes_gcm.finalize()
 
-        # Plaintext
+        # 明文
         plaintext = decrypted_bytes.decode("utf-8")
 
         return json.loads(plaintext)
 
     @staticmethod
     def _encrypt_aes_key_with_rsa(aes_key, public_key_str):
-        """Encrypt AES key with RSA public key"""
+        """使用RSA公钥加密AES密钥"""
 
-        # Decode Base64 formatted public key
+        # 解码Base64格式的公钥
         public_key_bytes = base64.b64decode(public_key_str)
 
-        # Load public key
+        # 加载公钥
         public_key = serialization.load_der_public_key(
             public_key_bytes,
             backend=default_backend(),
@@ -185,7 +185,7 @@ class Encryption:
 
         base64_aes_key = base64.b64encode(aes_key).decode("utf-8")
 
-        # Encrypt with RSA
+        # 使用RSA加密
         encrypted_bytes = public_key.encrypt(
             base64_aes_key.encode("utf-8"),
             padding.PKCS1v15(),

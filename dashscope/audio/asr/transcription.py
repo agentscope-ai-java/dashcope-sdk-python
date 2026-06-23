@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import asyncio
 import time
 from typing import List, Union
 
-import requests
+import aiohttp
 
 from dashscope.api_entities.dashscope_response import (
     DashScopeAPIResponse,
@@ -147,8 +148,8 @@ class Transcription(BaseAsyncApi):
                     workspace=workspace,
                     **kwargs,
                 )
-            except (requests.Timeout, requests.ConnectionError) as e:
-                logger.debug(e)
+            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+                logger.error(e)
                 try_count += 1
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
@@ -166,7 +167,6 @@ class Transcription(BaseAsyncApi):
         task: Union[str, TranscriptionResponse],  # type: ignore[override]
         api_key: str = None,
         workspace: str = None,
-        wait_timeout: int = -1,
         **kwargs,
     ) -> TranscriptionResponse:
         """Poll task until the final results of transcription is obtained.
@@ -174,12 +174,7 @@ class Transcription(BaseAsyncApi):
         Args:
             task (Union[str, TranscriptionResponse]): The task_id or
                 response including task_id returned from async_call().
-            api_key (str, optional): The api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
-            wait_timeout (int, optional): The timeout for waiting.
-                Defaults to -1.That means no timeout.
-                If set to a value > 0, the task does not complete
-                within this time, a timeout error response will be returned.
 
         Returns:
             TranscriptionResponse: The result of batch transcription.
@@ -188,7 +183,6 @@ class Transcription(BaseAsyncApi):
             task,
             api_key=api_key,
             workspace=workspace,
-            wait_timeout=wait_timeout,
             **kwargs,
         )
         return TranscriptionResponse.from_api_response(response)
@@ -229,8 +223,8 @@ class Transcription(BaseAsyncApi):
                     workspace=workspace,
                     **kwargs,
                 )
-            except (requests.Timeout, requests.ConnectionError) as e:
-                logger.debug(e)
+            except (asyncio.TimeoutError, aiohttp.ClientConnectorError) as e:
+                logger.error(e)
                 try_count += 1
                 if try_count <= Transcription.MAX_QUERY_TRY_COUNT:
                     time.sleep(2)
