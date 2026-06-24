@@ -99,14 +99,15 @@ class ImageGeneration(BaseApi, BaseAsyncApi):
             to_merge_incremental_output = True
             kwargs["incremental_output"] = True
 
-        # Pass incremental_to_full flag via headers user-agent
-        if "headers" not in kwargs:
-            kwargs["headers"] = {}
-
+        # Pass incremental_to_full flag via user_agent parameter
         flag = "1" if to_merge_incremental_output else "0"
-        kwargs["headers"]["user-agent"] = f"incremental_to_full/{flag}"
+        existing_ua = kwargs.get("user_agent", "")
+        new_ua = f"incremental_to_full/{flag}"
+        kwargs["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
+        )
         if kwargs.get("is_async", False):
-            kwargs["headers"]["X-DashScope-Async"] = "enable"
+            kwargs.setdefault("headers", {})["X-DashScope-Async"] = "enable"
             task = cls.async_task
         else:
             task = cls.sync_task
@@ -177,6 +178,7 @@ class ImageGeneration(BaseApi, BaseAsyncApi):
         task: Union[str, ImageGenerationResponse],  # type: ignore[override]
         api_key: str = None,
         workspace: str = None,
+        wait_timeout: int = -1,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Wait for image(s) synthesis task to complete, and return the result.
@@ -186,11 +188,18 @@ class ImageGeneration(BaseApi, BaseAsyncApi):
                 ImageGenerationResponse return by async_call().
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
+            wait_timeout (int, optional): The maximum seconds to wait.
+                Default is -1 (no timeout).
 
         Returns:
             DashScopeAPIResponse: The task result.
         """
-        response = super().wait(task, api_key, workspace=workspace)
+        response = super().wait(
+            task,
+            api_key,
+            workspace=workspace,
+            wait_timeout=wait_timeout,
+        )
         return ImageGenerationResponse.from_api_response(response)
 
     @classmethod
@@ -408,14 +417,15 @@ class AioImageGeneration(BaseAioApi, BaseAsyncAioApi):
             to_merge_incremental_output = True
             kwargs["incremental_output"] = True
 
-        # Pass incremental_to_full flag via headers user-agent
-        if "headers" not in kwargs:
-            kwargs["headers"] = {}
-
+        # Pass incremental_to_full flag via user_agent parameter
         flag = "1" if to_merge_incremental_output else "0"
-        kwargs["headers"]["user-agent"] = f"incremental_to_full/{flag}"
+        existing_ua = kwargs.get("user_agent", "")
+        new_ua = f"incremental_to_full/{flag}"
+        kwargs["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
+        )
         if kwargs.get("is_async", False):
-            kwargs["headers"]["X-DashScope-Async"] = "enable"
+            kwargs.setdefault("headers", {})["X-DashScope-Async"] = "enable"
             task = cls.async_task
         else:
             task = cls.sync_task
@@ -487,6 +497,7 @@ class AioImageGeneration(BaseAioApi, BaseAsyncAioApi):
         task: Union[str, ImageGenerationResponse],  # type: ignore[override]
         api_key: str = None,
         workspace: str = None,
+        wait_timeout: int = -1,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Wait for image(s) synthesis task to complete, and return the result.
@@ -496,11 +507,18 @@ class AioImageGeneration(BaseAioApi, BaseAsyncAioApi):
                 ImageGenerationResponse return by async_call().
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
+            wait_timeout (int, optional): The maximum seconds to wait.
+                Default is -1 (no timeout).
 
         Returns:
             DashScopeAPIResponse: The task result.
         """
-        response = await super().wait(task, api_key, workspace=workspace)
+        response = await super().wait(
+            task,
+            api_key,
+            workspace=workspace,
+            wait_timeout=wait_timeout,
+        )
         return ImageGenerationResponse.from_api_response(response)
 
     @classmethod

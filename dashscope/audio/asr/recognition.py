@@ -444,8 +444,8 @@ class Recognition(BaseApi):
             f.close()
             self._stop_stream_timestamp = time.time() * 1000
         except Exception as e:
-            logger.error(e)
-            raise e
+            logger.debug(e)
+            raise
 
         if not self._stream_data.empty():
             self._running = True
@@ -600,6 +600,6 @@ class Recognition(BaseApi):
         """Last Package Delay is the time between stop sending audio and receive last words package"""  # noqa: E501  # pylint: disable=line-too-long
         return self._on_complete_timestamp - self._stop_stream_timestamp
 
-    # 获取上一个任务的taskId
+    # Get the requestId of the last task
     def get_last_request_id(self):
         return self.last_request_id

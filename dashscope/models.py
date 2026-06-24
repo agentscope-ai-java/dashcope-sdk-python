@@ -2,9 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from dashscope.api_entities.dashscope_response import DashScopeAPIResponse
-from dashscope.client.base_api import GetMixin, ListMixin, _get
-from dashscope.common.utils import join_url
-import dashscope
+from dashscope.client.base_api import GetMixin, ListMixin
 
 
 class Models(ListMixin, GetMixin):
@@ -27,19 +25,7 @@ class Models(ListMixin, GetMixin):
         Returns:
             DashScopeAPIResponse: The model information.
         """
-        from http import HTTPStatus
-
-        # Use path parameter to get specific model
-        # API endpoint: /api/v1/models/{name}
-        url = join_url(dashscope.base_http_api_url, cls.SUB_PATH.lower(), name)
-
-        response = _get(
-            url,
-            api_key=api_key,
-            **kwargs,
-        )
-
-        return response  # type: ignore[return-value]
+        return super().get(name, api_key, **kwargs)  # type: ignore
 
     @classmethod
     def list(  # type: ignore[override]

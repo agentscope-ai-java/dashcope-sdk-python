@@ -81,9 +81,10 @@ class AsyncAioTaskGetMixin:
 
     @classmethod
     async def _handle_request(cls, request):
-        # 如果 aio_call 返回的是异步生成器，则需要从中获取响应
+        # If aio_call returns an async generator, consume it to get
+        # the response
         response = await request.aio_call()
-        # 处理异步生成器的情况
+        # Handle async generator case
         if isinstance(response, collections.abc.AsyncGenerator):
             result = None
             async for item in response:
@@ -190,6 +191,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         task: Union[str, DashScopeAPIResponse],
         api_key: str = None,
         workspace: str = None,
+        wait_timeout: int = -1,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Wait for async task completion and return task result.
@@ -198,6 +200,12 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             task (Union[str, DashScopeAPIResponse]): The task_id, or
                 async_call response.
             api_key (str, optional): The api_key. Defaults to None.
+            workspace (str, optional): The dashscope workspace id.
+            wait_timeout (int, optional): The maximum seconds to wait
+                for the task to complete. Default is -1, which means no
+                timeout. When set to a value > 0, if the task does not
+                complete within this time, a timeout error response will
+                be returned.
 
         Returns:
             DashScopeAPIResponse: The async task information.
@@ -207,6 +215,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         max_wait_seconds = 5
         increment_steps = 3
         step = 0
+        start_time = time.time()
         while True:
             step += 1
             # we start by querying once every second, and double
@@ -216,6 +225,23 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             # (server side return immediately when ready)
             if wait_seconds < max_wait_seconds and step % increment_steps == 0:
                 wait_seconds = min(wait_seconds * 2, max_wait_seconds)
+            if wait_timeout is not None and 0 < wait_timeout <= (
+                time.time() - start_time
+            ):
+                logger.warning(
+                    "Wait task: %s timeout after %s seconds.",
+                    task_id,
+                    wait_timeout,
+                )
+                return DashScopeAPIResponse(
+                    request_id=task_id,
+                    status_code=HTTPStatus.REQUEST_TIMEOUT,
+                    code="WaitTaskTimeout",
+                    message=(
+                        f"Wait task: {task_id} timeout after "
+                        f"{wait_timeout} seconds."
+                    ),
+                )
             rsp = await cls._get(
                 task_id,
                 api_key,
@@ -236,7 +262,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     return rsp
                 else:
                     logger.info("The task %s is  %s", task_id, task_status)
-                    await asyncio.sleep(wait_seconds)  # 异步等待
+                    await asyncio.sleep(wait_seconds)  # async wait
             elif rsp.status_code in REPEATABLE_STATUS:
                 logger.warning(
                     "Get task: %s temporary failure, "
@@ -246,7 +272,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
                     rsp.code,
                     rsp.message,
                 )
-                await asyncio.sleep(wait_seconds)  # 异步等待
+                await asyncio.sleep(wait_seconds)  # async wait
             else:
                 return rsp
 
@@ -348,7 +374,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             **_workspace_header(workspace),
             **default_headers(api_key),
         }
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(trust_env=True) as session:
             response = await session.get(
                 url,
                 params=params,
@@ -599,6 +625,10 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Call service and get result."""
+        wait_timeout = -1
+        if "wait_timeout" in kwargs:
+            wait_timeout = kwargs.pop("wait_timeout")
+
         task_response = cls.async_call(  # type: ignore[misc]
             *args,
             api_key=api_key,
@@ -609,6 +639,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             task_response,
             api_key=api_key,
             workspace=workspace,
+            wait_timeout=wait_timeout,
         )
         return response
 
@@ -766,6 +797,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         task: Union[str, DashScopeAPIResponse],
         api_key: str = None,
         workspace: str = None,
+        wait_timeout: int = -1,
         **kwargs,
     ) -> DashScopeAPIResponse:
         """Wait for async task completion and return task result.
@@ -774,6 +806,12 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             task (Union[str, DashScopeAPIResponse]): The task_id, or
                 async_call response.
             api_key (str, optional): The api_key. Defaults to None.
+            workspace (str, optional): The dashscope workspace id.
+            wait_timeout (int, optional): The maximum seconds to wait
+                for the task to complete. Default is -1, which means no
+                timeout. When set to a value > 0, if the task does not
+                complete within this time, a timeout error response will
+                be returned.
 
         Returns:
             DashScopeAPIResponse: The async task information.
@@ -783,6 +821,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         max_wait_seconds = 5
         increment_steps = 3
         step = 0
+        start_time = time.time()
         while True:
             step += 1
             # we start by querying once every second, and double
@@ -793,6 +832,23 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             # (server side return immediately when ready)
             if wait_seconds < max_wait_seconds and step % increment_steps == 0:
                 wait_seconds = min(wait_seconds * 2, max_wait_seconds)
+            if wait_timeout is not None and 0 < wait_timeout <= (
+                time.time() - start_time
+            ):
+                logger.warning(
+                    "Wait task: %s timeout after %s seconds.",
+                    task_id,
+                    wait_timeout,
+                )
+                return DashScopeAPIResponse(
+                    request_id=task_id,
+                    status_code=HTTPStatus.REQUEST_TIMEOUT,
+                    code="WaitTaskTimeout",
+                    message=(
+                        f"Wait task: {task_id} timeout after "
+                        f"{wait_timeout} seconds."
+                    ),
+                )
             rsp = cls._get(task_id, api_key, workspace=workspace, **kwargs)
             if rsp.status_code == HTTPStatus.OK:
                 if rsp.output is None:

@@ -21,6 +21,7 @@ from dashscope.common.constants import (
 )
 from dashscope.common.error import InputRequired, InvalidInput
 from dashscope.common.logging import logger
+from dashscope.utils.message_utils import merge_single_response
 
 
 class Application(BaseApi):
@@ -149,6 +150,25 @@ class Application(BaseApi):
             headers["X-DashScope-WorkSpace"] = workspace
             kwargs["headers"] = headers
 
+        # Check if we need to merge incremental output (compute once)
+        is_stream = kwargs.get("stream", False)
+        is_incremental_output = kwargs.get("incremental_output", None)
+        to_merge_incremental_output = (
+            is_stream and is_incremental_output is False
+        )
+
+        if to_merge_incremental_output:
+            kwargs["incremental_output"] = True
+
+        # Pass incremental_to_full flag via user_agent parameter to avoid
+        # overwriting the default SDK user-agent
+        flag = "1" if to_merge_incremental_output else "0"
+        existing_ua = kwargs.get("user_agent", "")
+        new_ua = f"incremental_to_full/{flag}"
+        kwargs["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
+        )
+
         (
             input,  # pylint: disable=redefined-builtin
             parameters,
@@ -171,12 +191,15 @@ class Application(BaseApi):
         )
         # call request service.
         response = request.call()
-        is_stream = kwargs.get("stream", False)
 
         if is_stream:
-            return (
-                ApplicationResponse.from_api_response(rsp) for rsp in response
-            )
+            if to_merge_incremental_output:
+                return cls._merge_application_response(response)
+            else:
+                return (
+                    ApplicationResponse.from_api_response(rsp)
+                    for rsp in response
+                )
         else:
             return ApplicationResponse.from_api_response(response)
 
@@ -238,3 +261,33 @@ class Application(BaseApi):
             input_param["file_list"] = file_list
 
         return input_param, {**parameters, **kwargs}
+
+    @classmethod
+    def _merge_application_response(cls, response):
+        """Merge incremental application response chunks.
+
+        Simulate non-incremental output by accumulating text.
+        """
+        accumulated_data = {}
+
+        for rsp in response:
+            parsed_response = ApplicationResponse.from_api_response(rsp)
+            if parsed_response.output and not hasattr(
+                parsed_response.output,
+                "choices",
+            ):
+                parsed_response.output.choices = None
+            result = merge_single_response(
+                parsed_response,
+                accumulated_data,
+            )
+            if result is True:
+                yield parsed_response
+            elif isinstance(result, list):
+                for resp in result:
+                    yield resp
+            else:
+                logger.warning(
+                    "Unexpected merge result type: %s, skipping",
+                    type(result).__name__,
+                )

@@ -242,9 +242,8 @@ class TestAgenticRLTuning:
         with pytest.raises(RegistrationError) as exc_info:
             await agentic_rl_tuning.tuning.register_functions()
 
-        assert "Function component registration failed" in str(
-            exc_info.value,
-        )
+        assert "Registration failed" in str(exc_info.value)
+        assert exc_info.value.error_code == 2052
 
     # pylint: disable=redefined-outer-name
     @pytest.mark.asyncio
