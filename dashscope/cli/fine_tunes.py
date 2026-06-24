@@ -13,6 +13,7 @@ from dashscope.cli.common import (
     console,
     err_console,
     ensure_ok,
+    handle_sdk_error,
     logger,
     print_failed_message,
     success,
@@ -132,6 +133,7 @@ def _dump_logs(job_id: str):
 
 
 @app.command("create")
+@handle_sdk_error("Create fine-tune job failed")
 def create(
     training_file_ids: List[str] = typer.Option(
         ...,
@@ -207,6 +209,7 @@ def create(
 
 # Backward compatibility alias
 @app.command("call", hidden=True)
+@handle_sdk_error("Create fine-tune job failed")
 def call(
     training_file_ids: List[str] = typer.Option(
         ...,
@@ -270,6 +273,7 @@ def call(
 
 
 @app.command("get")
+@handle_sdk_error("Retrieve fine-tune job failed")
 def get(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):
@@ -290,6 +294,7 @@ def get(
 
 
 @app.command("list")
+@handle_sdk_error("List fine-tune jobs failed")
 def list_jobs(
     page: int = typer.Option(1, "-p", "--page", help="Page number"),
     size: int = typer.Option(10, "-s", "--size", help="Page size"),
@@ -312,6 +317,7 @@ def list_jobs(
 
 
 @app.command("stream")
+@handle_sdk_error("Stream fine-tune events failed")
 def stream(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):
@@ -320,6 +326,7 @@ def stream(
 
 
 @app.command("cancel")
+@handle_sdk_error("Cancel fine-tune job failed")
 def cancel(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):
@@ -329,6 +336,7 @@ def cancel(
 
 
 @app.command("delete")
+@handle_sdk_error("Delete fine-tune job failed")
 def delete(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):

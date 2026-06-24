@@ -261,16 +261,16 @@ class ImageSynthesis(BaseAsyncApi):
             kwargs["headers"] = headers
 
         def __get_i2i_task(task, model) -> str:
-            # Handle task parameter: prefer valid task value
+            # 处理task参数：优先使用有效的task值
             if task is not None and task != "":
                 return task
 
-            # Determine task type based on model
+            # 根据model确定任务类型
             if model is not None and model != "":
                 if "imageedit" in model or "wan2.5-i2i" in model:
                     return "image2image"
 
-            # Default to text-to-image task
+            # 默认返回文本到图像任务
             return ImageSynthesis.task
 
         task = __get_i2i_task(task, model)
@@ -387,7 +387,6 @@ class ImageSynthesis(BaseAsyncApi):
         task: Union[str, ImageSynthesisResponse],
         api_key: str = None,
         workspace: str = None,
-        **kwargs,
     ) -> ImageSynthesisResponse:
         """Wait for image(s) synthesis task to complete, and return the result.
 
@@ -400,12 +399,7 @@ class ImageSynthesis(BaseAsyncApi):
         Returns:
             ImageSynthesisResponse: The task result.
         """
-        response = super().wait(
-            task,
-            api_key,
-            workspace=workspace,
-            **kwargs,
-        )
+        response = super().wait(task, api_key, workspace=workspace)
         return ImageSynthesisResponse.from_api_response(response)
 
     @classmethod
@@ -739,7 +733,6 @@ class AioImageSynthesis(BaseAsyncAioApi):
         task: Union[str, ImageSynthesisResponse],  # type: ignore[override]
         api_key: str = None,
         workspace: str = None,
-        wait_timeout: int = -1,
         **kwargs,
     ) -> ImageSynthesisResponse:
         """Wait for image(s) synthesis task to complete, and return the result.
@@ -749,18 +742,11 @@ class AioImageSynthesis(BaseAsyncAioApi):
                 ImageSynthesisResponse return by async_call().
             api_key (str, optional): The api api_key. Defaults to None.
             workspace (str): The dashscope workspace id.
-            wait_timeout (int, optional): The maximum seconds to wait.
-                Default is -1 (no timeout).
 
         Returns:
             ImageSynthesisResponse: The task result.
         """
-        response = await super().wait(
-            task,
-            api_key,
-            workspace=workspace,
-            wait_timeout=wait_timeout,
-        )
+        response = await super().wait(task, api_key, workspace=workspace)
         return ImageSynthesisResponse.from_api_response(response)
 
     @classmethod

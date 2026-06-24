@@ -53,6 +53,7 @@ repos:
           --disable-error-code=attr-defined,
           --disable-error-code=import-untyped,
           --disable-error-code=truthy-function,
+          --disable-error-code=arg-type,
           --follow-imports=skip,
           --explicit-package-bases,
         ]

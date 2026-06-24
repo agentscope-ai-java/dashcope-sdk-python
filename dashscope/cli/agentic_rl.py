@@ -24,6 +24,7 @@ from dashscope.finetune.reinforcement import (
 )
 from dashscope.finetune.reinforcement.common.errors import OutputError
 from dashscope.finetune.customize_types import FineTune
+from dashscope.cli.common import error, normalize_local_path_or_url
 
 
 app = typer.Typer(
@@ -35,6 +36,10 @@ app = typer.Typer(
 )
 console = Console()
 err_console = Console(stderr=True)
+SUPPORTED_OUTPUT_FORMATS = {"table", "json", "yaml"}
+SUPPORTED_FUNCTION_TYPES = {
+    function_type.name for function_type in FunctionType
+}
 
 
 @app.callback()
@@ -64,16 +69,43 @@ def _root_cause(e: Exception) -> Exception:
 
 
 # ================= Configuration & Utility Functions =================
+def validate_output_format(fmt: str) -> str:
+    """Validate and normalize output format."""
+    output_format = fmt.lower()
+    if output_format not in SUPPORTED_OUTPUT_FORMATS:
+        err_console.print(
+            "[red]Error:[/red] Invalid output format. "
+            "Expected one of: table, json, yaml.",
+        )
+        raise typer.Exit(2)
+    return output_format
+
+
+def validate_function_type(func_type: str) -> str:
+    """Validate and normalize function type."""
+    function_type = func_type.upper()
+    if function_type not in SUPPORTED_FUNCTION_TYPES:
+        expected_types = ", ".join(sorted(SUPPORTED_FUNCTION_TYPES))
+        err_console.print(
+            f"[red]Error:[/red] Invalid function type. "
+            f"Expected one of: {expected_types}.",
+        )
+        raise typer.Exit(2)
+    return function_type
+
+
 def format_output(data: Any, fmt: str = "table") -> None:
     """Unified output formatter: table | json | yaml"""
+    output_format = validate_output_format(fmt)
+
     if hasattr(data, "model_dump"):
         data = data.model_dump()
     elif hasattr(data, "__dict__"):
         data = data.__dict__
 
-    if fmt == "json":
+    if output_format == "json":
         print(json.dumps(data, indent=2, ensure_ascii=False))
-    elif fmt == "yaml":
+    elif output_format == "yaml":
         console.print(
             yaml.dump(data, default_flow_style=False, allow_unicode=True),
         )
@@ -188,6 +220,7 @@ async def _register_fc_async(
         raise typer.Exit(1)
 
 
+@app.command("register-functions", hidden=True)
 @app.command("register_functions")
 def register_fc(
     rollout_classpaths: Optional[List[str]] = typer.Option(
@@ -227,6 +260,7 @@ def register_fc(
     - rollout_classpath
     - reward_classpaths
     """
+    output_format = validate_output_format(output_format)
     result = asyncio.run(
         _register_fc_async(
             rollout_classpaths=rollout_classpaths or [],
@@ -263,6 +297,7 @@ async def _test_fc_async(
         raise typer.Exit(1)
 
 
+@app.command("test-functions", hidden=True)
 @app.command("test_functions")
 def test_fc(
     instance_id: str = typer.Argument(
@@ -296,7 +331,14 @@ def test_fc(
 ):
     """🧪 Test a registered Rollout/Reward function instance with custom
     input data."""
-    input_dict = load_json_input(input_data)
+    output_format = validate_output_format(output_format)
+    func_type = validate_function_type(func_type)
+    try:
+        input_dict = load_json_input(input_data)
+    except ValueError as exception:
+        err_console.print(f"[red]Error:[/red] {exception}")
+        raise typer.Exit(1)
+
     result = asyncio.run(
         _test_fc_async(
             instance_id=instance_id,
@@ -333,6 +375,7 @@ async def _upload_data_async(
         raise typer.Exit(1)
 
 
+@app.command("upload-data", hidden=True)
 @app.command("upload_data")
 def upload_data(
     training_files: List[str] = typer.Option(
@@ -358,6 +401,17 @@ def upload_data(
 ):
     """📦 Upload training/validation datasets to the platform, returns file
     IDs"""
+    output_format = validate_output_format(output_format)
+    training_files = [
+        normalize_local_path_or_url(training_file, "--training-files")
+        for training_file in training_files
+    ]
+    if validation_files:
+        validation_files = [
+            normalize_local_path_or_url(validation_file, "--validation-files")
+            for validation_file in validation_files
+        ]
+
     result = asyncio.run(
         _upload_data_async(
             training_files=training_files,
@@ -442,7 +496,12 @@ def run(
     - reward_classpaths (at least one)
     - training_files (at least one)
     """
+    output_format = validate_output_format(output_format)
     _apply_verbose(verbose)
+    if config and not config.exists():
+        error(f"--config file {config} does not exist")
+    if config and not config.is_file():
+        error(f"--config path {config} is not a file")
 
     # Prepare workflow parameters
     run_kwargs = {
@@ -495,7 +554,7 @@ def run(
             fmt=output_format,
         )
 
-    except (ValueError, Exception) as e:
+    except Exception as e:
         root = _root_cause(e)
         label = (
             "Validation error"
@@ -528,6 +587,7 @@ def get(
     output_format: str = typer.Option("table", "--output-format", "-o"),
 ):
     """📊 Query the current status and metadata of a specific job"""
+    output_format = validate_output_format(output_format)
     try:
         result = AgenticRL.get(job_id=job_id, api_key=api_key or "")
 
@@ -594,6 +654,7 @@ def logs(
     output_format: str = typer.Option("table", "--output-format", "-o"),
 ):
     """📜 Fetch job execution logs (supports pagination)"""
+    output_format = validate_output_format(output_format)
     try:
         result = AgenticRL.logs(
             job_id=job_id,
@@ -631,6 +692,7 @@ def list_jobs(
     output_format: str = typer.Option("table", "--output-format", "-o"),
 ):
     """📋 List historical fine-tuning jobs with pagination"""
+    output_format = validate_output_format(output_format)
     try:
         result = AgenticRL.list(
             page_no=page,

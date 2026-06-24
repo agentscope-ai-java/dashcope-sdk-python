@@ -6,14 +6,13 @@ from enum import Enum
 
 class DialogState(Enum):
     """
-    Dialog state enumeration class, defining the possible states
-    of a dialog bot.
+    对话状态枚举类，定义了对话机器人可能处于的不同状态。
 
     Attributes:
-        IDLE (str): Bot is in idle state.
-        LISTENING (str): Bot is listening to user input.
-        THINKING (str): Bot is thinking.
-        RESPONDING (str): Bot is generating or responding.
+        IDLE (str): 表示机器人处于空闲状态。
+        LISTENING (str): 表示机器人正在监听用户输入。
+        THINKING (str): 表示机器人正在思考。
+        RESPONDING (str): 表示机器人正在生成或回复中。
     """
 
     IDLE = "Idle"
@@ -24,36 +23,36 @@ class DialogState(Enum):
 
 class StateMachine:
     """
-    State machine class for managing bot state transitions.
+    状态机类，用于管理机器人的状态转换。
 
     Attributes:
-        current_state (DialogState): Current state.
+        current_state (DialogState): 当前状态。
     """
 
     def __init__(self):
-        # Set initial state to IDLE when initializing the state machine
+        # 初始化状态机时设置初始状态为IDLE
         self.current_state = DialogState.IDLE
 
     def change_state(self, new_state: str) -> None:
         """
-        Change the current state to the specified new state.
+        更改当前状态到指定的新状态。
 
         Args:
-            new_state (str): The new state to switch to.
+            new_state (str): 要切换到的新状态。
 
         Raises:
-            ValueError: If attempting to switch to an invalid state.
+            ValueError: 如果尝试切换到一个无效的状态，则抛出此异常。
         """
         if new_state in [state.value for state in DialogState]:
             self.current_state = DialogState(new_state)
         else:
-            raise ValueError("Invalid state type")
+            raise ValueError("无效的状态类型")
 
     def get_current_state(self) -> DialogState:
         """
-        Get the current state.
+        获取当前状态。
 
         Returns:
-            DialogState: The current state.
+            DialogState: 当前状态。
         """
         return self.current_state
