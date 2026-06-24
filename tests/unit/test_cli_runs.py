@@ -1,11 +1,18 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
+import re
 from types import SimpleNamespace
 
 from typer.testing import CliRunner
 
 from dashscope.cli import runs
+
+
+def strip_ansi_codes(text):
+    """Remove ANSI escape codes from text."""
+    ansi_escape = re.compile(r"\x1b\[[0-9;]*m")
+    return ansi_escape.sub("", text)
 
 
 class TestCliRuns:
@@ -120,8 +127,9 @@ class TestCliRuns:
         result = CliRunner().invoke(runs.app, ["get", "run-1234"])
 
         assert result.exit_code != 0
-        assert "Missing option" in result.output
-        assert "--thread-id" in result.output
+        clean_output = strip_ansi_codes(result.output)
+        assert "Missing option" in clean_output
+        assert "--thread-id" in clean_output
 
     def test_get(self, monkeypatch):
         captured_run_id = None

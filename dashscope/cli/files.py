@@ -64,15 +64,12 @@ def upload(
     if not os.path.exists(file_path):
         error(f"File {file_path} does not exist")
 
-    try:
-        rsp = dashscope.Files.upload(
-            file_path=file_path,
-            purpose=purpose,
-            description=description,  # type: ignore[arg-type]
-            base_address=base_url,
-        )
-    except Exception as exception:
-        error(str(exception))
+    rsp = dashscope.Files.upload(
+        file_path=file_path,
+        purpose=purpose,
+        description=description,  # type: ignore[arg-type]
+        base_address=base_url,
+    )
     output = ensure_ok(rsp)
     file_id = output["uploaded_files"][0]["file_id"]
     success(f"Upload success, file id: {file_id}")

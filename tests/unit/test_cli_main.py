@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
+import re
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -14,6 +15,12 @@ from dashscope.cli import agentic_rl
 from dashscope.cli import app as cli_app
 from dashscope.cli import main as cli_main
 from dashscope.common.error import AuthenticationError
+
+
+def strip_ansi_codes(text):
+    """Remove ANSI escape codes from text."""
+    ansi_escape = re.compile(r"\x1b\[[0-9;]*m")
+    return ansi_escape.sub("", text)
 
 
 # pylint: disable=too-many-public-methods
@@ -46,7 +53,8 @@ class TestCliMain:
         result = CliRunner().invoke(cli_app, ["--help"])
 
         assert result.exit_code == 0
-        assert "--api-key" in result.output
+        clean_output = strip_ansi_codes(result.output)
+        assert "--api-key" in clean_output
 
     def test_python_module_help_suppresses_urllib3_warning(self):
         result = subprocess.run(
@@ -84,7 +92,8 @@ class TestCliMain:
         )
 
         assert result.exit_code == 0
-        assert "rollout-classpaths" in result.output
+        clean_output = strip_ansi_codes(result.output)
+        assert "rollout-classpaths" in clean_output
 
     def test_rl_test_functions_hyphen_alias_help(self):
         result = CliRunner().invoke(
@@ -93,7 +102,8 @@ class TestCliMain:
         )
 
         assert result.exit_code == 0
-        assert "--input" in result.output
+        clean_output = strip_ansi_codes(result.output)
+        assert "--input" in clean_output
 
     def test_rl_upload_data_hyphen_alias_help(self):
         result = CliRunner().invoke(
@@ -102,7 +112,8 @@ class TestCliMain:
         )
 
         assert result.exit_code == 0
-        assert "training-files" in result.output
+        clean_output = strip_ansi_codes(result.output)
+        assert "training-files" in clean_output
 
     def test_missing_global_api_key_value_does_not_consume_command(
         self,

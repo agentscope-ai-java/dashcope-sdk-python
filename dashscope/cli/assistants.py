@@ -271,7 +271,7 @@ def update_assistant(
         description=description,
         instructions=instructions,
         tools=_parse_json_array(tools, "tools"),
-        file_ids=file_ids or [],
+        file_ids=file_ids,
         metadata=_parse_json_object(metadata, "metadata"),
         workspace=workspace,
         top_p=top_p,
