@@ -28,32 +28,18 @@ class Models(ListMixin, GetMixin):
             DashScopeAPIResponse: The model information.
         """
         from http import HTTPStatus
-        
-        # Use query parameter to filter by model name on server side
-        # API endpoint: /api/v1/models?model={name}&page_no=1&page_size=1
-        url = join_url(dashscope.base_http_api_url, cls.SUB_PATH.lower())
-        params = {"model": name, "page_no": 1, "page_size": 1}
-        
+
+        # Use path parameter to get specific model
+        # API endpoint: /api/v1/models/{name}
+        url = join_url(dashscope.base_http_api_url, cls.SUB_PATH.lower(), name)
+
         response = _get(
             url,
-            params=params,
             api_key=api_key,
             **kwargs,
         )
-        
-        if response.status_code != HTTPStatus.OK:
-            return response
-        
-        output = response.output
-        if not output or "models" not in output or not output["models"]:
-            response.status_code = 404
-            response.message = f"Model '{name}' not found"
-            response.output = None
-            return response
-        
-        # Return the first (and only) model from the filtered list
-        response.output = output["models"][0]
-        return response
+
+        return response  # type: ignore[return-value]
 
     @classmethod
     def list(  # type: ignore[override]
