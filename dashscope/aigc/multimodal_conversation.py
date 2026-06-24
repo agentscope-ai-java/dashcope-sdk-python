@@ -409,7 +409,6 @@ class AioMultiModalConversation(BaseAioApi):
         if msg_copy is not None:
             input.update({"messages": msg_copy})  # type: ignore
 
-
         # Validate input is not empty before sending request
         if not input:
             raise ValueError(
