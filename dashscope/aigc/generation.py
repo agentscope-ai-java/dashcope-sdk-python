@@ -179,11 +179,13 @@ class Generation(BaseApi):
             to_merge_incremental_output = True
             parameters["incremental_output"] = True
 
-        # Pass incremental_to_full flag via headers user-agent
-        if "headers" not in parameters:
-            parameters["headers"] = {}
+        # Pass incremental_to_full flag via user_agent parameter
         flag = "1" if to_merge_incremental_output else "0"
-        parameters["headers"]["user-agent"] = f"incremental_to_full/{flag}"
+        existing_ua = parameters.get("user_agent", "")
+        new_ua = f"incremental_to_full/{flag}"
+        parameters["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
+        )
 
         response = super().call(
             model=model,
@@ -434,11 +436,13 @@ class AioGeneration(BaseAioApi):
             to_merge_incremental_output = True
             parameters["incremental_output"] = True
 
-        # Pass incremental_to_full flag via headers user-agent
-        if "headers" not in parameters:
-            parameters["headers"] = {}
+        # Pass incremental_to_full flag via user_agent parameter
         flag = "1" if to_merge_incremental_output else "0"
-        parameters["headers"]["user-agent"] = f"incremental_to_full/{flag}"
+        existing_ua = parameters.get("user_agent", "")
+        new_ua = f"incremental_to_full/{flag}"
+        parameters["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
+        )
 
         response = await super().call(
             model=model,

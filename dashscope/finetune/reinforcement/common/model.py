@@ -348,6 +348,8 @@ class FunctionComponentModel(BaseModel):
             )
             return self.oss_signed_url
 
+        except OSSConnectionError:
+            raise
         except Exception as e:
             raise OSSConnectionError(
                 "Failed to obtain OSS URL",
@@ -1243,6 +1245,8 @@ class TuningModel(Models, BaseModel):
                         )
 
         except Exception as e:
+            if hasattr(e, "error_code"):
+                raise
             raise RegistrationError(
                 "Function component registration failed",
                 error_code=2055,

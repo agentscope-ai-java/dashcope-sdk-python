@@ -163,11 +163,13 @@ class MultiModalConversation(BaseApi):
             to_merge_incremental_output = True
             kwargs["incremental_output"] = True
 
-        # Pass incremental_to_full flag via headers user-agent
-        if "headers" not in kwargs:
-            kwargs["headers"] = {}
+        # Pass incremental_to_full flag via user_agent parameter
         flag = "1" if to_merge_incremental_output else "0"
-        kwargs["headers"]["user-agent"] = f"incremental_to_full/{flag}"
+        existing_ua = kwargs.get("user_agent", "")
+        new_ua = f"incremental_to_full/{flag}"
+        kwargs["user_agent"] = (
+            f"{existing_ua}; {new_ua}".strip() if existing_ua else new_ua
+        )
 
         response = super().call(
             model=model,

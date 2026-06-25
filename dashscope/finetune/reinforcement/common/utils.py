@@ -74,6 +74,7 @@ async def async_http_request(
         async with aiohttp.ClientSession(
             headers=headers,
             timeout=aiohttp.ClientTimeout(total=timeout),
+            trust_env=True,
         ) as session:
             method_upper = method.upper()
 
@@ -897,7 +898,7 @@ def extract_reward_weights(
         """Extract name and sub_weight from a decorator AST node."""
         args_dict = {}
         if isinstance(decorator, ast.Call):
-            # 处理 args 和 keywords
+            # Process args and keywords
             for i, arg in enumerate(decorator.args):
                 if i == 0:
                     args_dict["name"] = _resolve_str_literal(arg)
@@ -1003,3 +1004,46 @@ def serialize_for_output(data: Any) -> Any:
 
     # Return basic types directly
     return data
+
+
+def get_fc_request_id(request) -> str:
+    """Extract Function Compute request ID from request headers.
+
+    Retrieves the 'x-fc-request-id' header from a FastAPI/Starlette Request
+    object. This is useful for correlating logs with specific FC invocations.
+
+    Args:
+        request: FastAPI/Starlette Request object (or any object with a
+            `.headers` mapping).
+
+    Returns:
+        The FC request ID string, or "unknown" if the header is not present.
+    """
+    if request is None:
+        return "unknown"
+    headers = getattr(request, "headers", None)
+    if headers is not None and hasattr(headers, "get"):
+        return headers.get("x-fc-request-id", "unknown")
+    return "unknown"
+
+
+def get_business_summary(processor_input) -> str:
+    """Extract summary business information from processor input.
+
+    Returns the string representation of request_metadata if present,
+    otherwise returns an empty string.
+
+    Args:
+        processor_input: The processor input object (BaseDataModel subclass).
+
+    Returns:
+        String representation of request_metadata, or empty string.
+    """
+    if processor_input is None:
+        return ""
+
+    request_metadata = getattr(processor_input, "request_metadata", None)
+    if request_metadata is None:
+        return ""
+
+    return str(request_metadata)
