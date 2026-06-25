@@ -56,6 +56,8 @@ from dashscope.files import Files
 from dashscope.models import Models
 from dashscope.nlp.understanding import Understanding
 from dashscope.rerank import AioTextReRank, TextReRank
+from dashscope.assistants import Assistant, AssistantList, Assistants
+from dashscope.assistants.assistant_types import AssistantFile, DeleteResponse
 from dashscope.threads import (
     MessageFile,
     Messages,
