@@ -567,21 +567,6 @@ class TestCliMain:
         assert "Dataset upload failed" not in result.output
         assert "Traceback" not in result.output
 
-    def test_sdk_exception_is_printed_without_traceback(self, monkeypatch):
-        def mock_list(**kwargs):
-            raise RuntimeError("sdk failed")
-
-        monkeypatch.setattr(
-            "dashscope.cli.assistants.dashscope.Assistants.list",
-            mock_list,
-        )
-
-        result = CliRunner().invoke(cli_app, ["assistants", "list"])
-
-        assert result.exit_code == 1
-        assert "List assistants failed: sdk failed" in result.output
-        assert "Traceback" not in result.output
-
     def test_generation_stream_exception_is_printed_without_traceback(
         self,
         monkeypatch,

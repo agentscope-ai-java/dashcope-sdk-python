@@ -23,8 +23,6 @@ from dashscope.cli.common import err_console  # noqa: E402
 from dashscope.common.error import AuthenticationError  # noqa: E402
 from dashscope.cli import (  # noqa: E402
     application,
-    assistant_files,
-    assistants,
     code_generation,
     deployments,
     embeddings,
@@ -33,16 +31,12 @@ from dashscope.cli import (  # noqa: E402
     generation,
     image_generation,
     image_synthesis,
-    messages,
     models,
     multimodal_conversation,
     multimodal_embedding,
     oss,
     rerank,
-    runs,
     speech_synthesis,
-    steps,
-    threads,
     tokenization,
     transcription,
     understanding,
@@ -113,12 +107,6 @@ _TOP_LEVEL_COMMANDS = {
     "multimodal-embedding",
     "transcription",
     "speech-synthesis",
-    "assistants",
-    "assistant-files",
-    "threads",
-    "messages",
-    "runs",
-    "steps",
     "rl",
     "agentic-rl",
 }
@@ -298,12 +286,6 @@ app.add_typer(multimodal_conversation.app)
 app.add_typer(multimodal_embedding.app)
 app.add_typer(transcription.app)
 app.add_typer(speech_synthesis.app)
-app.add_typer(assistants.app)
-app.add_typer(assistant_files.app)
-app.add_typer(threads.app)
-app.add_typer(messages.app)
-app.add_typer(runs.app)
-app.add_typer(steps.app)
 
 
 def _register_rl_app():

@@ -24,8 +24,6 @@ from dashscope.aigc.multimodal_conversation import (
 )
 from dashscope.aigc.video_synthesis import VideoSynthesis
 from dashscope.app.application import Application
-from dashscope.assistants import Assistant, AssistantList, Assistants
-from dashscope.assistants.assistant_types import AssistantFile, DeleteResponse
 from dashscope.audio.asr.transcription import Transcription
 from dashscope.audio.http_tts.http_speech_synthesizer import (
     HttpSpeechSynthesizer,
@@ -57,6 +55,8 @@ from dashscope.files import Files
 from dashscope.models import Models
 from dashscope.nlp.understanding import Understanding
 from dashscope.rerank.text_rerank import TextReRank
+from dashscope.assistants import Assistant, AssistantList, Assistants
+from dashscope.assistants.assistant_types import AssistantFile, DeleteResponse
 from dashscope.threads import (
     MessageFile,
     Messages,
