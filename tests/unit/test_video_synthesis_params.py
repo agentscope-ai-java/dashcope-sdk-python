@@ -183,7 +183,7 @@ class TestVideoSynthesis(MockServerBase):
 
         req = mock_server.requests.get(block=True)
         params = req["parameters"]
-        
+
         assert params["size"] == "1280*720"
         assert params["duration"] == 10
         assert params["seed"] == 42
@@ -193,7 +193,7 @@ class TestVideoSynthesis(MockServerBase):
         assert params["ratio"] == "16:9"
         assert params["shot_type"] == "single"
         assert params["audio_setting"] == "origin"
-        
+
         assert response.status_code == HTTPStatus.OK
 
     def test_with_none_parameters_not_included(self, mock_server: MockServer):
@@ -211,10 +211,10 @@ class TestVideoSynthesis(MockServerBase):
 
         req = mock_server.requests.get(block=True)
         params = req["parameters"]
-        
+
         # None parameters should not be in the request
         assert "size" not in params
         assert "duration" not in params
         assert "seed" not in params
-        
+
         assert response.status_code == HTTPStatus.OK

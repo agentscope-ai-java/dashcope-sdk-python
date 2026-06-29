@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Any, Dict, Union, List
+from typing import Any, Dict, Union, List, Optional
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -75,15 +75,15 @@ class VideoSynthesis(BaseAsyncApi):
         first_frame_url: str = None,
         last_frame_url: str = None,
         media: List[Dict] = None,
-        size: str = None,
-        duration: int = None,
-        seed: int = None,
-        prompt_extend: bool = None,
-        watermark: bool = None,
-        resolution: str = None,
-        ratio: str = None,
-        shot_type: str = None,
-        audio_setting: str = None,
+        size: Optional[str] = None,
+        duration: Optional[int] = None,
+        seed: Optional[int] = None,
+        prompt_extend: Optional[bool] = None,
+        watermark: Optional[bool] = None,
+        resolution: Optional[str] = None,
+        ratio: Optional[str] = None,
+        shot_type: Optional[str] = None,
+        audio_setting: Optional[str] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -388,15 +388,15 @@ class VideoSynthesis(BaseAsyncApi):
         first_frame_url: str = None,
         last_frame_url: str = None,
         media: List[Dict] = None,
-        size: str = None,
-        duration: int = None,
-        seed: int = None,
-        prompt_extend: bool = None,
-        watermark: bool = None,
-        resolution: str = None,
-        ratio: str = None,
-        shot_type: str = None,
-        audio_setting: str = None,
+        size: Optional[str] = None,
+        duration: Optional[int] = None,
+        seed: Optional[int] = None,
+        prompt_extend: Optional[bool] = None,
+        watermark: Optional[bool] = None,
+        resolution: Optional[str] = None,
+        ratio: Optional[str] = None,
+        shot_type: Optional[str] = None,
+        audio_setting: Optional[str] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
