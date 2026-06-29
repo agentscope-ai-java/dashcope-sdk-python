@@ -82,6 +82,8 @@ class VideoSynthesis(BaseAsyncApi):
         watermark: bool = None,
         resolution: str = None,
         ratio: str = None,
+        shot_type: str = None,
+        audio_setting: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -121,6 +123,9 @@ class VideoSynthesis(BaseAsyncApi):
             resolution (str, optional): Output resolution, e.g.
                 "720P", "1080P".
             ratio (str, optional): Aspect ratio, e.g. "16:9", "9:16".
+            shot_type (str, optional): Shot type for video generation.
+            audio_setting (str, optional): Audio setting for video,
+                "auto" or "origin".
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -143,6 +148,10 @@ class VideoSynthesis(BaseAsyncApi):
             kwargs["resolution"] = resolution
         if ratio is not None:
             kwargs["ratio"] = ratio
+        if shot_type is not None:
+            kwargs["shot_type"] = shot_type
+        if audio_setting is not None:
+            kwargs["audio_setting"] = audio_setting
         return super().call(  # type: ignore[return-value]
             model,
             prompt,
@@ -386,6 +395,8 @@ class VideoSynthesis(BaseAsyncApi):
         watermark: bool = None,
         resolution: str = None,
         ratio: str = None,
+        shot_type: str = None,
+        audio_setting: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -421,6 +432,9 @@ class VideoSynthesis(BaseAsyncApi):
             watermark (bool, optional): Whether to add watermark.
             resolution (str, optional): Output resolution.
             ratio (str, optional): Aspect ratio, e.g. "16:9".
+            shot_type (str, optional): Shot type for video generation.
+            audio_setting (str, optional): Audio setting for video,
+                "auto" or "origin".
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -444,6 +458,10 @@ class VideoSynthesis(BaseAsyncApi):
             kwargs["resolution"] = resolution
         if ratio is not None:
             kwargs["ratio"] = ratio
+        if shot_type is not None:
+            kwargs["shot_type"] = shot_type
+        if audio_setting is not None:
+            kwargs["audio_setting"] = audio_setting
         task_group, function = _get_task_group_and_task(__name__)
 
         inputs, kwargs, task = cls._get_input(
@@ -636,6 +654,8 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         watermark: bool = None,
         resolution: str = None,
         ratio: str = None,
+        shot_type: str = None,
+        audio_setting: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -671,6 +691,9 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             watermark (bool, optional): Whether to add watermark.
             resolution (str, optional): Output resolution.
             ratio (str, optional): Aspect ratio, e.g. "16:9".
+            shot_type (str, optional): Shot type for video generation.
+            audio_setting (str, optional): Audio setting for video,
+                "auto" or "origin".
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -693,6 +716,10 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             kwargs["resolution"] = resolution
         if ratio is not None:
             kwargs["ratio"] = ratio
+        if shot_type is not None:
+            kwargs["shot_type"] = shot_type
+        if audio_setting is not None:
+            kwargs["audio_setting"] = audio_setting
         task_group, f = _get_task_group_and_task(__name__)
         # pylint: disable=protected-access
         inputs, kwargs, task = VideoSynthesis._get_input(
@@ -764,6 +791,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         watermark: bool = None,
         resolution: str = None,
         ratio: str = None,
+        shot_type: str = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -799,6 +827,7 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             watermark (bool, optional): Whether to add watermark.
             resolution (str, optional): Output resolution.
             ratio (str, optional): Aspect ratio, e.g. "16:9".
+            shot_type (str, optional): Shot type for video generation.
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -822,6 +851,8 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             kwargs["resolution"] = resolution
         if ratio is not None:
             kwargs["ratio"] = ratio
+        if shot_type is not None:
+            kwargs["shot_type"] = shot_type
         task_group, function = _get_task_group_and_task(__name__)
 
         # pylint: disable=protected-access
