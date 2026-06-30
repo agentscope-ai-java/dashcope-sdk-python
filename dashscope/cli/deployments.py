@@ -12,6 +12,7 @@ from dashscope.cli.common import (
     console,
     err_console,
     ensure_ok,
+    handle_sdk_error,
     logger,
     success,
 )
@@ -87,6 +88,7 @@ def _print_deployments(output):
 
 
 @app.command("create")
+@handle_sdk_error("Create deployment failed")
 def create(
     model: str = typer.Option(..., "-m", "--model", help="The model ID"),
     suffix: Optional[str] = typer.Option(
@@ -116,6 +118,7 @@ def create(
 
 # Backward compatibility alias
 @app.command("call", hidden=True)
+@handle_sdk_error("Create deployment failed")
 def call(
     model: str = typer.Option(..., "-m", "--model", help="The model ID"),
     suffix: Optional[str] = typer.Option(
@@ -140,6 +143,7 @@ def call(
 
 
 @app.command("get")
+@handle_sdk_error("Retrieve deployment failed")
 def get(
     deployed_model: str = typer.Argument(..., help="The deployed model name"),
 ):
@@ -154,6 +158,7 @@ def get(
 
 
 @app.command("list")
+@handle_sdk_error("List deployments failed")
 def list_deployments(
     page: int = typer.Option(1, "-p", "--page", help="Page number"),
     size: int = typer.Option(10, "-s", "--size", help="Page size"),
@@ -168,6 +173,7 @@ def list_deployments(
 
 
 @app.command("scale")
+@handle_sdk_error("Scale deployment failed")
 def scale(
     deployed_model: str = typer.Argument(
         ...,
@@ -194,6 +200,7 @@ def scale(
 
 
 @app.command("delete")
+@handle_sdk_error("Delete deployment failed")
 def delete(
     deployed_model: str = typer.Argument(..., help="The deployed model name"),
 ):

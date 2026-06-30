@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
+# pylint: disable=wrong-import-position
 
 import logging
+import warnings
 from logging import NullHandler
+
+# Suppress urllib3 NotOpenSSLWarning on systems with LibreSSL before any SDK
+# submodule imports urllib3.
+warnings.filterwarnings(
+    "ignore",
+    message=".*urllib3.*only supports OpenSSL.*",
+    category=Warning,
+)
 
 from dashscope.aigc.code_generation import CodeGeneration
 from dashscope.aigc.conversation import Conversation, History, HistoryItem
@@ -14,8 +24,6 @@ from dashscope.aigc.multimodal_conversation import (
 )
 from dashscope.aigc.video_synthesis import VideoSynthesis
 from dashscope.app.application import Application
-from dashscope.assistants import Assistant, AssistantList, Assistants
-from dashscope.assistants.assistant_types import AssistantFile, DeleteResponse
 from dashscope.audio.asr.transcription import Transcription
 from dashscope.audio.http_tts.http_speech_synthesizer import (
     HttpSpeechSynthesizer,
@@ -48,6 +56,8 @@ from dashscope.files import Files
 from dashscope.models import Models
 from dashscope.nlp.understanding import Understanding
 from dashscope.rerank import AioTextReRank, TextReRank
+from dashscope.assistants import Assistant, AssistantList, Assistants
+from dashscope.assistants.assistant_types import AssistantFile, DeleteResponse
 from dashscope.threads import (
     MessageFile,
     Messages,
