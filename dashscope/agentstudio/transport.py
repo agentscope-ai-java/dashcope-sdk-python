@@ -664,12 +664,7 @@ class AsyncTransport:
         )
 
     def close(self) -> None:
-        """Best-effort synchronous close (for __del__ / GC safety)."""
-        if self._owns_client:
-            try:
-                self._client.close()
-            except Exception:
-                pass
+        """No-op: AsyncClient requires async cleanup via aclose()."""
 
     async def aclose(self) -> None:
         if self._owns_client:

@@ -475,7 +475,9 @@ class Session(BaseModel):
     @property
     def agent_id(self) -> Optional[str]:
         a = self.agent
-        return a.id if isinstance(a, Agent) else None
+        if isinstance(a, Agent):
+            return a.id
+        return a if isinstance(a, str) else None
 
     @property
     def agent_version(self) -> Optional[int]:

@@ -190,7 +190,7 @@ class Files:
         def fetch_next(token: str) -> IdCursorPage[File]:
             return self.list(
                 limit=limit,
-                page=token,
+                after_id=token,
                 scope_id=scope_id,
             )
 
@@ -291,7 +291,7 @@ class AsyncFiles:
         async def fetch_next(token: str) -> AsyncIdCursorPage[File]:
             return await self.list(
                 limit=limit,
-                page=token,
+                after_id=token,
                 scope_id=scope_id,
             )
 
