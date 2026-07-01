@@ -46,6 +46,18 @@ class ImageSynthesis(BaseAsyncApi):
         function: str = None,
         mask_image_url: str = None,
         base_image_url: str = None,
+        size: str = None,
+        n: int = None,
+        seed: int = None,
+        style: str = None,
+        ref_strength: float = None,
+        ref_mode: str = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        bbox_list: List = None,
+        enable_sequential: bool = None,
+        thinking_mode: str = None,
+        color_palette: str = None,
         **kwargs,
     ) -> ImageSynthesisResponse:
         """Call image(s) synthesis service and get result.
@@ -68,9 +80,27 @@ class ImageSynthesis(BaseAsyncApi):
                 description_edit_with_mask,description_edit,stylization_local,stylization_all
             base_image_url (str): Enter the URL address of the target edited image.
             mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.  # pylint: disable=line-too-long
+            size (str, optional): The output image(s) size(width*height).
+            n (int, optional): Number of images to synthesis.
+            seed (int, optional): Random seed for image generation.
+            style (str, optional): The output image style. Supported values:
+                <auto>, <photography>, <portrait>, <3d cartoon>, <anime>,
+                <oil painting>, <watercolor>, <sketch>, <chinese painting>,
+                <flat illustration>. Default is <auto>.
+            ref_strength (float, optional): Control the similarity between
+                output image and reference image. Range [0.0, 1.0].
+                Higher value means more similar to reference image.
+            ref_mode (str, optional): Mode for generating image based on
+                reference image. Supported values: repaint (default, based on
+                content), refonly (based on style).
+            prompt_extend (bool, optional): Whether to extend prompt
+                automatically for better results.
+            watermark (bool, optional): Whether to add watermark.
+            bbox_list (List, optional): List of bounding boxes for region-specific editing.
+            enable_sequential (bool, optional): Enable sequential generation mode.
+            thinking_mode (str, optional): Thinking mode for generation. Supported values: fast, balanced, quality.
+            color_palette (str, optional): Color palette specification for consistent styling.
             **kwargs:
-                n(int, `optional`): Number of images to synthesis.
-                size(str, `optional`): The output image(s) size(width*height).
                 similarity(float, `optional`): The similarity between the
                     output image and the input image
                 sketch_weight(int, optional): How much the input sketch
@@ -85,6 +115,30 @@ class ImageSynthesis(BaseAsyncApi):
         Returns:
             ImageSynthesisResponse: The image(s) synthesis result.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if n is not None:
+            kwargs["n"] = n
+        if seed is not None:
+            kwargs["seed"] = seed
+        if style is not None:
+            kwargs["style"] = style
+        if ref_strength is not None:
+            kwargs["ref_strength"] = ref_strength
+        if ref_mode is not None:
+            kwargs["ref_mode"] = ref_mode
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if bbox_list is not None:
+            kwargs["bbox_list"] = bbox_list
+        if enable_sequential is not None:
+            kwargs["enable_sequential"] = enable_sequential
+        if thinking_mode is not None:
+            kwargs["thinking_mode"] = thinking_mode
+        if color_palette is not None:
+            kwargs["color_palette"] = color_palette
         return super().call(  # type: ignore[return-value]
             model,
             prompt,
@@ -118,12 +172,48 @@ class ImageSynthesis(BaseAsyncApi):
         function: str = None,
         mask_image_url: str = None,
         base_image_url: str = None,
+        size: str = None,
+        n: int = None,
+        seed: int = None,
+        style: str = None,
+        ref_strength: float = None,
+        ref_mode: str = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        bbox_list: List = None,
+        enable_sequential: bool = None,
+        thinking_mode: str = None,
+        color_palette: str = None,
         **kwargs,
     ) -> ImageSynthesisResponse:
         """
         Note: This method currently now only supports wan2.2-t2i-flash and wan2.2-t2i-plus.  # noqa: E501  # pylint: disable=line-too-long
             Using other models will result in an error，More raw image models may be added for use later  # pylint: disable=line-too-long
         """
+        if size is not None:
+            kwargs["size"] = size
+        if n is not None:
+            kwargs["n"] = n
+        if seed is not None:
+            kwargs["seed"] = seed
+        if style is not None:
+            kwargs["style"] = style
+        if ref_strength is not None:
+            kwargs["ref_strength"] = ref_strength
+        if ref_mode is not None:
+            kwargs["ref_mode"] = ref_mode
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if bbox_list is not None:
+            kwargs["bbox_list"] = bbox_list
+        if enable_sequential is not None:
+            kwargs["enable_sequential"] = enable_sequential
+        if thinking_mode is not None:
+            kwargs["thinking_mode"] = thinking_mode
+        if color_palette is not None:
+            kwargs["color_palette"] = color_palette
         task_group, f = _get_task_group_and_task(__name__)
         inputs, kwargs, task = cls._get_input(
             model,
@@ -294,6 +384,18 @@ class ImageSynthesis(BaseAsyncApi):
         function: str = None,
         mask_image_url: str = None,
         base_image_url: str = None,
+        size: str = None,
+        n: int = None,
+        seed: int = None,
+        style: str = None,
+        ref_strength: float = None,
+        ref_mode: str = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        bbox_list: List = None,
+        enable_sequential: bool = None,
+        thinking_mode: str = None,
+        color_palette: str = None,
         **kwargs,
     ) -> ImageSynthesisResponse:
         """Create a image(s) synthesis task, and return task information.
@@ -309,31 +411,61 @@ class ImageSynthesis(BaseAsyncApi):
             workspace (str): The dashscope workspace id.
             extra_input (Dict): The extra input parameters.
             task (str): The task of api, ref doc.
-            function (str): The specific functions to be achieved. like:
-                colorization,super_resolution,expand,remove_watermaker,doodle,
-                description_edit_with_mask,description_edit,stylization_local,stylization_all
-            base_image_url (str): Enter the URL address of the target edited image.
-            mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.  # pylint: disable=line-too-long
-            **kwargs(wanx-v1):
-                n(int, `optional`): Number of images to synthesis.
-                size: The output image(s) size, Default 1024*1024
-                similarity(float, `optional`): The similarity between the
-                    output image and the input image.
-                sketch_weight(int, optional): How much the input sketch
-                    affects the output image[0-10], only for wanx-sketch-to-image-v1. # noqa E501
-                    Default 10.
-                realisticness(int, optional): The realisticness of the output
-                    image[0-10], only for wanx-sketch-to-image-v1. Default 5
-
-        Raises:
-            InputRequired: The prompt cannot be empty.
-
-        Returns:
-            DashScopeAPIResponse: The image synthesis
-                task id in the response.
+            function (str): The specific functions to be achieved.
+            mask_image_url (str): Provide the URL address of the image of
+                the marked area by the user.
+            base_image_url (str): Enter the URL address of the target edited
+                image.
+            size (str, optional): The output image(s) size(width*height).
+            seed (int, optional): Random seed for image generation.
+            style (str, optional): The output image style. Supported values:
+                <auto>, <photography>, <portrait>, <3d cartoon>, <anime>,
+                <oil painting>, <watercolor>, <sketch>, <chinese painting>,
+                <flat illustration>. Default is <auto>.
+            ref_strength (float, optional): Control the similarity between
+                output image and reference image. Range [0.0, 1.0].
+            ref_mode (str, optional): Mode for generating image based on
+                reference image. Supported values: repaint (default, based on
+                content), refonly (based on style).
+            prompt_extend (bool, optional): Whether to extend prompt
+                automatically for better results.
+            watermark (bool, optional): Whether to add watermark.
+            bbox_list (List, optional): List of bounding boxes for
+                region-specific editing.
+            enable_sequential (bool, optional): Enable sequential generation
+                mode.
+            thinking_mode (str, optional): Thinking mode for generation.
+                Supported values: fast, balanced, quality.
+            color_palette (str, optional): Color palette specification for
+                consistent styling.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if n is not None:
+            kwargs["n"] = n
+        if seed is not None:
+            kwargs["seed"] = seed
+        if style is not None:
+            kwargs["style"] = style
+        if ref_strength is not None:
+            kwargs["ref_strength"] = ref_strength
+        if ref_mode is not None:
+            kwargs["ref_mode"] = ref_mode
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if bbox_list is not None:
+            kwargs["bbox_list"] = bbox_list
+        if enable_sequential is not None:
+            kwargs["enable_sequential"] = enable_sequential
+        if thinking_mode is not None:
+            kwargs["thinking_mode"] = thinking_mode
+        if color_palette is not None:
+            kwargs["color_palette"] = color_palette
         task_group, f = _get_task_group_and_task(__name__)
-        inputs, kwargs, task = cls._get_input(
+        # pylint: disable=protected-access
+        inputs, kwargs, task = ImageSynthesis._get_input(
             model,
             prompt,
             negative_prompt,
@@ -499,6 +631,18 @@ class AioImageSynthesis(BaseAsyncAioApi):
         function: str = None,
         mask_image_url: str = None,
         base_image_url: str = None,
+        size: str = None,
+        n: int = None,
+        seed: int = None,
+        style: str = None,
+        ref_strength: float = None,
+        ref_mode: str = None,
+        prompt_extend: bool = None,
+        watermark: bool = None,
+        bbox_list: List = None,
+        enable_sequential: bool = None,
+        thinking_mode: str = None,
+        color_palette: str = None,
         **kwargs,
     ) -> ImageSynthesisResponse:
         """Call image(s) synthesis service and get result.
@@ -521,9 +665,26 @@ class AioImageSynthesis(BaseAsyncAioApi):
                 description_edit_with_mask,description_edit,stylization_local,stylization_all
             base_image_url (str): Enter the URL address of the target edited image.
             mask_image_url (str): Provide the URL address of the image of the marked area by the user. It should be consistent with the image resolution of the base_image_url.  # pylint: disable=line-too-long
+            size (str, optional): The output image(s) size(width*height).
+            n (int, optional): Number of images to synthesis.
+            seed (int, optional): Random seed for image generation.
+            style (str, optional): The output image style. Supported values:
+                <auto>, <photography>, <portrait>, <3d cartoon>, <anime>,
+                <oil painting>, <watercolor>, <sketch>, <chinese painting>,
+                <flat illustration>. Default is <auto>.
+            ref_strength (float, optional): Control the similarity between
+                output image and reference image. Range [0.0, 1.0].
+            ref_mode (str, optional): Mode for generating image based on
+                reference image. Supported values: repaint (default, based on
+                content), refonly (based on style).
+            prompt_extend (bool, optional): Whether to extend prompt
+                automatically for better results.
+            watermark (bool, optional): Whether to add watermark.
+            bbox_list (List, optional): List of bounding boxes for region-specific editing.
+            enable_sequential (bool, optional): Enable sequential generation mode.
+            thinking_mode (str, optional): Thinking mode for generation. Supported values: fast, balanced, quality.
+            color_palette (str, optional): Color palette specification for consistent styling.
             **kwargs:
-                n(int, `optional`): Number of images to synthesis.
-                size(str, `optional`): The output image(s) size(width*height).
                 similarity(float, `optional`): The similarity between the
                     output image and the input image
                 sketch_weight(int, optional): How much the input sketch
@@ -538,6 +699,30 @@ class AioImageSynthesis(BaseAsyncAioApi):
         Returns:
             ImageSynthesisResponse: The image(s) synthesis result.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if n is not None:
+            kwargs["n"] = n
+        if seed is not None:
+            kwargs["seed"] = seed
+        if style is not None:
+            kwargs["style"] = style
+        if ref_strength is not None:
+            kwargs["ref_strength"] = ref_strength
+        if ref_mode is not None:
+            kwargs["ref_mode"] = ref_mode
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if bbox_list is not None:
+            kwargs["bbox_list"] = bbox_list
+        if enable_sequential is not None:
+            kwargs["enable_sequential"] = enable_sequential
+        if thinking_mode is not None:
+            kwargs["thinking_mode"] = thinking_mode
+        if color_palette is not None:
+            kwargs["color_palette"] = color_palette
         task_group, f = _get_task_group_and_task(__name__)
         # pylint: disable=protected-access
         inputs, kwargs, task = ImageSynthesis._get_input(
@@ -583,12 +768,48 @@ class AioImageSynthesis(BaseAsyncAioApi):
         function: str = None,
         mask_image_url: str = None,
         base_image_url: str = None,
+        size: str = None,  # pylint: disable=unused-argument
+        n: int = None,  # pylint: disable=unused-argument
+        seed: int = None,  # pylint: disable=unused-argument
+        style: str = None,  # pylint: disable=unused-argument
+        ref_strength: float = None,  # pylint: disable=unused-argument
+        ref_mode: str = None,  # pylint: disable=unused-argument
+        prompt_extend: bool = None,  # pylint: disable=unused-argument
+        watermark: bool = None,  # pylint: disable=unused-argument
+        bbox_list: List = None,  # pylint: disable=unused-argument
+        enable_sequential: bool = None,  # pylint: disable=unused-argument
+        thinking_mode: str = None,  # pylint: disable=unused-argument
+        color_palette: str = None,  # pylint: disable=unused-argument
         **kwargs,
     ) -> ImageSynthesisResponse:
         """
         Note: This method currently now only supports wan2.2-t2i-flash and wan2.2-t2i-plus.  # noqa: E501  # pylint: disable=line-too-long
             Using other models will result in an error，More raw image models may be added for use later  # pylint: disable=line-too-long
         """
+        if size is not None:
+            kwargs["size"] = size
+        if n is not None:
+            kwargs["n"] = n
+        if seed is not None:
+            kwargs["seed"] = seed
+        if style is not None:
+            kwargs["style"] = style
+        if ref_strength is not None:
+            kwargs["ref_strength"] = ref_strength
+        if ref_mode is not None:
+            kwargs["ref_mode"] = ref_mode
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if bbox_list is not None:
+            kwargs["bbox_list"] = bbox_list
+        if enable_sequential is not None:
+            kwargs["enable_sequential"] = enable_sequential
+        if thinking_mode is not None:
+            kwargs["thinking_mode"] = thinking_mode
+        if color_palette is not None:
+            kwargs["color_palette"] = color_palette
         task_group, f = _get_task_group_and_task(__name__)
         # pylint: disable=protected-access
         inputs, kwargs, task = ImageSynthesis._get_input(
@@ -634,6 +855,18 @@ class AioImageSynthesis(BaseAsyncAioApi):
         function: str = None,
         mask_image_url: str = None,
         base_image_url: str = None,
+        size: str = None,  # pylint: disable=unused-argument
+        n: int = None,  # pylint: disable=unused-argument
+        seed: int = None,  # pylint: disable=unused-argument
+        style: str = None,  # pylint: disable=unused-argument
+        ref_strength: float = None,  # pylint: disable=unused-argument
+        ref_mode: str = None,  # pylint: disable=unused-argument
+        prompt_extend: bool = None,  # pylint: disable=unused-argument
+        watermark: bool = None,  # pylint: disable=unused-argument
+        bbox_list: List = None,  # pylint: disable=unused-argument
+        enable_sequential: bool = None,  # pylint: disable=unused-argument
+        thinking_mode: str = None,  # pylint: disable=unused-argument
+        color_palette: str = None,  # pylint: disable=unused-argument
         **kwargs,
     ) -> ImageSynthesisResponse:
         """Create a image(s) synthesis task, and return task information.
@@ -678,6 +911,30 @@ class AioImageSynthesis(BaseAsyncAioApi):
             DashScopeAPIResponse: The image synthesis
                 task id in the response.
         """
+        if size is not None:
+            kwargs["size"] = size
+        if n is not None:
+            kwargs["n"] = n
+        if seed is not None:
+            kwargs["seed"] = seed
+        if style is not None:
+            kwargs["style"] = style
+        if ref_strength is not None:
+            kwargs["ref_strength"] = ref_strength
+        if ref_mode is not None:
+            kwargs["ref_mode"] = ref_mode
+        if prompt_extend is not None:
+            kwargs["prompt_extend"] = prompt_extend
+        if watermark is not None:
+            kwargs["watermark"] = watermark
+        if bbox_list is not None:
+            kwargs["bbox_list"] = bbox_list
+        if enable_sequential is not None:
+            kwargs["enable_sequential"] = enable_sequential
+        if thinking_mode is not None:
+            kwargs["thinking_mode"] = thinking_mode
+        if color_palette is not None:
+            kwargs["color_palette"] = color_palette
         task_group, f = _get_task_group_and_task(__name__)
         # pylint: disable=protected-access
         inputs, kwargs, task = ImageSynthesis._get_input(

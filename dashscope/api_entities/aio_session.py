@@ -46,8 +46,44 @@ async def get_shared_aio_session() -> aiohttp.ClientSession:
 
         connector = aiohttp.TCPConnector(ssl=get_ssl_context())
         session = aiohttp.ClientSession(connector=connector, trust_env=True)
+
+        # Register finalizer to close session when it's garbage collected.
+        # This prevents resource leaks even if
+        # close_shared_aio_session() is not called.
+        weakref.finalize(session, _sync_close_session, id(session))
+
         _aio_sessions[loop] = session
     return session
+
+
+def _sync_close_session(session_id: int) -> None:
+    """Synchronous callback when session is garbage collected.
+
+    Note: This runs during GC, so we cannot await. We try to close
+    synchronously if possible, otherwise log a warning.
+    """
+    try:
+        loop = asyncio.get_event_loop()
+        if not loop.is_closed() and not loop.is_running():
+            # Loop exists and is not running, we can use it
+            # Find the session in our cache
+            with _lock:
+                for stored_session in _aio_sessions.values():
+                    if (
+                        id(stored_session) == session_id
+                        and not stored_session.closed
+                    ):
+                        try:
+                            loop.run_until_complete(stored_session.close())
+                        except Exception:
+                            pass
+                        break
+    except RuntimeError:
+        # No event loop available, can't close asynchronously
+        pass
+    except Exception:
+        # Ignore errors during cleanup
+        pass
 
 
 async def close_shared_aio_session() -> None:

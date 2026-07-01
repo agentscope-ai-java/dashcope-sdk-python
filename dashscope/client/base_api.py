@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import asyncio
 import collections
+import json
 import time
 from http import HTTPStatus
 from typing import Any, Dict, Iterator, List, Union
@@ -1266,11 +1267,13 @@ class CreateMixin:
         flattened_output = kwargs.pop("flattened_output", False)
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
+            body = json.dumps(data, ensure_ascii=False).encode("utf-8")
             response = session.post(
                 url,
-                json=data,
+                data=body,
                 stream=stream,
                 headers={
+                    "Content-Type": "application/json; charset=utf-8",
                     **_workspace_header(workspace),
                     **default_headers(api_key),
                     **kwargs.pop("headers", {}),
@@ -1295,7 +1298,7 @@ class UpdateMixin:
     def update(
         cls,
         target: str,
-        json: object,
+        json_body: object,
         api_key: str = None,
         path: str = None,
         workspace: str = None,
@@ -1306,7 +1309,7 @@ class UpdateMixin:
 
         Args:
             target (str): The target to update.
-            json (object): The create request json body.
+            json_body (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
                 will get by default rule(TODO: api key doc). Defaults to None.
 
@@ -1329,11 +1332,13 @@ class UpdateMixin:
         flattened_output = kwargs.pop("flattened_output", False)
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
+            body = json.dumps(json_body, ensure_ascii=False).encode("utf-8")
             if method == "post":
                 response = session.post(
                     url,
-                    json=json,
+                    data=body,
                     headers={
+                        "Content-Type": "application/json; charset=utf-8",
                         **_workspace_header(workspace),
                         **default_headers(api_key),
                         **kwargs.pop("headers", {}),
@@ -1343,8 +1348,9 @@ class UpdateMixin:
             else:
                 response = session.patch(
                     url,
-                    json=json,
+                    data=body,
                     headers={
+                        "Content-Type": "application/json; charset=utf-8",
                         **_workspace_header(workspace),
                         **default_headers(api_key),
                         **kwargs.pop("headers", {}),
@@ -1360,7 +1366,7 @@ class PutMixin:
     def put(
         cls,
         target: str,
-        json: object,
+        json_body: object,
         path: str = None,
         api_key: str = None,
         workspace: str = None,
@@ -1370,7 +1376,7 @@ class PutMixin:
 
         Args:
             target (str): The target to update.
-            json (object): The create request json body.
+            json_body (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
                 will get by default rule(TODO: api key doc). Defaults to None.
 
@@ -1392,10 +1398,12 @@ class PutMixin:
         )
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
+            body = json.dumps(json_body, ensure_ascii=False).encode("utf-8")
             response = session.put(
                 url,
-                json=json,
+                data=body,
                 headers={
+                    "Content-Type": "application/json; charset=utf-8",
                     **_workspace_header(workspace),
                     **default_headers(api_key),
                     **kwargs.pop("headers", {}),

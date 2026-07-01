@@ -70,7 +70,14 @@ class Generation(BaseApi):
         tools: List[Dict[str, Any]] = None,
         tool_choice: Union[str, Dict[str, Any]] = None,
         enable_thinking: bool = None,
+        thinking_budget: int = None,
         n: int = None,
+        logprobs: bool = None,
+        top_logprobs: int = None,
+        search_options: Dict[str, Any] = None,
+        parallel_tool_calls: bool = None,
+        response_format: Dict[str, Any] = None,
+        output_format: str = None,  # pylint: disable=unused-argument
         **kwargs,
     ) -> Union[GenerationResponse, Generator[GenerationResponse, None, None]]:
         """Call generation model service.
@@ -102,7 +109,22 @@ class Generation(BaseApi):
             tool_choice (str or dict, optional): Tool selection strategy.
             enable_thinking (bool, optional): Enable thinking mode for
                 hybrid thinking models.
+            thinking_budget (int, optional): Maximum token budget for thinking
+                mode. Controls the maximum length of thinking process.
             n (int, optional): Number of responses to generate (1-4).
+            logprobs (bool, optional): Whether to return log probabilities of
+                the output tokens.
+            top_logprobs (int, optional): Number of most likely tokens to
+                return at each token position when logprobs is enabled.
+            search_options (dict, optional): Configuration options for web
+                search feature.
+            parallel_tool_calls (bool, optional): Enable parallel tool calls
+                for function calling.
+            response_format (dict, optional): Format constraint for response,
+                e.g., {"type": "json_object"} for JSON mode.
+            output_format (str, optional): Output format for qwen-deep-research
+                model. Options: "model_detailed_report" (default),
+                "model_summary_report".
             **kwargs: Additional parameters passed to the API.
 
         Returns:
@@ -146,8 +168,20 @@ class Generation(BaseApi):
             kwargs["tool_choice"] = tool_choice
         if enable_thinking is not None:
             kwargs["enable_thinking"] = enable_thinking
+        if thinking_budget is not None:
+            kwargs["thinking_budget"] = thinking_budget
         if n is not None:
             kwargs["n"] = n
+        if logprobs is not None:
+            kwargs["logprobs"] = logprobs
+        if top_logprobs is not None:
+            kwargs["top_logprobs"] = top_logprobs
+        if search_options is not None:
+            kwargs["search_options"] = search_options
+        if parallel_tool_calls is not None:
+            kwargs["parallel_tool_calls"] = parallel_tool_calls
+        if response_format is not None:
+            kwargs["response_format"] = response_format
         task_group, function = _get_task_group_and_task(__name__)
         if plugins is not None:
             headers = kwargs.pop("headers", {})
@@ -329,7 +363,14 @@ class AioGeneration(BaseAioApi):
         tools: List[Dict[str, Any]] = None,
         tool_choice: Union[str, Dict[str, Any]] = None,
         enable_thinking: bool = None,
+        thinking_budget: int = None,
         n: int = None,
+        logprobs: bool = None,
+        top_logprobs: int = None,
+        search_options: Dict[str, Any] = None,
+        parallel_tool_calls: bool = None,
+        response_format: Dict[str, Any] = None,
+        output_format: str = None,
         **kwargs,
     ) -> Union[GenerationResponse, AsyncGenerator[GenerationResponse, None]]:
         """Call generation model service.
@@ -358,7 +399,22 @@ class AioGeneration(BaseAioApi):
             tools (list, optional): Tool definitions for function calling.
             tool_choice (str or dict, optional): Tool selection strategy.
             enable_thinking (bool, optional): Enable thinking mode.
+            thinking_budget (int, optional): Maximum token budget for thinking
+                mode. Controls the maximum length of thinking process.
             n (int, optional): Number of responses to generate (1-4).
+            logprobs (bool, optional): Whether to return log probabilities of
+                the output tokens.
+            top_logprobs (int, optional): Number of most likely tokens to
+                return at each token position when logprobs is enabled.
+            search_options (dict, optional): Configuration options for web
+                search feature.
+            parallel_tool_calls (bool, optional): Enable parallel tool calls
+                for function calling.
+            response_format (dict, optional): Format constraint for response,
+                e.g., {"type": "json_object"} for JSON mode.
+            output_format (str, optional): Output format for qwen-deep-research
+                model. Options: "model_detailed_report" (default),
+                "model_summary_report".
             **kwargs: Additional parameters passed to the API.
 
         Returns:
@@ -402,8 +458,22 @@ class AioGeneration(BaseAioApi):
             kwargs["tool_choice"] = tool_choice
         if enable_thinking is not None:
             kwargs["enable_thinking"] = enable_thinking
+        if thinking_budget is not None:
+            kwargs["thinking_budget"] = thinking_budget
         if n is not None:
             kwargs["n"] = n
+        if logprobs is not None:
+            kwargs["logprobs"] = logprobs
+        if top_logprobs is not None:
+            kwargs["top_logprobs"] = top_logprobs
+        if search_options is not None:
+            kwargs["search_options"] = search_options
+        if parallel_tool_calls is not None:
+            kwargs["parallel_tool_calls"] = parallel_tool_calls
+        if response_format is not None:
+            kwargs["response_format"] = response_format
+        if output_format is not None:
+            kwargs["output_format"] = output_format
         task_group, function = _get_task_group_and_task(__name__)
         if plugins is not None:
             headers = kwargs.pop("headers", {})
