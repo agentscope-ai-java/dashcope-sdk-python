@@ -398,40 +398,21 @@ async def handle_delete_file(request: aiohttp.request):
 async def list_models_handler(
     request: aiohttp.request,
 ):  # pylint: disable=unused-argument
-    # Check if model query parameter is present (for Models.get)
-    model_param = request.query.get("model")
-
-    if model_param:
-        # Return single model for Models.get
-        assert model_param == TEST_JOB_ID
-        response = {
-            "code": "200",
-            "output": {
-                "models": [
-                    {
-                        "model_id": TEST_JOB_ID,
-                        "name": "gpt3",
-                    },
-                ],
-            },
-        }
-    else:
-        # Return model list for Models.list
-        response = {
-            "code": "200",
-            "data": {
-                "models": [
-                    {
-                        "model_id": "1111",
-                        "gmt_create": "2023-03-15 14:25:50",
-                    },
-                    {
-                        "model_id": "2222",
-                        "gmt_create": "2023-03-15 14:25:50",
-                    },
-                ],
-            },
-        }
+    response = {
+        "code": "200",
+        "data": {
+            "models": [
+                {
+                    "model_id": "1111",
+                    "gmt_create": "2023-03-15 14:25:50",
+                },
+                {
+                    "model_id": "2222",
+                    "gmt_create": "2023-03-15 14:25:50",
+                },
+            ],
+        },
+    }
     return web.json_response(
         text=json.dumps(response),
         content_type="application/json",
@@ -439,31 +420,13 @@ async def list_models_handler(
 
 
 async def get_model_handler(request: aiohttp.request):
-    # Support both path parameter and query parameter
-    model_id = request.match_info.get("id")
-    if not model_id:
-        # Fallback to query parameter
-        model_id = request.query.get("model")
-
-    if not model_id:
-        return web.json_response(
-            text=json.dumps(
-                {"code": "400", "message": "Model name is required"},
-            ),
-            status=400,
-            content_type="application/json",
-        )
-
+    model_id = request.match_info["id"]
     assert model_id == TEST_JOB_ID
     response = {
         "code": "200",
-        "output": {
-            "models": [
-                {
-                    "model_id": TEST_JOB_ID,
-                    "name": "gpt3",
-                },
-            ],
+        "data": {
+            "model_id": TEST_JOB_ID,
+            "name": "gpt3",
         },
     }
     return web.json_response(

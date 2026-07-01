@@ -93,23 +93,17 @@ def iter_over_async(ait):
             return True, None
 
     def iter_thread(loop, message_queue):
-        try:
-            while True:
-                try:
-                    done, obj = loop.run_until_complete(get_next())
-                    if done:
-                        message_queue.put((True, None, None))
-                        break
-                    message_queue.put((False, None, obj))
-                except BaseException as e:  # noqa E722
-                    logger.exception(e)
-                    message_queue.put((True, e, None))
-                    break
-        finally:
+        while True:
             try:
-                loop.close()
-            except Exception:
-                pass
+                done, obj = loop.run_until_complete(get_next())
+                if done:
+                    message_queue.put((True, None, None))
+                    break
+                message_queue.put((False, None, obj))
+            except BaseException as e:  # noqa E722
+                logger.exception(e)
+                message_queue.put((True, e, None))
+                break
 
     message_queue = queue.Queue()
     x = threading.Thread(

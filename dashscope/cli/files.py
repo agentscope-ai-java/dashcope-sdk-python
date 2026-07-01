@@ -1,20 +1,13 @@
 # -*- coding: utf-8 -*-
 """``files`` sub-command group."""
 import json
-import os
 from typing import Optional
 
 import typer
 
 import dashscope
 from dashscope.common.constants import FilePurpose
-from dashscope.cli.common import (
-    console,
-    ensure_ok,
-    error,
-    handle_sdk_error,
-    success,
-)
+from dashscope.cli.common import console, ensure_ok, success
 
 app = typer.Typer(
     name="files",
@@ -32,7 +25,6 @@ def callback(ctx: typer.Context):
 
 
 @app.command("upload")
-@handle_sdk_error("Upload file failed")
 def upload(
     file: str = typer.Option(
         ...,
@@ -60,12 +52,8 @@ def upload(
     ),
 ):
     """Upload a file."""
-    file_path = os.path.expanduser(file)
-    if not os.path.exists(file_path):
-        error(f"File {file_path} does not exist")
-
     rsp = dashscope.Files.upload(
-        file_path=file_path,
+        file_path=file,
         purpose=purpose,
         description=description,  # type: ignore[arg-type]
         base_address=base_url,
@@ -76,7 +64,6 @@ def upload(
 
 
 @app.command("get")
-@handle_sdk_error("Retrieve file failed")
 def get(
     file_id: str = typer.Argument(..., help="The file ID"),
     base_url: Optional[str] = typer.Option(
@@ -96,7 +83,6 @@ def get(
 
 
 @app.command("list")
-@handle_sdk_error("List files failed")
 def list_files(
     page: int = typer.Option(1, "-p", "--page", help="Page number"),
     size: int = typer.Option(10, "-s", "--size", help="Page size"),
@@ -121,7 +107,6 @@ def list_files(
 
 
 @app.command("delete")
-@handle_sdk_error("Delete file failed")
 def delete(
     file_id: str = typer.Argument(..., help="The file ID"),
     base_url: Optional[str] = typer.Option(
