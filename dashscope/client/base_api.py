@@ -1298,7 +1298,7 @@ class UpdateMixin:
     def update(
         cls,
         target: str,
-        json_body: object,
+        json: object,  # pylint: disable=redefined-outer-name
         api_key: str = None,
         path: str = None,
         workspace: str = None,
@@ -1309,7 +1309,7 @@ class UpdateMixin:
 
         Args:
             target (str): The target to update.
-            json_body (object): The create request json body.
+            json (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
                 will get by default rule(TODO: api key doc). Defaults to None.
 
@@ -1330,9 +1330,11 @@ class UpdateMixin:
             DEFAULT_REQUEST_TIMEOUT_SECONDS,
         )
         flattened_output = kwargs.pop("flattened_output", False)
+        import json as _json  # pylint: disable=reimported
+
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
-            body = json.dumps(json_body, ensure_ascii=False).encode("utf-8")
+            body = _json.dumps(json, ensure_ascii=False).encode("utf-8")
             if method == "post":
                 response = session.post(
                     url,
@@ -1366,7 +1368,7 @@ class PutMixin:
     def put(
         cls,
         target: str,
-        json_body: object,
+        json: object,  # pylint: disable=redefined-outer-name
         path: str = None,
         api_key: str = None,
         workspace: str = None,
@@ -1376,7 +1378,7 @@ class PutMixin:
 
         Args:
             target (str): The target to update.
-            json_body (object): The create request json body.
+            json (object): The create request json body.
             api_key (str, optional): The api api_key, if not present,
                 will get by default rule(TODO: api key doc). Defaults to None.
 
@@ -1396,9 +1398,11 @@ class PutMixin:
             REQUEST_TIMEOUT_KEYWORD,
             DEFAULT_REQUEST_TIMEOUT_SECONDS,
         )
+        import json as _json  # pylint: disable=reimported
+
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
-            body = json.dumps(json_body, ensure_ascii=False).encode("utf-8")
+            body = _json.dumps(json, ensure_ascii=False).encode("utf-8")
             response = session.put(
                 url,
                 data=body,
