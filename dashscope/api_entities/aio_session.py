@@ -86,7 +86,6 @@ def _sync_close_session(session_id: int) -> None:
         pass
 
 
-
 async def close_shared_aio_session() -> None:
     """Close the shared session for the current event loop."""
     loop = asyncio.get_running_loop()
