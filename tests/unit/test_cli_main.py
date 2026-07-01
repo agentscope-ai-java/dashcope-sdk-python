@@ -403,11 +403,25 @@ class TestCliMain:
 
         def mock_fine_tunes_list(**kwargs):
             captured_requests["fine_tunes"] = kwargs
-            return SimpleNamespace(status_code=200, output={"jobs": []})
+            from dashscope.finetune.customize_types import (
+                FineTuneList,
+                FineTuneListOutput,
+            )
+
+            result = FineTuneList(status_code=200)
+            result.output = FineTuneListOutput(jobs=[])
+            return result
 
         def mock_deployments_list(**kwargs):
             captured_requests["deployments"] = kwargs
-            return SimpleNamespace(status_code=200, output={"deployments": []})
+            from dashscope.finetune.customize_types import (
+                DeploymentList,
+                DeploymentListOutput,
+            )
+
+            result = DeploymentList(status_code=200)
+            result.output = DeploymentListOutput(deployments=[])
+            return result
 
         monkeypatch.setattr(
             "dashscope.cli.files.dashscope.Files.list",

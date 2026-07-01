@@ -670,7 +670,7 @@ def logs(
             )
 
         format_output(
-            {"job_id": job_id, "logs": result.output.get("logs", "")},
+            {"job_id": job_id, "logs": getattr(result.output, "logs", "")},
             fmt=output_format,
         )
     except Exception as e:

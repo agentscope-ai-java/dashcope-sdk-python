@@ -43,7 +43,7 @@ def _wait_for_deployment(deployed_model: str):
         while True:
             rsp = dashscope.Deployments.get(deployed_model)
             output = ensure_ok(rsp)
-            status = output["status"]
+            status = output.status
 
             if status in (
                 DeploymentStatus.PENDING,
@@ -67,18 +67,14 @@ def _wait_for_deployment(deployed_model: str):
 
 def _print_deployments(output):
     """Pretty-print a list of deployments from *output*."""
-    if (
-        output is None
-        or "deployments" not in output
-        or not output["deployments"]
-    ):
+    if output is None or not output.deployments:
         console.print("There is no deployed model!")
         return
-    for dep in output["deployments"]:
+    for dep in output.deployments:
         console.print(
-            f"Deployed_model: {dep['deployed_model']}, "
-            f"model: {dep['model_name']}, "
-            f"status: {dep['status']}",
+            f"Deployed_model: {dep.deployed_model}, "
+            f"model: {dep.model_name}, "
+            f"status: {dep.status}",
         )
 
 
@@ -111,7 +107,7 @@ def create(
         suffix=suffix,  # type: ignore[arg-type]
     )
     output = ensure_ok(rsp)
-    deployed_model = output["deployed_model"]
+    deployed_model = output.deployed_model
     success(f"Create model: {deployed_model} deployment")
     _wait_for_deployment(deployed_model)
 
@@ -151,9 +147,9 @@ def get(
     rsp = dashscope.Deployments.get(deployed_model)
     output = ensure_ok(rsp)
     console.print(
-        f"Deployed model: {output['deployed_model']} "
-        f"capacity: {output['capacity']} "
-        f"status: {output['status']}",
+        f"Deployed model: {output.deployed_model} "
+        f"capacity: {output.capacity} "
+        f"status: {output.status}",
     )
 
 
@@ -166,7 +162,7 @@ def list_deployments(
     """List model deployments."""
     rsp = dashscope.Deployments.list(page_no=page, page_size=size)
     output = ensure_ok(rsp)
-    if output is None or not output.get("deployments"):
+    if output is None or not output.deployments:
         console.print("There is no deployed model.")
         return
     _print_deployments(output)
@@ -193,9 +189,9 @@ def scale(
         console.print("There is no deployed model.")
         return
     console.print(
-        f"Deployed_model: {output['deployed_model']}, "
-        f"model: {output['model_name']}, "
-        f"status: {output['status']}",
+        f"Deployed_model: {output.deployed_model}, "
+        f"model: {output.model_name}, "
+        f"status: {output.status}",
     )
 
 
