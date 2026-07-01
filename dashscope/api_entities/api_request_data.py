@@ -83,14 +83,8 @@ class ApiRequestData:
                 form.add_field(key, value)
             form.add_field("model", data["model"])
             if "input" in data:
-                form.add_field(
-                    "input",
-                    json.dumps(data["input"], ensure_ascii=False),
-                )
-            form.add_field(
-                "parameters",
-                json.dumps(data["parameters"], ensure_ascii=False),
-            )
+                form.add_field("input", json.dumps(data["input"]))
+            form.add_field("parameters", json.dumps(data["parameters"]))
             return True, form()
             # pylint: disable=unreachable,pointless-string-statement
             """

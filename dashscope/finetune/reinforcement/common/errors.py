@@ -7,32 +7,7 @@ from datetime import datetime
 from typing import Optional, Dict
 
 
-class _RootCauseMixin:
-    """Mixin that provides root-cause traversal and formatting for exceptions
-    that carry an error code."""
-
-    @property
-    def root_cause(self) -> "Exception":
-        root: "Exception" = self  # type: ignore[assignment]
-        seen = {id(root)}
-        while root.__cause__ and id(root.__cause__) not in seen:
-            root = root.__cause__
-            seen.add(id(root))
-        return root
-
-    def _format_cause(self) -> str:
-        """Format root cause information if available."""
-        if self.__cause__ is not None:
-            root = self.root_cause
-            if self is not root:
-                cause_msg = str(root).split("\n", maxsplit=1)[0][:100].strip()
-                if cause_msg:
-                    return f" (caused by: {type(root).__name__}: {cause_msg})"
-                return f" (caused by: {type(root).__name__})"
-        return ""
-
-
-class AgenticRLError(_RootCauseMixin, Exception):
+class AgenticRLError(Exception):
     """Base class for all Agentic RL exceptions."""
 
     def __init__(self, message: str, error_code: int = 1000):
@@ -41,9 +16,15 @@ class AgenticRLError(_RootCauseMixin, Exception):
         self.timestamp = datetime.now().isoformat()
         self.message = message
 
+    @property
+    def root_cause(self) -> Exception:
+        root = self
+        while root.__cause__:
+            root = root.__cause__
+        return root
+
     def __str__(self):
-        base = f"[{self.error_code}] {self.message} (at {self.timestamp})"
-        return f"{base}{self._format_cause()}"
+        return f"[{self.error_code}] {self.message} (at {self.timestamp})"
 
 
 class IOErrorWithCode(AgenticRLError):
@@ -61,7 +42,7 @@ class IOErrorWithCode(AgenticRLError):
         self.operation = operation
 
 
-class RuntimeErrorWithCode(_RootCauseMixin, RuntimeError):
+class RuntimeErrorWithCode(RuntimeError):
     """Enhanced RuntimeError that supports error codes for better error
     categorization."""
 
@@ -70,11 +51,18 @@ class RuntimeErrorWithCode(_RootCauseMixin, RuntimeError):
         self.error_code = error_code
         self.message = message
 
+    @property
+    def root_cause(self) -> Exception:
+        root = self
+        while root.__cause__:
+            root = root.__cause__
+        return root
+
     def __str__(self):
-        return f"[{self.error_code}] {self.message}{self._format_cause()}"
+        return f"[{self.error_code}] {self.message}"
 
 
-class ValueErrorWithCode(_RootCauseMixin, ValueError):
+class ValueErrorWithCode(ValueError):
     """Enhanced ValueError that supports error codes for better error
     categorization."""
 
@@ -83,8 +71,15 @@ class ValueErrorWithCode(_RootCauseMixin, ValueError):
         self.error_code = error_code
         self.message = message
 
+    @property
+    def root_cause(self) -> Exception:
+        root = self
+        while root.__cause__:
+            root = root.__cause__
+        return root
+
     def __str__(self):
-        return f"[{self.error_code}] {self.message}{self._format_cause()}"
+        return f"[{self.error_code}] {self.message}"
 
 
 class InputError(AgenticRLError):

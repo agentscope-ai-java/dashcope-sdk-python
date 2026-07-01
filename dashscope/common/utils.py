@@ -93,23 +93,17 @@ def iter_over_async(ait):
             return True, None
 
     def iter_thread(loop, message_queue):
-        try:
-            while True:
-                try:
-                    done, obj = loop.run_until_complete(get_next())
-                    if done:
-                        message_queue.put((True, None, None))
-                        break
-                    message_queue.put((False, None, obj))
-                except BaseException as e:  # noqa E722
-                    logger.exception(e)
-                    message_queue.put((True, e, None))
-                    break
-        finally:
+        while True:
             try:
-                loop.close()
-            except Exception:
-                pass
+                done, obj = loop.run_until_complete(get_next())
+                if done:
+                    message_queue.put((True, None, None))
+                    break
+                message_queue.put((False, None, obj))
+            except BaseException as e:  # noqa E722
+                logger.exception(e)
+                message_queue.put((True, e, None))
+                break
 
     message_queue = queue.Queue()
     x = threading.Thread(
@@ -166,7 +160,7 @@ def default_headers(api_key: str = None) -> Dict[str, str]:
     if api_key is None:
         api_key = get_default_api_key()
     headers["Authorization"] = f"Bearer {api_key}"
-    headers["Accept"] = "application/json; charset=utf-8"
+    headers["Accept"] = "application/json"
     return headers
 
 

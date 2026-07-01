@@ -13,7 +13,6 @@ from dashscope.cli.common import (
     console,
     err_console,
     ensure_ok,
-    handle_sdk_error,
     logger,
     print_failed_message,
     success,
@@ -45,7 +44,7 @@ def _wait_for_job(job_id: str):
         while True:
             rsp = dashscope.FineTunes.get(job_id)
             output = ensure_ok(rsp)
-            status = output.status
+            status = output["status"]
 
             if status == TaskStatus.FAILED:
                 err_console.print("[red]Fine-tune FAILED![/red]")
@@ -62,7 +61,7 @@ def _wait_for_job(job_id: str):
             if status == TaskStatus.SUCCEEDED:
                 success(
                     f"Fine-tune task success, fine-tuned model: "
-                    f"{output.finetuned_output}",
+                    f"{output['finetuned_output']}",
                 )
                 return
 
@@ -86,12 +85,12 @@ def _stream_events(job_id: str):
         print_failed_message(rsp)
         return
 
-    if rsp.output.status in (
+    if rsp.output["status"] in (
         TaskStatus.FAILED,
         TaskStatus.CANCELED,
         TaskStatus.SUCCEEDED,
     ):
-        console.print(f"Fine-tune job: {job_id} is {rsp.output.status}")
+        console.print(f"Fine-tune job: {job_id} is {rsp.output['status']}")
         _dump_logs(job_id)
         return
 
@@ -120,9 +119,9 @@ def _dump_logs(job_id: str):
             line=LOG_PAGE_SIZE,
         )
         output = ensure_ok(rsp)
-        for line in output.logs:
+        for line in output["logs"]:
             console.print(line, highlight=False)
-        if len(output.logs) < LOG_PAGE_SIZE:
+        if len(output["logs"]) < LOG_PAGE_SIZE:
             break
         offset += LOG_PAGE_SIZE
 
@@ -133,7 +132,6 @@ def _dump_logs(job_id: str):
 
 
 @app.command("create")
-@handle_sdk_error("Create fine-tune job failed")
 def create(
     training_file_ids: List[str] = typer.Option(
         ...,
@@ -202,14 +200,13 @@ def create(
         hyper_parameters=params if params else None,  # type: ignore[arg-type]
     )
     output = ensure_ok(rsp)
-    job_id = output.job_id
+    job_id = output["job_id"]
     success(f"Create fine-tune job success, job_id: {job_id}")
     _wait_for_job(job_id)
 
 
 # Backward compatibility alias
 @app.command("call", hidden=True)
-@handle_sdk_error("Create fine-tune job failed")
 def call(
     training_file_ids: List[str] = typer.Option(
         ...,
@@ -273,28 +270,26 @@ def call(
 
 
 @app.command("get")
-@handle_sdk_error("Retrieve fine-tune job failed")
 def get(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):
     """Get fine-tune job status."""
     rsp = dashscope.FineTunes.get(job_id)
     output = ensure_ok(rsp)
-    status = output.status
+    status = output["status"]
 
     if status == TaskStatus.FAILED:
         err_console.print("[red]Fine-tune failed![/red]")
     elif status == TaskStatus.CANCELED:
         console.print("Fine-tune task canceled")
     elif status == TaskStatus.SUCCEEDED:
-        model_name = output.finetuned_output
+        model_name = output["finetuned_output"]
         success(f"Fine-tune task success, fine-tuned model: {model_name}")
     else:
         console.print(f"The fine-tune task is: {status}")
 
 
 @app.command("list")
-@handle_sdk_error("List fine-tune jobs failed")
 def list_jobs(
     page: int = typer.Option(1, "-p", "--page", help="Page number"),
     size: int = typer.Option(10, "-s", "--size", help="Page size"),
@@ -302,22 +297,21 @@ def list_jobs(
     """List fine-tune jobs."""
     rsp = dashscope.FineTunes.list(page=page, page_size=size)
     output = ensure_ok(rsp)
-    if output is None or not output.jobs:
+    if output is None or not output.get("jobs"):
         console.print("There is no fine-tuned model.")
         return
 
-    for job in output.jobs:
+    for job in output["jobs"]:
         line = (
-            f"job: {job.job_id}, status: {job.status}, "
-            f"base model: {job.model}"
+            f"job: {job['job_id']}, status: {job['status']}, "
+            f"base model: {job['model']}"
         )
-        if job.status == TaskStatus.SUCCEEDED:
-            line += f", fine-tuned model: {job.finetuned_output}"
+        if job["status"] == TaskStatus.SUCCEEDED:
+            line += f", fine-tuned model: {job['finetuned_output']}"
         console.print(line)
 
 
 @app.command("stream")
-@handle_sdk_error("Stream fine-tune events failed")
 def stream(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):
@@ -326,7 +320,6 @@ def stream(
 
 
 @app.command("cancel")
-@handle_sdk_error("Cancel fine-tune job failed")
 def cancel(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):
@@ -336,7 +329,6 @@ def cancel(
 
 
 @app.command("delete")
-@handle_sdk_error("Delete fine-tune job failed")
 def delete(
     job_id: str = typer.Argument(..., help="The fine-tune job id"),
 ):

@@ -158,13 +158,6 @@ class QwenTtsRealtime:
     def __send_str(self, data: str, enable_log: bool = True):
         if enable_log:
             logger.debug("[qwen tts realtime] send string: %s", data)
-        # Check connection status before sending
-        if not self.ws or not self.ws.sock or not self.ws.sock.connected:
-            raise ConnectionError(
-                "WebSocket connection is not established or has been closed. "
-                "Please call connect() first and ensure the connection is "
-                "active.",
-            )
         self.ws.send(data)
 
     def update_session(
@@ -377,18 +370,9 @@ class QwenTtsRealtime:
                             self.last_first_audio_delay,
                         )
             except json.JSONDecodeError:
-                logger.error(
-                    "Failed to parse message as JSON: %s",
-                    message[:200],
-                )
-                # Do not raise exception here, let the connection stay alive.
-                # Raising exception in callback can cause unexpected thread
-                # termination.
-            except Exception as e:
-                logger.error("Error processing message: %s", str(e))
-                # Do not raise exception here, let the connection stay alive.
-                # Raising exception in callback can cause unexpected thread
-                # termination.
+                logger.error("Failed to parse message as JSON.")
+                # pylint: disable=broad-exception-raised,raise-missing-from
+                raise Exception("Failed to parse message as JSON.")
         elif isinstance(message, (bytes, bytearray)):
             # If parsing fails, treat as binary message
             logger.error(
@@ -414,9 +398,9 @@ class QwenTtsRealtime:
 
     # Callback for WebSocket error
     def on_error(self, ws, error):  # pylint: disable=unused-argument
-        logger.error(f"websocket error: {error}")
-        # Do not raise exception here, let the connection close naturally
-        # Raising exception in callback can cause unexpected thread termination
+        print(f"websocket closed due to {error}")
+        # pylint: disable=broad-exception-raised
+        raise Exception(f"websocket closed due to {error}")
 
     # Get the taskId of the last task
     def get_session_id(self):
