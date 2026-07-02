@@ -152,6 +152,7 @@ class CodeGeneration(BaseApi):
             api_key=api_key,
             input=input,
             workspace=workspace,
+            is_service=False,
             **parameters,
         )
 

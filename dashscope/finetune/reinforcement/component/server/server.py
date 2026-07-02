@@ -37,6 +37,7 @@ dashscope.agenticRL.component.demo.reward_processor_demo.DemoRewardProcessor
   GET  /health Health check
 """
 
+import asyncio
 import logging
 import os
 import time
@@ -47,6 +48,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from dashscope.finetune.reinforcement.common.log import logger
+from dashscope.finetune.reinforcement.common.utils import (
+    get_fc_request_id,
+    get_business_summary,
+)
 from dashscope.finetune.reinforcement.common.model_types import (
     FunctionType as FuncType,
 )
@@ -72,7 +77,7 @@ _ENABLE_LOGGING = os.getenv("ENABLE_LOGGING", "true").strip().lower() not in (
     "0",
     "no",
 )
-_THREAD_POOL_WORKERS = int(os.getenv("THREAD_POOL_WORKERS", "4"))
+_THREAD_POOL_WORKERS = int(os.getenv("THREAD_POOL_WORKERS", "32"))
 _THREAD_POOL_QUEUE = int(os.getenv("THREAD_POOL_QUEUE", "100"))
 
 if not _ENABLE_LOGGING:
@@ -377,6 +382,52 @@ def _serialize_result(result: Any) -> Dict:
         return {"result": result}
 
 
+async def _cancel_task_on_disconnect(
+    process_task: "asyncio.Task",
+    disconnect_listener: "asyncio.Task",
+    disconnected: "asyncio.Event",
+) -> bool:
+    """Wait for processing or disconnect, cancel task if disconnected.
+
+    Returns True if disconnected, False if processing completed normally.
+    """
+    _done, _pending = await asyncio.wait(
+        [process_task, disconnect_listener],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+
+    if disconnected.is_set():
+        process_task.cancel()
+        try:
+            await process_task
+        except asyncio.CancelledError:
+            pass
+        return True
+
+    return False
+
+
+async def _log_request_metrics(
+    request: "Request",
+    processor_input,
+    start_time: float,
+    success: bool,
+    cancelled: bool,
+) -> None:
+    """Log request metrics and force flush if configured."""
+    elapsed = round(time.time() - start_time, 4)
+    fc_req_id = get_fc_request_id(request)
+    biz_summary = get_business_summary(processor_input)
+    biz_part = f" | {biz_summary}" if biz_summary else ""
+    logger.info(
+        f"[Server] /api/v1 | func_type={func_type.value} | "
+        f"fc_request_id={fc_req_id} | "
+        f"success={success} | cancelled={cancelled} | "
+        f"elapsed={elapsed}s{biz_part}",
+    )
+    await maybe_force_flush_async(reason="request")
+
+
 @app.post("/api/v1")
 async def handle_endpoint(request: Request) -> JSONResponse:
     """
@@ -385,6 +436,10 @@ async def handle_endpoint(request: Request) -> JSONResponse:
     Automatically selects appropriate parser based on FUNC_TYPE to process
     request body, executes business logic using configured processor,
     and returns serialized result.
+
+    Monitors client connection state via ASGI disconnect messages. If the
+    client disconnects before processing completes, the processing task is
+    cancelled to avoid wasting resources.
 
     Request body format: JSON, fields determined by FuncType:
     - reward: See RewardInput
@@ -398,7 +453,24 @@ async def handle_endpoint(request: Request) -> JSONResponse:
     """
     start_time = time.time()
     success = False
+    cancelled = False
     processor_input = None
+
+    disconnect_listener = None
+    disconnected = asyncio.Event()
+
+    async def _listen_for_disconnect():
+        """Background listener for ASGI disconnect messages."""
+        try:
+            while True:
+                message = await request.receive()
+                if message.get("type") == "http.disconnect":
+                    disconnected.set()
+                    break
+        except Exception:
+            # If receive() raises (e.g. connection already closed),
+            # treat as disconnected.
+            disconnected.set()
 
     # Extract trace context from request headers
     _otel_ctx_token, _upstream_tokens = await _extract_trace_context(request)
@@ -413,8 +485,39 @@ async def handle_endpoint(request: Request) -> JSONResponse:
         # Check thread pool queue capacity
         await _check_queue_capacity()
 
-        # Execute processor
-        result = await func_manager.processes(processor_input)
+        # Start listening for disconnect only AFTER the request body has been
+        # fully read.  Otherwise the background listener competes with the body
+        # reader for ASGI receive() messages, causing hung requests or parse
+        # failures.
+        disconnect_listener = asyncio.create_task(_listen_for_disconnect())
+
+        # Execute processor as a task so we can cancel it on disconnect
+        process_task = asyncio.create_task(
+            func_manager.processes(processor_input),
+        )
+
+        # Wait for either the processing to finish or client disconnect
+        disconnected_flag = await _cancel_task_on_disconnect(
+            process_task,
+            disconnect_listener,
+            disconnected,
+        )
+
+        if disconnected_flag:
+            cancelled = True
+            fc_request_id = get_fc_request_id(request)
+            logger.warning(
+                "[Server] Client disconnected during processing, "
+                "task cancelled. x-fc-request-id: %s",
+                fc_request_id,
+            )
+            return JSONResponse(
+                status_code=499,
+                content={"message": "Client disconnected, request cancelled."},
+            )
+
+        # Processing completed normally
+        result = process_task.result()
         success = True
 
         # Serialize result
@@ -425,6 +528,13 @@ async def handle_endpoint(request: Request) -> JSONResponse:
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
+    except asyncio.CancelledError:
+        cancelled = True
+        logger.warning("[Server] Request processing was cancelled.")
+        return JSONResponse(
+            status_code=499,
+            content={"message": "Request cancelled."},
+        )
     except Exception as ex:
         logger.error(f"[Server] Unexpected error: {ex}", exc_info=True)
         return JSONResponse(
@@ -432,18 +542,25 @@ async def handle_endpoint(request: Request) -> JSONResponse:
             content={"message": str(ex)},
         )
     finally:
+        # Cancel the disconnect listener if still running
+        if disconnect_listener is not None:
+            disconnect_listener.cancel()
+            try:
+                await disconnect_listener
+            except asyncio.CancelledError:
+                pass
+
         # Clean up trace context
         await _cleanup_trace_context(_otel_ctx_token, _upstream_tokens)
 
         # Log request metrics
-        elapsed = round(time.time() - start_time, 4)
-        logger.info(
-            f"[Server] /api/v1 | func_type={func_type.value} | "
-            f"success={success} | elapsed={elapsed}s",
+        await _log_request_metrics(
+            request,
+            processor_input,
+            start_time,
+            success,
+            cancelled,
         )
-
-        # Best-effort force flush based on platform/internal env config
-        await maybe_force_flush_async(reason="request")
 
 
 @app.get("/health")

@@ -51,6 +51,9 @@ class MultiModalConversation(BaseApi):
         tool_choice: Union[str, Dict[str, Any]] = None,
         enable_thinking: bool = None,
         n: int = None,
+        ocr_options: Dict[str, Any] = None,
+        logprobs: bool = None,
+        top_logprobs: int = None,
         **kwargs,
     ) -> Union[
         MultiModalConversationResponse,
@@ -87,13 +90,17 @@ class MultiModalConversation(BaseApi):
             tool_choice (str or dict, optional): Tool selection strategy.
             enable_thinking (bool, optional): Enable thinking mode.
             n (int, optional): Number of responses to generate (1-4).
+            ocr_options (dict, optional): OCR task options for qwen-ocr models.
+            logprobs (bool, optional): Whether to return log probabilities of
+                the output tokens.
+            top_logprobs (int, optional): Number of most likely tokens to
+                return at each token position.
             **kwargs: Additional parameters passed to the API.
 
         Returns:
             Union[MultiModalConversationResponse,
                   Generator[MultiModalConversationResponse, None, None]]: If
             stream is True, return Generator, otherwise
-            MultiModalConversationResponse.
         """
         if stream is not None:
             kwargs["stream"] = stream
@@ -127,6 +134,12 @@ class MultiModalConversation(BaseApi):
             kwargs["enable_thinking"] = enable_thinking
         if n is not None:
             kwargs["n"] = n
+        if ocr_options is not None:
+            kwargs["ocr_options"] = ocr_options
+        if logprobs is not None:
+            kwargs["logprobs"] = logprobs
+        if top_logprobs is not None:
+            kwargs["top_logprobs"] = top_logprobs
         if model is None or not model:
             raise ModelRequired("Model is required!")
         task_group, _ = _get_task_group_and_task(__name__)
@@ -149,6 +162,13 @@ class MultiModalConversation(BaseApi):
             input.update({"language_type": language_type})
         if msg_copy is not None:
             input.update({"messages": msg_copy})  # type: ignore
+
+        # Validate input is not empty before sending request
+        if not input:
+            raise ValueError(
+                "Input data is required. Please provide at least one of: "
+                "messages, text, voice, or language_type.",
+            )
 
         # Check if we need to merge incremental output
         is_incremental_output = kwargs.get("incremental_output", None)
@@ -297,6 +317,9 @@ class AioMultiModalConversation(BaseAioApi):
         tool_choice: Union[str, Dict[str, Any]] = None,
         enable_thinking: bool = None,
         n: int = None,
+        ocr_options: Dict[str, Any] = None,
+        logprobs: bool = None,
+        top_logprobs: int = None,
         **kwargs,
     ) -> Union[
         MultiModalConversationResponse,
@@ -332,13 +355,17 @@ class AioMultiModalConversation(BaseAioApi):
             tool_choice (str or dict, optional): Tool selection strategy.
             enable_thinking (bool, optional): Enable thinking mode.
             n (int, optional): Number of responses to generate (1-4).
+            ocr_options (dict, optional): OCR task options for qwen-ocr models.
+            logprobs (bool, optional): Whether to return log probabilities of
+                the output tokens.
+            top_logprobs (int, optional): Number of most likely tokens to
+                return at each token position.
             **kwargs: Additional parameters passed to the API.
 
         Returns:
             Union[MultiModalConversationResponse,
                   AsyncGenerator[MultiModalConversationResponse, None]]: If
             stream is True, return AsyncGenerator, otherwise
-            MultiModalConversationResponse.
         """
         if stream is not None:
             kwargs["stream"] = stream
@@ -372,6 +399,12 @@ class AioMultiModalConversation(BaseAioApi):
             kwargs["enable_thinking"] = enable_thinking
         if n is not None:
             kwargs["n"] = n
+        if ocr_options is not None:
+            kwargs["ocr_options"] = ocr_options
+        if logprobs is not None:
+            kwargs["logprobs"] = logprobs
+        if top_logprobs is not None:
+            kwargs["top_logprobs"] = top_logprobs
         if model is None or not model:
             raise ModelRequired("Model is required!")
         task_group, _ = _get_task_group_and_task(__name__)
@@ -395,6 +428,12 @@ class AioMultiModalConversation(BaseAioApi):
         if msg_copy is not None:
             input.update({"messages": msg_copy})  # type: ignore
 
+        # Validate input is not empty before sending request
+        if not input:
+            raise ValueError(
+                "Input data is required. Please provide at least one of: "
+                "messages, text, voice, or language_type.",
+            )
         # Check if we need to merge incremental output
         is_incremental_output = kwargs.get("incremental_output", None)
         to_merge_incremental_output = False

@@ -73,7 +73,7 @@ class WebSocketRequest(AioBaseRequest):
 
         self.headers = {
             "Authorization": f"bearer {api_key}",
-            **self.headers,
+            **self.headers,  # type: ignore[has-type]
         }
 
         self.task_headers = {
@@ -422,4 +422,4 @@ class WebSocketRequest(AioBaseRequest):
 
     def _build_up_message(self, headers, payload):
         message = {"header": headers, "payload": payload}
-        return json.dumps(message)
+        return json.dumps(message, ensure_ascii=False)

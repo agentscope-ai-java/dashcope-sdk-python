@@ -377,6 +377,13 @@ class SpeechSynthesizer:
 
     def __send_str(self, data: str):
         logger.debug(">>>send %s", data)
+        # Check connection status before sending
+        if not self.ws or not self.ws.sock or not self.ws.sock.connected:
+            raise ConnectionError(
+                "WebSocket connection is not established or has been closed. "
+                "Please call connect() first and ensure the connection is "
+                "active.",
+            )
         self.ws.send(data)
 
     def __connect(self, timeout_seconds=5) -> None:
@@ -798,9 +805,9 @@ class SpeechSynthesizer:
 
     # Callback for WebSocket error
     def on_error(self, ws, error):  # pylint: disable=unused-argument
-        print(f"websocket closed due to {error}")
-        # pylint: disable=broad-exception-raised
-        raise Exception(f"websocket closed due to {error}")
+        logger.error("websocket error: %s", error)
+        # Do not raise exception here, let the connection close naturally
+        # Raising exception in callback can cause unexpected thread termination
 
     # Close WebSocket connection
     def close(self):
