@@ -66,6 +66,7 @@ class Understanding(BaseApi):
             function=function,
             api_key=api_key,
             input=input,
+            is_service=False,
             **parameters,
         )
 

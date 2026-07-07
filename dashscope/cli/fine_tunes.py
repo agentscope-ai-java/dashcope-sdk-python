@@ -65,7 +65,7 @@ def _wait_for_job(job_id: str, timeout: int = DEFAULT_WAIT_TIMEOUT):
 
             rsp = dashscope.FineTunes.get(job_id)
             output = ensure_ok(rsp)
-            status = output["status"]
+            status = output.status
 
             if status == TaskStatus.FAILED:
                 err_console.print("[red]Fine-tune FAILED![/red]")
@@ -82,7 +82,7 @@ def _wait_for_job(job_id: str, timeout: int = DEFAULT_WAIT_TIMEOUT):
             if status == TaskStatus.SUCCEEDED:
                 success(
                     f"Fine-tune task success, fine-tuned model: "
-                    f"{output['finetuned_output']}",
+                    f"{output.finetuned_output}",
                 )
                 return
 
@@ -327,14 +327,14 @@ def get(
     """Get fine-tune job status."""
     rsp = dashscope.FineTunes.get(job_id)
     output = ensure_ok(rsp)
-    status = output["status"]
+    status = output.status
 
     if status == TaskStatus.FAILED:
         err_console.print("[red]Fine-tune failed![/red]")
     elif status == TaskStatus.CANCELED:
         console.print("Fine-tune task canceled")
     elif status == TaskStatus.SUCCEEDED:
-        model_name = output["finetuned_output"]
+        model_name = output.finetuned_output
         success(f"Fine-tune task success, fine-tuned model: {model_name}")
     else:
         console.print(f"The fine-tune task is: {status}")
@@ -349,17 +349,17 @@ def list_jobs(
     """List fine-tune jobs."""
     rsp = dashscope.FineTunes.list(page=page, page_size=size)
     output = ensure_ok(rsp)
-    if output is None or not output.get("jobs"):
+    if output is None or not output.jobs:
         console.print("There is no fine-tuned model.")
         return
 
-    for job in output["jobs"]:
+    for job in output.jobs:
         line = (
-            f"job: {job['job_id']}, status: {job['status']}, "
-            f"base model: {job['model']}"
+            f"job: {job.job_id}, status: {job.status}, "
+            f"base model: {job.model}"
         )
-        if job["status"] == TaskStatus.SUCCEEDED:
-            line += f", fine-tuned model: {job['finetuned_output']}"
+        if job.status == TaskStatus.SUCCEEDED:
+            line += f", fine-tuned model: {job.finetuned_output}"
         console.print(line)
 
 

@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import asyncio
 import collections
+import json
 import time
 from http import HTTPStatus
 from typing import Any, Dict, Iterator, List, Union
@@ -1266,11 +1267,13 @@ class CreateMixin:
         flattened_output = kwargs.pop("flattened_output", False)
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
+            body = json.dumps(data, ensure_ascii=False).encode("utf-8")
             response = session.post(
                 url,
-                json=data,
+                data=body,
                 stream=stream,
                 headers={
+                    "Content-Type": "application/json; charset=utf-8",
                     **_workspace_header(workspace),
                     **default_headers(api_key),
                     **kwargs.pop("headers", {}),
@@ -1295,7 +1298,7 @@ class UpdateMixin:
     def update(
         cls,
         target: str,
-        json: object,
+        json: object,  # pylint: disable=redefined-outer-name
         api_key: str = None,
         path: str = None,
         workspace: str = None,
@@ -1327,13 +1330,17 @@ class UpdateMixin:
             DEFAULT_REQUEST_TIMEOUT_SECONDS,
         )
         flattened_output = kwargs.pop("flattened_output", False)
+        import json as _json  # pylint: disable=reimported
+
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
+            body = _json.dumps(json, ensure_ascii=False).encode("utf-8")
             if method == "post":
                 response = session.post(
                     url,
-                    json=json,
+                    data=body,
                     headers={
+                        "Content-Type": "application/json; charset=utf-8",
                         **_workspace_header(workspace),
                         **default_headers(api_key),
                         **kwargs.pop("headers", {}),
@@ -1343,8 +1350,9 @@ class UpdateMixin:
             else:
                 response = session.patch(
                     url,
-                    json=json,
+                    data=body,
                     headers={
+                        "Content-Type": "application/json; charset=utf-8",
                         **_workspace_header(workspace),
                         **default_headers(api_key),
                         **kwargs.pop("headers", {}),
@@ -1360,7 +1368,7 @@ class PutMixin:
     def put(
         cls,
         target: str,
-        json: object,
+        json: object,  # pylint: disable=redefined-outer-name
         path: str = None,
         api_key: str = None,
         workspace: str = None,
@@ -1390,12 +1398,16 @@ class PutMixin:
             REQUEST_TIMEOUT_KEYWORD,
             DEFAULT_REQUEST_TIMEOUT_SECONDS,
         )
+        import json as _json  # pylint: disable=reimported
+
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
+            body = _json.dumps(json, ensure_ascii=False).encode("utf-8")
             response = session.put(
                 url,
-                json=json,
+                data=body,
                 headers={
+                    "Content-Type": "application/json; charset=utf-8",
                     **_workspace_header(workspace),
                     **default_headers(api_key),
                     **kwargs.pop("headers", {}),

@@ -57,7 +57,7 @@ class AioHttpRequest(AioBaseRequest):
         self.async_request = async_request
         self._external_aio_session = session
         self.headers = {
-            "Accept": "application/json",
+            "Accept": "application/json; charset=utf-8",
             "Authorization": f"Bearer {api_key}",
             "Cache-Control": "no-cache",
             **self.headers,  # type: ignore[has-type]
@@ -70,7 +70,7 @@ class AioHttpRequest(AioBaseRequest):
             }
         self.method = http_method
         if self.method == HTTPMethod.POST:
-            self.headers["Content-Type"] = "application/json"
+            self.headers["Content-Type"] = "application/json; charset=utf-8"
 
         self.stream = stream
         if self.stream:
@@ -286,10 +286,13 @@ class AioHttpRequest(AioBaseRequest):
                             timeout=request_timeout,
                         )
                     else:
+                        body = json.dumps(obj, ensure_ascii=False).encode(
+                            "utf-8",
+                        )
                         response = await session.request(
                             "POST",
                             url=self.url,
-                            json=obj,
+                            data=body,
                             headers=self.headers,
                             timeout=request_timeout,
                         )
