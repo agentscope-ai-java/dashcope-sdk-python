@@ -63,13 +63,19 @@ def ensure_ok(rsp):
         raise typer.Exit(1)
 
     # Some APIs return error info in output even with HTTP 200
-    error_code = output.get("code") if isinstance(output, dict) else None
+    if isinstance(output, dict):
+        error_code = output.get("code")
+        message = output.get("message", "Unknown error")
+    else:
+        error_code = getattr(output, "code", None)
+        message = getattr(output, "message", "Unknown error")
+
     if error_code and error_code != "":
         err_console.print(
             f"[red]Business Error[/red] request_id: {rsp.request_id}, "
             f"status_code: {rsp.status_code}, "
             f"code: {error_code}, "
-            f"message: {output.get('message', 'Unknown error')}",
+            f"message: {message}",
         )
         raise typer.Exit(1)
 
