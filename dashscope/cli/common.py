@@ -47,11 +47,33 @@ def ensure_ok(rsp):
 
     This eliminates the repetitive ``if rsp.status_code == OK … else …``
     pattern that appears in every command handler.
+
+    Enhanced to check both HTTP status and business-level error codes:
+    - HTTP 200 but InvalidParameter → still treated as failure
+    - HTTP 4xx/5xx → clear error message
     """
-    if rsp.status_code == HTTPStatus.OK:
-        return rsp.output
-    print_failed_message(rsp)
-    raise typer.Exit(1)
+    if rsp.status_code != HTTPStatus.OK:
+        print_failed_message(rsp)
+        raise typer.Exit(1)
+
+    # Check for business-level errors even when HTTP status is 200
+    output = rsp.output
+    if output is None:
+        print_failed_message(rsp)
+        raise typer.Exit(1)
+
+    # Some APIs return error info in output even with HTTP 200
+    error_code = output.get("code") if isinstance(output, dict) else None
+    if error_code and error_code != "":
+        err_console.print(
+            f"[red]Business Error[/red] request_id: {rsp.request_id}, "
+            f"status_code: {rsp.status_code}, "
+            f"code: {error_code}, "
+            f"message: {output.get('message', 'Unknown error')}",
+        )
+        raise typer.Exit(1)
+
+    return output
 
 
 def success(message: str):

@@ -545,6 +545,10 @@ def run(
                 description="[green]✅ Job submitted successfully![/green]",
             )
 
+        # Validate output is not None before accessing attributes
+        if result.output is None:
+            raise OutputError("API returned success but output is empty")
+
         format_output(
             {
                 "job_id": result.output.job_id,
@@ -596,6 +600,10 @@ def get(
             raise OutputError(
                 f"API returned status {result.status_code}: {result.message}",
             )
+
+        # Validate output is not None before accessing attributes
+        if result.output is None:
+            raise OutputError("API returned success but output is empty")
 
         format_output(
             {
@@ -669,8 +677,13 @@ def logs(
                 f"API returned status {result.status_code}: {result.message}",
             )
 
+        # Validate output is not None before accessing attributes
+        logs_data = ""
+        if result.output is not None and isinstance(result.output, dict):
+            logs_data = result.output.get("logs", "")
+
         format_output(
-            {"job_id": job_id, "logs": getattr(result.output, "logs", "")},
+            {"job_id": job_id, "logs": logs_data},
             fmt=output_format,
         )
     except Exception as e:

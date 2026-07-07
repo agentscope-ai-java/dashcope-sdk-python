@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """``deployments`` sub-command group."""
 import time
+from http import HTTPStatus
 from typing import Optional
 
 import typer
@@ -12,8 +13,10 @@ from dashscope.cli.common import (
     console,
     err_console,
     ensure_ok,
+    error,
     handle_sdk_error,
     logger,
+    print_failed_message,
     success,
 )
 
@@ -37,13 +40,34 @@ def callback(ctx: typer.Context):
 # ---------------------------------------------------------------------------
 
 
-def _wait_for_deployment(deployed_model: str):
-    """Block until the deployment reaches a non-pending state."""
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+DEFAULT_WAIT_TIMEOUT = 3600  # 1 hour default timeout for waiting
+
+
+def _wait_for_deployment(
+    deployed_model: str,
+    timeout: int = DEFAULT_WAIT_TIMEOUT,
+):
+    """Block until the deployment reaches a non-pending state or times out."""
+    start_time = time.time()
     try:
         while True:
+            # Check timeout
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
+                err_console.print(
+                    "[red]Timeout:[/red] Deployment "
+                    f"{deployed_model} did not complete within "
+                    f"{timeout} seconds. You can check status later via: "
+                    f"[cyan]dashscope deployments get {deployed_model}[/cyan]",
+                )
+                raise typer.Exit(1)
+
             rsp = dashscope.Deployments.get(deployed_model)
             output = ensure_ok(rsp)
-            status = output.status
+            status = output["status"]
 
             if status in (
                 DeploymentStatus.PENDING,
@@ -67,14 +91,19 @@ def _wait_for_deployment(deployed_model: str):
 
 def _print_deployments(output):
     """Pretty-print a list of deployments from *output*."""
-    if output is None or not output.deployments:
+    if (
+        output is None
+        or not isinstance(output, dict)
+        or "deployments" not in output
+        or not output["deployments"]
+    ):
         console.print("There is no deployed model!")
         return
-    for dep in output.deployments:
+    for dep in output["deployments"]:
         console.print(
-            f"Deployed_model: {dep.deployed_model}, "
-            f"model: {dep.model_name}, "
-            f"status: {dep.status}",
+            f"Deployed_model: {dep['deployed_model']}, "
+            f"model: {dep['model_name']}, "
+            f"status: {dep['status']}",
         )
 
 
@@ -99,15 +128,46 @@ def create(
         "--capacity",
         help="The target capacity",
     ),
+    plan: Optional[str] = typer.Option(
+        None,
+        "--plan",
+        help="Deployment plan or template ID",
+    ),
+    template_id: Optional[str] = typer.Option(
+        None,
+        "--template-id",
+        help="Template ID for deployment configuration",
+    ),
 ):
     """Create a model deployment."""
-    rsp = dashscope.Deployments.call(
-        model=model,
-        capacity=capacity,
-        suffix=suffix,  # type: ignore[arg-type]
-    )
-    output = ensure_ok(rsp)
-    deployed_model = output.deployed_model
+    kwargs = {
+        "model": model,
+        "capacity": capacity,
+        "suffix": suffix,
+    }
+    if plan is not None:
+        kwargs["plan"] = plan
+    if template_id is not None:
+        kwargs["template_id"] = template_id
+
+    rsp = dashscope.Deployments.call(**kwargs)
+
+    # Enhanced error checking: verify both HTTP status and response content
+    if rsp.status_code != HTTPStatus.OK:
+        print_failed_message(rsp)
+        raise typer.Exit(1)
+
+    output = rsp.output
+    if output is None:
+        error("Deployment creation returned empty response")
+
+    deployed_model = output.get("deployed_model")
+    if not deployed_model:
+        error(
+            "Deployment creation succeeded but missing deployed_model "
+            f"in response. Response: {output}",
+        )
+
     success(f"Create model: {deployed_model} deployment")
     _wait_for_deployment(deployed_model)
 
@@ -147,9 +207,9 @@ def get(
     rsp = dashscope.Deployments.get(deployed_model)
     output = ensure_ok(rsp)
     console.print(
-        f"Deployed model: {output.deployed_model} "
-        f"capacity: {output.capacity} "
-        f"status: {output.status}",
+        f"Deployed model: {output['deployed_model']} "
+        f"capacity: {output['capacity']} "
+        f"status: {output['status']}",
     )
 
 
@@ -162,7 +222,7 @@ def list_deployments(
     """List model deployments."""
     rsp = dashscope.Deployments.list(page_no=page, page_size=size)
     output = ensure_ok(rsp)
-    if output is None or not output.deployments:
+    if output is None or not output.get("deployments"):
         console.print("There is no deployed model.")
         return
     _print_deployments(output)
@@ -189,9 +249,9 @@ def scale(
         console.print("There is no deployed model.")
         return
     console.print(
-        f"Deployed_model: {output.deployed_model}, "
-        f"model: {output.model_name}, "
-        f"status: {output.status}",
+        f"Deployed_model: {output['deployed_model']}, "
+        f"model: {output['model_name']}, "
+        f"status: {output['status']}",
     )
 
 

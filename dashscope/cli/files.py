@@ -63,6 +63,7 @@ def upload(
     file_path = os.path.expanduser(file)
     if not os.path.exists(file_path):
         error(f"File {file_path} does not exist")
+        return  # unreachable, but makes intent clear
 
     rsp = dashscope.Files.upload(
         file_path=file_path,
@@ -71,7 +72,13 @@ def upload(
         base_address=base_url,
     )
     output = ensure_ok(rsp)
-    file_id = output["uploaded_files"][0]["file_id"]
+
+    # Validate uploaded_files exists and is not empty
+    uploaded_files = output.get("uploaded_files", [])
+    if not uploaded_files:
+        error("Upload succeeded but no file_id returned in response")
+
+    file_id = uploaded_files[0]["file_id"]
     success(f"Upload success, file id: {file_id}")
 
 
