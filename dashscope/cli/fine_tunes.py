@@ -64,7 +64,8 @@ def _wait_for_job(job_id: str, timeout: int = DEFAULT_WAIT_TIMEOUT):
                 raise typer.Exit(1)
 
             rsp = dashscope.FineTunes.get(job_id)
-            output = ensure_ok(rsp)
+            # During polling, only check HTTP success, not business errors
+            output = ensure_ok(rsp, check_business_error=False)
             status = output.status
 
             if status == TaskStatus.FAILED:

@@ -66,7 +66,8 @@ def _wait_for_deployment(
                 raise typer.Exit(1)
 
             rsp = dashscope.Deployments.get(deployed_model)
-            output = ensure_ok(rsp)
+            # During polling, only check HTTP success, not business errors
+            output = ensure_ok(rsp, check_business_error=False)
             status = output.status
 
             if status in (
