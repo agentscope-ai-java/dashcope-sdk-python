@@ -115,7 +115,11 @@ def _stream_events(job_id: str):
         )
         return
 
-    status = getattr(rsp.output, "status", None)
+    status = (
+        rsp.output.get("status")
+        if isinstance(rsp.output, dict)
+        else getattr(rsp.output, "status", None)
+    )
     if status in (
         TaskStatus.FAILED,
         TaskStatus.CANCELED,
@@ -150,7 +154,11 @@ def _dump_logs(job_id: str):
             line=LOG_PAGE_SIZE,
         )
         output = ensure_ok(rsp)
-        logs = getattr(output, "logs", [])
+        logs = (
+            output.get("logs", [])
+            if isinstance(output, dict)
+            else getattr(output, "logs", [])
+        )
         if not logs:
             break
         for line in logs:

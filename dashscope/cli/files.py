@@ -74,7 +74,11 @@ def upload(
     output = ensure_ok(rsp)
 
     # Validate uploaded_files exists and is not empty
-    uploaded_files = getattr(output, "uploaded_files", [])
+    uploaded_files = (
+        output.get("uploaded_files", [])
+        if isinstance(output, dict)
+        else getattr(output, "uploaded_files", [])
+    )
     if not uploaded_files:
         error("Upload succeeded but no file_id returned in response")
 
