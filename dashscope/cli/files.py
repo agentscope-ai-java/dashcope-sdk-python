@@ -63,6 +63,7 @@ def upload(
     file_path = os.path.expanduser(file)
     if not os.path.exists(file_path):
         error(f"File {file_path} does not exist")
+        return  # unreachable, but makes intent clear
 
     rsp = dashscope.Files.upload(
         file_path=file_path,

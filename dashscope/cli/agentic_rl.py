@@ -536,16 +536,8 @@ def run(
             # Handle API response errors
             if result.status_code != 200:
                 raise OutputError(
-                    (
-                        f"API error [status={result.status_code}, "
-                        f"code={result.code}]: {result.message}"
-                    ),
-                    response={
-                        "status_code": result.status_code,
-                        "code": result.code,
-                        "message": result.message,
-                        "request_id": result.request_id,
-                    },
+                    f"API returned status {result.status_code}:"
+                    f" {result.message}",
                 )
 
             progress.update(
@@ -606,16 +598,7 @@ def get(
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                (
-                    f"API error [status={result.status_code}, "
-                    f"code={result.code}]: {result.message}"
-                ),
-                response={
-                    "status_code": result.status_code,
-                    "code": result.code,
-                    "message": result.message,
-                    "request_id": result.request_id,
-                },
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         # Validate output is not None before accessing attributes
@@ -653,16 +636,7 @@ def cancel(
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                (
-                    f"API error [status={result.status_code}, "
-                    f"code={result.code}]: {result.message}"
-                ),
-                response={
-                    "status_code": result.status_code,
-                    "code": result.code,
-                    "message": result.message,
-                    "request_id": result.request_id,
-                },
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         err_console.print(
@@ -700,16 +674,7 @@ def logs(
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                (
-                    f"API error [status={result.status_code}, "
-                    f"code={result.code}]: {result.message}"
-                ),
-                response={
-                    "status_code": result.status_code,
-                    "code": result.code,
-                    "message": result.message,
-                    "request_id": result.request_id,
-                },
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         # Validate output is not None before accessing attributes
@@ -751,16 +716,7 @@ def list_jobs(
         # Handle API response errors
         if result.status_code != 200:
             raise OutputError(
-                (
-                    f"API error [status={result.status_code}, "
-                    f"code={result.code}]: {result.message}"
-                ),
-                response={
-                    "status_code": result.status_code,
-                    "code": result.code,
-                    "message": result.message,
-                    "request_id": result.request_id,
-                },
+                f"API returned status {result.status_code}: {result.message}",
             )
 
         output_data = serialize_for_output(

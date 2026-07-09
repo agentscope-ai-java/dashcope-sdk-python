@@ -112,9 +112,7 @@ class WebSocketRequest(AioBaseRequest):
                 pass
             return result
 
-    async def connection_handler(
-        self,
-    ):  # pylint: disable=too-many-branches,too-many-statements
+    async def connection_handler(self):  # pylint: disable=too-many-branches
         try:
             task_id = None
             async with aiohttp.ClientSession(
@@ -205,42 +203,26 @@ class WebSocketRequest(AioBaseRequest):
             )
         except aiohttp.WSServerHandshakeError as e:
             code = e.status
-            original_msg = e.message or ""
-
+            msg = e.message
             if e.status in [HTTPStatus.FORBIDDEN, HTTPStatus.UNAUTHORIZED]:
-                friendly_hint = "Unauthorized, your api-key may be invalid!"
-                msg = (
-                    f"{friendly_hint} (Server details: {original_msg})"
-                    if original_msg
-                    else friendly_hint
-                )
+                msg = "Unauthorized, your api-key is invalid!"
             elif e.status == HTTPStatus.SERVICE_UNAVAILABLE:
-                friendly_hint = SERVICE_503_MESSAGE
-                msg = (
-                    f"{friendly_hint} (Server details: {original_msg})"
-                    if original_msg
-                    else friendly_hint
-                )
+                msg = SERVICE_503_MESSAGE
             else:
-                msg = (
-                    original_msg
-                    or f"WebSocket handshake failed with status {e.status}"
-                )
-
+                pass
             yield DashScopeAPIResponse(
                 request_id=task_id,
                 status_code=code,
-                code=f"http_{code}" if code else "websocket_handshake_error",
+                code=code,
                 message=msg,
             )
         except BaseException as e:
             logger.exception(e)
-            exception_name = type(e).__name__
             yield DashScopeAPIResponse(
                 request_id="",
                 status_code=-1,
-                code="",
-                message=f"[SDK Internal Error] {exception_name}: {e}",
+                code="Unknown",
+                message=f"Error type: {type(e)}, message: {e}",
             )
 
     def _to_DashScopeAPIResponse(self, task_id, is_binary, result):

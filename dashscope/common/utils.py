@@ -122,12 +122,11 @@ def iter_over_async(ait):
         finished, error, obj = message_queue.get()
         if finished:
             if error is not None:
-                exception_name = type(error).__name__
                 yield DashScopeAPIResponse(
                     -1,
                     "",
-                    "",
-                    message=f"[SDK Internal Error] {exception_name}: {error}",
+                    "Unknown",
+                    message=f"Error type: {type(error)}, message: {error}",
                 )
             break
         yield obj  # pylint: disable=no-else-break
@@ -320,7 +319,7 @@ def _handle_http_failed_response(
         return DashScopeAPIResponse(
             request_id=request_id,
             status_code=response.status_code,
-            code=f"http_{response.status_code}",
+            code="Unknown",
             message=msgs,
             headers=headers,
         )
@@ -331,7 +330,7 @@ def _handle_http_failed_response(
         return DashScopeAPIResponse(
             request_id=request_id,
             status_code=response.status_code,
-            code=f"http_{response.status_code}",
+            code="Unknown",
             message=msg,
             headers=headers,
         )
@@ -386,7 +385,7 @@ async def _handle_aiohttp_failed_response(
             return DashScopeAPIResponse(
                 request_id=request_id,
                 status_code=response.status,
-                code=f"http_{response.status}",
+                code="Unknown",
                 message="Empty SSE error response",
                 headers=headers,
             )
@@ -403,7 +402,7 @@ async def _handle_aiohttp_failed_response(
         return DashScopeAPIResponse(
             request_id=request_id,
             status_code=response.status,
-            code=f"http_{response.status}",
+            code="Unknown",
             message=msg,
             headers=headers,
         )
