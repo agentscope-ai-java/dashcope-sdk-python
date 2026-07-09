@@ -162,7 +162,7 @@ def create(
     if output is None:
         error("Deployment creation returned empty response")
 
-    deployed_model = output.get("deployed_model")
+    deployed_model = getattr(output, "deployed_model", None)
     if not deployed_model:
         error(
             "Deployment creation succeeded but missing deployed_model "

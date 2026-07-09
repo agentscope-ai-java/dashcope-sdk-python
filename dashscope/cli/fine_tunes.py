@@ -115,7 +115,7 @@ def _stream_events(job_id: str):
         )
         return
 
-    status = rsp.output.get("status")
+    status = getattr(rsp.output, "status", None)
     if status in (
         TaskStatus.FAILED,
         TaskStatus.CANCELED,
@@ -150,7 +150,7 @@ def _dump_logs(job_id: str):
             line=LOG_PAGE_SIZE,
         )
         output = ensure_ok(rsp)
-        logs = output.get("logs", [])
+        logs = getattr(output, "logs", [])
         if not logs:
             break
         for line in logs:
@@ -244,7 +244,7 @@ def create(
     if output is None:
         error("Fine-tune creation returned empty response")
 
-    job_id = output.get("job_id")
+    job_id = getattr(output, "job_id", None)
     if not job_id:
         error(
             "Fine-tune creation succeeded but missing job_id in response. "
