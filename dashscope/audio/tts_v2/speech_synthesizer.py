@@ -686,10 +686,11 @@ class SpeechSynthesizer:
         Parameters:
         -----------
         complete_timeout_millis: int
-            Throws TimeoutError exception if it times out waiting for the
-            server's task-finished message. If the timeout is not None and
-            greater than zero, it will wait for the corresponding number of
-            milliseconds; otherwise, it will wait indefinitely.
+            If it times out waiting for the server's task-finished message,
+            the connection is force-closed and a warning is logged. If the
+            timeout is not None and greater than zero, it will wait for the
+            corresponding number of milliseconds; otherwise, it will wait
+            indefinitely.
         """
 
         if not self._is_started:
@@ -707,10 +708,13 @@ class SpeechSynthesizer:
                     "after cancel timeout %sms, force closing.",
                     complete_timeout_millis,
                 )
+                self.close()
+            elif self._close_ws_after_use:
+                self.close()
         else:
             self.complete_event.wait()
-        if self._close_ws_after_use:
-            self.close()
+            if self._close_ws_after_use:
+                self.close()
         self._stopped.set()
         self._is_started = False
 
