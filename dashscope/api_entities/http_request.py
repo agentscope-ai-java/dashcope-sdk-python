@@ -435,10 +435,10 @@ class HttpRequest(AioBaseRequest):
             logger.debug("Response: %s", json_content)
             output = None
             usage = None
-            if "task_id" in json_content:
-                output = {"task_id": json_content["task_id"]}
             if "output" in json_content:
                 output = json_content["output"]
+            elif "task_id" in json_content:
+                output = {"task_id": json_content["task_id"]}
             if "usage" in json_content:
                 usage = json_content["usage"]
             if "request_id" in json_content:

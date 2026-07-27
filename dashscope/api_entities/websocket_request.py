@@ -72,7 +72,7 @@ class WebSocketRequest(AioBaseRequest):
         self.is_binary_input = is_binary_input
 
         self.headers = {
-            "Authorization": f"bearer {api_key}",
+            "Authorization": f"Bearer {api_key}",
             **self.headers,  # type: ignore[has-type]
         }
 

@@ -142,6 +142,7 @@ class AioHttpRequest(AioBaseRequest):
         response: aiohttp.ClientResponse,
     ):
         request_id = ""
+        headers = dict(response.headers)
         if (
             response.status == HTTPStatus.OK
             and self.stream
@@ -167,6 +168,7 @@ class AioHttpRequest(AioBaseRequest):
                         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                         code="Unknown",
                         message=data,
+                        headers=headers,
                     )
                     continue
                 if is_error:
@@ -175,6 +177,7 @@ class AioHttpRequest(AioBaseRequest):
                         status_code=status_code,
                         code=msg["code"],
                         message=msg["message"],
+                        headers=headers,
                     )
                 else:
                     yield DashScopeAPIResponse(
@@ -182,6 +185,7 @@ class AioHttpRequest(AioBaseRequest):
                         status_code=HTTPStatus.OK,
                         output=output,
                         usage=usage,
+                        headers=headers,
                     )
         elif (
             response.status == HTTPStatus.OK
@@ -201,6 +205,7 @@ class AioHttpRequest(AioBaseRequest):
                 request_id=request_id,
                 status_code=HTTPStatus.OK,
                 output=output,
+                headers=headers,
             )
         elif response.status == HTTPStatus.OK:
             json_content = await response.json()
@@ -217,6 +222,7 @@ class AioHttpRequest(AioBaseRequest):
                 status_code=HTTPStatus.OK,
                 output=output,
                 usage=usage,
+                headers=headers,
             )
         else:
             if "application/json" in response.content_type:
@@ -243,6 +249,7 @@ class AioHttpRequest(AioBaseRequest):
                     status_code=response.status,
                     code=error["code"],
                     message=message,
+                    headers=headers,
                 )
             else:
                 msg = await response.read()
@@ -251,6 +258,7 @@ class AioHttpRequest(AioBaseRequest):
                     status_code=response.status,
                     code="Unknown",
                     message=msg.decode("utf-8"),
+                    headers=headers,
                 )
 
     # pylint: disable=too-many-branches
