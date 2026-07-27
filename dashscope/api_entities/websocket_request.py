@@ -82,7 +82,7 @@ class WebSocketRequest(AioBaseRequest):
         self.pre_task_id = pre_task_id
 
     def add_headers(self, headers):
-        self.headers = {**self.headers, **headers}
+        self.headers.update(headers)
 
     def call(self):
         response = async_to_sync(self.connection_handler())
@@ -95,10 +95,6 @@ class WebSocketRequest(AioBaseRequest):
             except StopIteration:
                 pass
             return output
-
-    async def close(self):
-        if self.ws is not None and not self.ws.closed:
-            await self.ws.close()
 
     async def aio_call(self):
         response = self.connection_handler()
@@ -176,7 +172,9 @@ class WebSocketRequest(AioBaseRequest):
                                 message,
                             )
                     else:  # duplex mode
-                        asyncio.create_task(self._send_continue_task_data(ws))
+                        bg_task = asyncio.create_task(
+                            self._send_continue_task_data(ws),
+                        )
                         async for is_binary, message in self._receive_streaming_data_task(  # noqa E501  # pylint: disable=line-too-long
                             ws,
                         ):
@@ -185,6 +183,8 @@ class WebSocketRequest(AioBaseRequest):
                                 is_binary,
                                 message,
                             )
+                        # Wait for background task to complete
+                        await bg_task
         except RequestFailure as e:
             yield DashScopeAPIResponse(
                 request_id=e.request_id,

@@ -4,6 +4,7 @@
 import base64
 import json
 import os
+import time
 
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -18,6 +19,11 @@ from dashscope.common.constants import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
 )
 from dashscope.common.logging import logger
+
+# Public key cache with TTL (1 hour)
+_cached_public_keys = None
+_cache_timestamp = 0
+_PUBLIC_KEY_CACHE_TTL = 3600  # seconds
 
 
 class Encryption:
@@ -87,6 +93,17 @@ class Encryption:
 
     @staticmethod
     def _get_public_keys():
+        global _cached_public_keys, _cache_timestamp
+
+        # Check cache validity
+        current_time = time.time()
+        if (
+            _cached_public_keys is not None
+            and (current_time - _cache_timestamp) < _PUBLIC_KEY_CACHE_TTL
+        ):
+            return _cached_public_keys
+
+        # Fetch from server
         url = dashscope.base_http_api_url + "/public-keys/latest"
         headers = {
             "Authorization": f"Bearer {dashscope.api_key}",
@@ -107,6 +124,10 @@ class Encryption:
         if not response_data:
             logger.error("no valid data in public key response")
             return None
+
+        # Update cache
+        _cached_public_keys = response_data
+        _cache_timestamp = current_time
 
         return response_data
 

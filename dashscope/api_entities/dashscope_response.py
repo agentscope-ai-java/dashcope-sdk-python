@@ -168,7 +168,10 @@ class Message(DictMixin):
             content = response.output["text"]
             return Message(role=Role.ASSISTANT, content=content)
         else:
-            return response.output.choices[0]["message"]
+            choices = response.output.get("choices", [])
+            if not choices:
+                return None
+            return choices[0].get("message")
 
     @classmethod
     def from_conversation_response(cls, response: DictMixin):
