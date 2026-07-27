@@ -3,9 +3,6 @@
 
 from .omni_realtime import (
     AudioFormat,
-    AudioFormatConfig,
-    AudioFormatType,
-    AudioSampleRate,
     MultiModality,
     OmniRealtimeCallback,
     OmniRealtimeConversation,
@@ -14,9 +11,6 @@ from .omni_realtime import (
 __all__ = [
     "OmniRealtimeCallback",
     "AudioFormat",
-    "AudioFormatConfig",
-    "AudioFormatType",
-    "AudioSampleRate",
     "MultiModality",
     "OmniRealtimeConversation",
 ]
