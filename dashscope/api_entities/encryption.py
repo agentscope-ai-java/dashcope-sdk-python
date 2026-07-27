@@ -92,7 +92,11 @@ class Encryption:
             "Authorization": f"Bearer {dashscope.api_key}",
         }
 
-        response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS)
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
+        )
         if response.status_code != 200:
             logger.error("exceptional public key response: %s", response)
             return None
