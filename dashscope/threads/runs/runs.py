@@ -3,6 +3,7 @@
 
 import time
 from http import HTTPStatus
+import warnings
 from typing import Dict, List, Optional
 
 from dashscope.client.base_api import (
@@ -38,6 +39,12 @@ class Runs(
     GetStatusMixin,
     UpdateMixin,
 ):
+    """
+    .. deprecated::
+        The Runs API (Assistants API) is deprecated and will be removed
+        in a future release. Please migrate to the Responses API.
+        See https://help.aliyun.com/zh/model-studio/ for migration details.
+    """
     SUB_PATH = "RUNS"  # useless
 
     @classmethod
@@ -57,6 +64,7 @@ class Runs(
         api_key: str = None,
         **kwargs,
     ) -> Run:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         if not assistant_id:
             raise InputRequired("assistant_id is required")
         data = {"assistant_id": assistant_id}
@@ -114,6 +122,7 @@ class Runs(
         max_tokens: Optional[int] = None,
         **kwargs,
     ) -> Run:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Create a run.
 
         Args:
@@ -293,6 +302,7 @@ class Runs(
         api_key: str = None,
         **kwargs,
     ) -> RunList:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """List `Run`.
 
         Args:
@@ -334,6 +344,7 @@ class Runs(
         api_key: str = None,
         **kwargs,
     ) -> Run:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Retrieve the `Run`.
 
         Args:
@@ -399,6 +410,7 @@ class Runs(
         api_key: str = None,
         **kwargs,
     ) -> Run:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """_summary_
 
         Args:
@@ -557,6 +569,7 @@ class Runs(
         api_key: str = None,
         **kwargs,
     ) -> Run:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Cancel the `Run`.
 
         Args:

@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from dashscope.client.base_api import GetStatusMixin, ListObjectMixin
+import warnings
 from dashscope.common.error import InputRequired
 from dashscope.threads.thread_types import RunStep, RunStepList
 
@@ -9,6 +10,12 @@ __all__ = ["Steps"]
 
 
 class Steps(ListObjectMixin, GetStatusMixin):
+    """
+    .. deprecated::
+        The Steps API (Assistants API) is deprecated and will be removed
+        in a future release. Please migrate to the Responses API.
+        See https://help.aliyun.com/zh/model-studio/ for migration details.
+    """
     SUB_PATH = "RUNS"  # useless
 
     @classmethod
@@ -25,6 +32,7 @@ class Steps(ListObjectMixin, GetStatusMixin):
         api_key: str = None,
         **kwargs,
     ) -> RunStepList:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """List  `RunStep` of `Run`.
 
         Args:
@@ -68,6 +76,7 @@ class Steps(ListObjectMixin, GetStatusMixin):
         api_key: str = None,
         **kwargs,
     ) -> RunStep:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Retrieve the `RunStep`.
 
         Args:

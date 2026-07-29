@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from typing import Dict, List, Optional
+import warnings
 
 from dashscope.assistants.assistant_types import DeleteResponse
 from dashscope.client.base_api import (
@@ -17,6 +18,12 @@ __all__ = ["Threads"]
 
 
 class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
+    """
+    .. deprecated::
+        The Threads API is deprecated and will be removed in a future release.
+        Please migrate to the Responses API.
+        See https://help.aliyun.com/zh/model-studio/ for migration details.
+    """
     SUB_PATH = "threads"
 
     @classmethod
@@ -62,6 +69,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Thread:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Create a thread.
 
         Args:
@@ -127,6 +135,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Thread:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Retrieve the thread.
 
         Args:
@@ -159,6 +168,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Thread:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Update thread information.
 
         Args:
@@ -194,6 +204,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> DeleteResponse:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Delete thread.
 
         Args:
@@ -231,6 +242,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Run:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         if not assistant_id:
             raise InputRequired("assistant_id is required")
         data = {"assistant_id": assistant_id}
