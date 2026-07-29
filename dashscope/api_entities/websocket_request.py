@@ -96,6 +96,11 @@ class WebSocketRequest(AioBaseRequest):
                 pass
             return output
 
+    async def close(self):
+        ws = getattr(self, "ws", None)
+        if ws is not None and not ws.closed:
+            await ws.close()
+
     async def aio_call(self):
         response = self.connection_handler()
         if self.stream:
@@ -175,16 +180,27 @@ class WebSocketRequest(AioBaseRequest):
                         bg_task = asyncio.create_task(
                             self._send_continue_task_data(ws),
                         )
-                        async for is_binary, message in self._receive_streaming_data_task(  # noqa E501  # pylint: disable=line-too-long
-                            ws,
-                        ):
-                            yield self._to_DashScopeAPIResponse(
-                                task_id,
-                                is_binary,
-                                message,
+                        try:
+                            async for is_binary, message in self._receive_streaming_data_task(  # noqa E501  # pylint: disable=line-too-long
+                                ws,
+                            ):
+                                yield self._to_DashScopeAPIResponse(
+                                    task_id,
+                                    is_binary,
+                                    message,
+                                )
+                            # Normal completion: wait for the send task.
+                            await bg_task
+                        except BaseException:
+                            # Abnormal exit (error or consumer closed the
+                            # stream early): cancel to avoid leaking it.
+                            if not bg_task.done():
+                                bg_task.cancel()
+                            await asyncio.gather(
+                                bg_task,
+                                return_exceptions=True,
                             )
-                        # Wait for background task to complete
-                        await bg_task
+                            raise
         except RequestFailure as e:
             yield DashScopeAPIResponse(
                 request_id=e.request_id,

@@ -4,6 +4,7 @@
 import base64
 import json
 import os
+import threading
 import time
 
 import requests
@@ -20,9 +21,9 @@ from dashscope.common.constants import (
 )
 from dashscope.common.logging import logger
 
-# Public key cache with TTL (1 hour)
-_cached_public_keys = None
-_cache_timestamp = 0
+# Public key cache with TTL (1 hour), keyed by (base_url, api_key)
+_public_key_cache = {}
+_public_key_cache_lock = threading.Lock()
 _PUBLIC_KEY_CACHE_TTL = 3600  # seconds
 
 
@@ -93,15 +94,17 @@ class Encryption:
 
     @staticmethod
     def _get_public_keys():
-        global _cached_public_keys, _cache_timestamp
+        cache_key = (dashscope.base_http_api_url, dashscope.api_key)
 
         # Check cache validity
         current_time = time.time()
-        if (
-            _cached_public_keys is not None
-            and (current_time - _cache_timestamp) < _PUBLIC_KEY_CACHE_TTL
-        ):
-            return _cached_public_keys
+        with _public_key_cache_lock:
+            cached = _public_key_cache.get(cache_key)
+            if (
+                cached is not None
+                and (current_time - cached[1]) < _PUBLIC_KEY_CACHE_TTL
+            ):
+                return cached[0]
 
         # Fetch from server
         url = dashscope.base_http_api_url + "/public-keys/latest"
@@ -126,8 +129,8 @@ class Encryption:
             return None
 
         # Update cache
-        _cached_public_keys = response_data
-        _cache_timestamp = current_time
+        with _public_key_cache_lock:
+            _public_key_cache[cache_key] = (response_data, current_time)
 
         return response_data
 

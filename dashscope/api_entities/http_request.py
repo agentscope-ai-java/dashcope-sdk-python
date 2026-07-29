@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import datetime
 import json
+import threading
 from http import HTTPStatus
 from typing import Optional, Dict, Union
 
@@ -28,13 +29,20 @@ from dashscope.api_entities.encryption import Encryption
 
 # Shared synchronous session for connection pooling
 _shared_sync_session: Optional[requests.Session] = None
+_shared_sync_session_lock = threading.Lock()
 
 
 def _get_shared_sync_session() -> requests.Session:
-    """Return a shared requests.Session for connection pooling."""
+    """Return a shared requests.Session for connection pooling.
+
+    The session is created lazily and reused for the process lifetime;
+    it is never closed explicitly.
+    """
     global _shared_sync_session
     if _shared_sync_session is None:
-        _shared_sync_session = requests.Session()
+        with _shared_sync_session_lock:
+            if _shared_sync_session is None:
+                _shared_sync_session = requests.Session()
     return _shared_sync_session
 
 

@@ -52,9 +52,9 @@ class ApiRequestData:
         self.resources = resources
 
     def to_request_object(self) -> dict:
-        """Convert data to json, called from http request.
+        """Convert data to request dict, called from http request.
         Returns:
-            str: Json string.
+            dict: Request payload.
         """
         self.input = next(self._input_resolver)
         o = {
