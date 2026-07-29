@@ -177,7 +177,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         return Thread(**response)
 
     @classmethod
-    def update(
+    def update(  # type: ignore[override]
         cls,
         thread_id: str,
         *,
