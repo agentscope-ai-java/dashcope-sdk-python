@@ -2,7 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import warnings
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from dashscope.assistants.assistant_types import DeleteResponse
 from dashscope.client.base_api import (
@@ -12,7 +12,7 @@ from dashscope.client.base_api import (
     UpdateMixin,
 )
 from dashscope.common.error import InputRequired
-from dashscope.threads.thread_types import Run, Thread
+from dashscope.threads.thread_types import Thread
 
 __all__ = ["Threads"]
 
@@ -20,8 +20,8 @@ __all__ = ["Threads"]
 _DEPRECATION_MSG = (
     "The Assistants API (dashscope.threads) is deprecated and will be "
     "removed in a future release. Please migrate to the Responses API. "
-    "See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference "
-    "for migration details."
+    "See https://help.aliyun.com/zh/model-studio/"
+    "synchronous-call-api-reference for migration details."
 )
 
 
@@ -30,8 +30,8 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
     .. deprecated::
         The Threads API is deprecated and will be removed in a future release.
         Please migrate to the Responses API.
-        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference
-        for migration details.
+        See https://help.aliyun.com/zh/model-studio/
+        synchronous-call-api-reference for migration details.
     """
 
     SUB_PATH = "threads"
