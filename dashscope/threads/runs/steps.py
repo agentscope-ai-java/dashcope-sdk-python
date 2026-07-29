@@ -1,12 +1,21 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from dashscope.client.base_api import GetStatusMixin, ListObjectMixin
 import warnings
+
+from dashscope.client.base_api import GetStatusMixin, ListObjectMixin
 from dashscope.common.error import InputRequired
 from dashscope.threads.thread_types import RunStep, RunStepList
 
 __all__ = ["Steps"]
+
+# Deprecation warning message
+_DEPRECATION_MSG = (
+    "The Assistants API (dashscope.threads) is deprecated and will be "
+    "removed in a future release. Please migrate to the Responses API. "
+    "See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference "
+    "for migration details."
+)
 
 
 class Steps(ListObjectMixin, GetStatusMixin):
@@ -14,8 +23,10 @@ class Steps(ListObjectMixin, GetStatusMixin):
     .. deprecated::
         The Steps API (Assistants API) is deprecated and will be removed
         in a future release. Please migrate to the Responses API.
-        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.
+        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference
+        for migration details.
     """
+
     SUB_PATH = "RUNS"  # useless
 
     @classmethod
@@ -32,7 +43,6 @@ class Steps(ListObjectMixin, GetStatusMixin):
         api_key: str = None,
         **kwargs,
     ) -> RunStepList:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
         """List  `RunStep` of `Run`.
 
         Args:
@@ -50,6 +60,11 @@ class Steps(ListObjectMixin, GetStatusMixin):
         Returns:
             RunList: The list of runs.
         """
+        warnings.warn(
+            _DEPRECATION_MSG,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         if not run_id:
             raise InputRequired("run_id is required!")
         response = super().list(
@@ -76,7 +91,6 @@ class Steps(ListObjectMixin, GetStatusMixin):
         api_key: str = None,
         **kwargs,
     ) -> RunStep:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
         """Retrieve the `RunStep`.
 
         Args:
@@ -89,6 +103,11 @@ class Steps(ListObjectMixin, GetStatusMixin):
         Returns:
             RunStep: The `RunStep` object.
         """
+        warnings.warn(
+            _DEPRECATION_MSG,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         if not thread_id or not run_id or not step_id:
             raise InputRequired("thread_id, run_id and step_id are required!")
         response = super().get(
