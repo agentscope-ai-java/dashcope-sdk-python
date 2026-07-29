@@ -113,7 +113,9 @@ class WebSocketRequest(AioBaseRequest):
                 pass
             return result
 
-    async def connection_handler(self):  # pylint: disable=too-many-branches
+    async def connection_handler(
+        self,
+    ):  # pylint: disable=too-many-branches,too-many-statements
         try:
             task_id = None
             async with aiohttp.ClientSession(
