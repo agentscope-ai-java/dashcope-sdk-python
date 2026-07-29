@@ -14,7 +14,7 @@ class Steps(ListObjectMixin, GetStatusMixin):
     .. deprecated::
         The Steps API (Assistants API) is deprecated and will be removed
         in a future release. Please migrate to the Responses API.
-        See https://help.aliyun.com/zh/model-studio/ for migration details.
+        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.
     """
     SUB_PATH = "RUNS"  # useless
 
@@ -32,7 +32,7 @@ class Steps(ListObjectMixin, GetStatusMixin):
         api_key: str = None,
         **kwargs,
     ) -> RunStepList:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
         """List  `RunStep` of `Run`.
 
         Args:
@@ -76,7 +76,7 @@ class Steps(ListObjectMixin, GetStatusMixin):
         api_key: str = None,
         **kwargs,
     ) -> RunStep:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
         """Retrieve the `RunStep`.
 
         Args:
