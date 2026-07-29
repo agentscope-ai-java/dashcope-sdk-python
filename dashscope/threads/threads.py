@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-from typing import Dict, List, Optional
 import warnings
+from typing import Dict, List, Optional
 
 from dashscope.assistants.assistant_types import DeleteResponse
 from dashscope.client.base_api import (
@@ -16,14 +16,24 @@ from dashscope.threads.thread_types import Run, Thread
 
 __all__ = ["Threads"]
 
+# Deprecation warning message
+_DEPRECATION_MSG = (
+    "The Assistants API (dashscope.threads) is deprecated and will be "
+    "removed in a future release. Please migrate to the Responses API. "
+    "See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference "
+    "for migration details."
+)
+
 
 class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
     """
     .. deprecated::
         The Threads API is deprecated and will be removed in a future release.
         Please migrate to the Responses API.
-        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.
+        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference
+        for migration details.
     """
+
     SUB_PATH = "threads"
 
     @classmethod
@@ -69,7 +79,6 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Thread:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
         """Create a thread.
 
         Args:
@@ -85,6 +94,11 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         Returns:
             Thread: The thread object.
         """
+        warnings.warn(
+            _DEPRECATION_MSG,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         data = {}
         if messages:
             data["messages"] = messages
@@ -135,7 +149,6 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Thread:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
         """Retrieve the thread.
 
         Args:
@@ -147,10 +160,15 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         Returns:
             Thread: The `Thread` information.
         """
+        warnings.warn(
+            _DEPRECATION_MSG,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         if not thread_id:
             raise InputRequired("thread_id is required!")
-        response = super().get(
-            thread_id,
+        response = super().call(
+            data={"thread_id": thread_id},
             api_key=api_key,
             flattened_output=True,
             workspace=workspace,
@@ -159,7 +177,7 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         return Thread(**response)
 
     @classmethod
-    def update(  # type: ignore[override]
+    def update(
         cls,
         thread_id: str,
         *,
@@ -168,13 +186,13 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> Thread:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
-        """Update thread information.
+        """Update the thread.
 
         Args:
-            thread_id (str): The thread id.
+            thread_id (str): The target thread.
             metadata (Dict, optional):
-                The thread key-value information. Defaults to None.
+                The key-value information associate with thread. Defaults to
+                None.
             workspace (str, optional):
                 The DashScope workspace id. Defaults to None.
             api_key (str, optional): Your DashScope api key. Defaults to None.
@@ -182,15 +200,21 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         Returns:
             Thread: The `Thread` information.
         """
+        warnings.warn(
+            _DEPRECATION_MSG,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         if not thread_id:
             raise InputRequired("thread_id is required!")
-        response = super().update(
-            thread_id,
-            json={"metadata": metadata},
+        data = {"thread_id": thread_id}
+        if metadata:
+            data["metadata"] = metadata
+        response = super().call(
+            data=data,
             api_key=api_key,
-            workspace=workspace,
             flattened_output=True,
-            method="post",
+            workspace=workspace,
             **kwargs,
         )
         return Thread(**response)
@@ -198,73 +222,35 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
     @classmethod
     def delete(  # type: ignore[override]
         cls,
-        thread_id,
+        thread_id: str,
         *,
         workspace: str = None,
         api_key: str = None,
         **kwargs,
     ) -> DeleteResponse:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
-        """Delete thread.
+        """Delete the thread.
 
         Args:
-            thread_id (str): The thread id to delete.
+            thread_id (str): The target thread.
             workspace (str, optional):
                 The DashScope workspace id. Defaults to None.
             api_key (str, optional): Your DashScope api key. Defaults to None.
 
         Returns:
-            AssistantsDeleteResponse: The deleted information.
+            DeleteResponse: The delete response.
         """
+        warnings.warn(
+            _DEPRECATION_MSG,
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
         if not thread_id:
             raise InputRequired("thread_id is required!")
-        response = super().delete(
-            thread_id,
+        response = super().call(
+            data={"thread_id": thread_id},
             api_key=api_key,
-            workspace=workspace,
             flattened_output=True,
+            workspace=workspace,
             **kwargs,
         )
         return DeleteResponse(**response)
-
-    @classmethod
-    def create_and_run(
-        cls,
-        *,
-        assistant_id: str,
-        thread: Optional[Dict] = None,
-        model: Optional[str] = None,
-        instructions: Optional[str] = None,
-        additional_instructions: Optional[str] = None,
-        tools: Optional[List[Dict]] = None,
-        metadata: Optional[Dict] = None,
-        workspace: str = None,
-        api_key: str = None,
-        **kwargs,
-    ) -> Run:
-        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference for migration details.", category=DeprecationWarning, stacklevel=2)
-        if not assistant_id:
-            raise InputRequired("assistant_id is required")
-        data = {"assistant_id": assistant_id}
-        if thread:
-            data["thread"] = thread
-        if model:
-            data["model"] = model
-        if instructions:
-            data["instructions"] = instructions
-        if additional_instructions:
-            data["additional_instructions"] = additional_instructions
-        if tools:
-            data["tools"] = tools
-        if metadata:
-            data["metadata"] = metadata
-
-        response = super().call(
-            data=data,
-            path="threads/runs",
-            api_key=api_key,
-            flattened_output=True,
-            workspace=workspace,
-            **kwargs,
-        )
-        return Run(**response)
