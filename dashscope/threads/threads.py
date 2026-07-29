@@ -167,8 +167,8 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         )
         if not thread_id:
             raise InputRequired("thread_id is required!")
-        response = super().call(
-            data={"thread_id": thread_id},
+        response = super().get(
+            thread_id,
             api_key=api_key,
             flattened_output=True,
             workspace=workspace,
@@ -246,11 +246,11 @@ class Threads(CreateMixin, DeleteMixin, GetStatusMixin, UpdateMixin):
         )
         if not thread_id:
             raise InputRequired("thread_id is required!")
-        response = super().call(
-            data={"thread_id": thread_id},
+        response = super().delete(
+            thread_id,
             api_key=api_key,
-            flattened_output=True,
             workspace=workspace,
+            flattened_output=True,
             **kwargs,
         )
         return DeleteResponse(**response)
