@@ -2,6 +2,7 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 from typing import Dict, List, Optional
+import warnings
 
 from dashscope.client.base_api import (
     CreateMixin,
@@ -16,6 +17,12 @@ __all__ = ["Messages"]
 
 
 class Messages(CreateMixin, ListObjectMixin, GetStatusMixin, UpdateMixin):
+    """
+    .. deprecated::
+        The Messages API (Assistants API) is deprecated and will be removed
+        in a future release. Please migrate to the Responses API.
+        See https://help.aliyun.com/zh/model-studio/ for migration details.
+    """
     SUB_PATH = "messages"  # useless
 
     @classmethod
@@ -73,6 +80,7 @@ class Messages(CreateMixin, ListObjectMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> ThreadMessage:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Create message of thread.
 
         Args:
@@ -149,6 +157,7 @@ class Messages(CreateMixin, ListObjectMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> ThreadMessage:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """Get the `ThreadMessage`.
 
         Args:
@@ -185,6 +194,7 @@ class Messages(CreateMixin, ListObjectMixin, GetStatusMixin, UpdateMixin):
         api_key: str = None,
         **kwargs,
     ) -> ThreadMessageList:
+        warnings.warn("The Assistants API (dashscope.threads) is deprecated and will be removed in a future release. Please migrate to the Responses API. See https://help.aliyun.com/zh/model-studio/ for migration details.", category=DeprecationWarning, stacklevel=2)
         """List message of the thread.
 
         Args:
