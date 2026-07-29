@@ -35,8 +35,8 @@ __all__ = ["Runs"]
 _DEPRECATION_MSG = (
     "The Assistants API (dashscope.threads) is deprecated and will be "
     "removed in a future release. Please migrate to the Responses API. "
-    "See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference "
-    "for migration details."
+    "See https://help.aliyun.com/zh/model-studio/"
+    "synchronous-call-api-reference for migration details."
 )
 
 
@@ -51,8 +51,8 @@ class Runs(
     .. deprecated::
         The Runs API (Assistants API) is deprecated and will be removed
         in a future release. Please migrate to the Responses API.
-        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference
-        for migration details.
+        See https://help.aliyun.com/zh/model-studio/
+        synchronous-call-api-reference for migration details.
     """
 
     SUB_PATH = "RUNS"  # useless
@@ -81,9 +81,11 @@ class Runs(
             thread (Optional[Dict], optional): The thread to create.
             model (Optional[str], optional): The model to use.
             instructions (Optional[str], optional): The instructions.
-            additional_instructions (Optional[str], optional): Additional instructions.
+            additional_instructions (Optional[str], optional):
+                Additional instructions.
             tools (Optional[List[Dict]], optional): The tools to use.
-            stream (Optional[bool], optional): Whether to stream. Defaults to False.
+            stream (Optional[bool], optional):
+                Whether to stream. Defaults to False.
             metadata (Optional[Dict], optional): The metadata.
             workspace (str, optional): The workspace id.
             extra_body (Optional[Dict], optional): Extra body parameters.

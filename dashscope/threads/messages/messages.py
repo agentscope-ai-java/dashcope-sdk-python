@@ -19,8 +19,8 @@ __all__ = ["Messages"]
 _DEPRECATION_MSG = (
     "The Assistants API (dashscope.threads) is deprecated and will be "
     "removed in a future release. Please migrate to the Responses API. "
-    "See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference "
-    "for migration details."
+    "See https://help.aliyun.com/zh/model-studio/"
+    "synchronous-call-api-reference for migration details."
 )
 
 
@@ -29,8 +29,8 @@ class Messages(CreateMixin, ListObjectMixin, GetStatusMixin, UpdateMixin):
     .. deprecated::
         The Messages API (Assistants API) is deprecated and will be removed
         in a future release. Please migrate to the Responses API.
-        See https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference
-        for migration details.
+        See https://help.aliyun.com/zh/model-studio/
+        synchronous-call-api-reference for migration details.
     """
 
     SUB_PATH = "messages"  # useless
