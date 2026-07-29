@@ -6,8 +6,6 @@ from dataclasses import dataclass
 from http import HTTPStatus
 from typing import Any, Dict, List, Union
 
-_MISSING = object()
-
 
 @dataclass(init=False)
 class DictMixin(dict):
@@ -42,9 +40,7 @@ class DictMixin(dict):
     def setdefault(self, key, default=None):
         return super().setdefault(key, default)
 
-    def pop(self, key, default: Any = _MISSING):
-        if default is _MISSING:
-            return super().pop(key)
+    def pop(self, key, default: Any):  # type: ignore[override]
         return super().pop(key, default)
 
     def update(self, **kwargs):
@@ -168,10 +164,7 @@ class Message(DictMixin):
             content = response.output["text"]
             return Message(role=Role.ASSISTANT, content=content)
         else:
-            choices = response.output.get("choices", [])
-            if not choices:
-                return None
-            return choices[0].get("message")
+            return response.output.choices[0]["message"]
 
     @classmethod
     def from_conversation_response(cls, response: DictMixin):

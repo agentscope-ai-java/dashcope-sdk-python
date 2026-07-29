@@ -72,7 +72,7 @@ class WebSocketRequest(AioBaseRequest):
         self.is_binary_input = is_binary_input
 
         self.headers = {
-            "Authorization": f"Bearer {api_key}",
+            "Authorization": f"bearer {api_key}",
             **self.headers,  # type: ignore[has-type]
         }
 
@@ -82,7 +82,7 @@ class WebSocketRequest(AioBaseRequest):
         self.pre_task_id = pre_task_id
 
     def add_headers(self, headers):
-        self.headers.update(headers)
+        self.headers = {**self.headers, **headers}
 
     def call(self):
         response = async_to_sync(self.connection_handler())
@@ -97,9 +97,8 @@ class WebSocketRequest(AioBaseRequest):
             return output
 
     async def close(self):
-        ws = getattr(self, "ws", None)
-        if ws is not None and not ws.closed:
-            await ws.close()
+        if self.ws is not None and not self.ws.closed:
+            await self.ws.close()
 
     async def aio_call(self):
         response = self.connection_handler()
@@ -113,9 +112,7 @@ class WebSocketRequest(AioBaseRequest):
                 pass
             return result
 
-    async def connection_handler(
-        self,
-    ):  # pylint: disable=too-many-branches,too-many-statements
+    async def connection_handler(self):  # pylint: disable=too-many-branches
         try:
             task_id = None
             async with aiohttp.ClientSession(
@@ -179,30 +176,15 @@ class WebSocketRequest(AioBaseRequest):
                                 message,
                             )
                     else:  # duplex mode
-                        bg_task = asyncio.create_task(
-                            self._send_continue_task_data(ws),
-                        )
-                        try:
-                            async for is_binary, message in self._receive_streaming_data_task(  # noqa E501  # pylint: disable=line-too-long
-                                ws,
-                            ):
-                                yield self._to_DashScopeAPIResponse(
-                                    task_id,
-                                    is_binary,
-                                    message,
-                                )
-                            # Normal completion: wait for the send task.
-                            await bg_task
-                        except BaseException:
-                            # Abnormal exit (error or consumer closed the
-                            # stream early): cancel to avoid leaking it.
-                            if not bg_task.done():
-                                bg_task.cancel()
-                            await asyncio.gather(
-                                bg_task,
-                                return_exceptions=True,
+                        asyncio.create_task(self._send_continue_task_data(ws))
+                        async for is_binary, message in self._receive_streaming_data_task(  # noqa E501  # pylint: disable=line-too-long
+                            ws,
+                        ):
+                            yield self._to_DashScopeAPIResponse(
+                                task_id,
+                                is_binary,
+                                message,
                             )
-                            raise
         except RequestFailure as e:
             yield DashScopeAPIResponse(
                 request_id=e.request_id,
