@@ -78,7 +78,7 @@ class AioHttpRequest(AioBaseRequest):
             self.headers["X-Accel-Buffering"] = "no"
             self.headers["X-DashScope-SSE"] = "enable"
         if self.query:
-            self.url = self.url.replace("/api/", "/api-task/", 1)
+            self.url = self.url.replace("api", "api-task")
             self.url += f"{task_id}"
         if timeout is None:
             self.timeout = DEFAULT_REQUEST_TIMEOUT_SECONDS
@@ -89,7 +89,7 @@ class AioHttpRequest(AioBaseRequest):
         self.headers[key] = value
 
     def add_headers(self, headers):
-        self.headers.update(headers)
+        self.headers = {**self.headers, **headers}
 
     def call(self):
         response = async_to_sync(self._handle_request())
@@ -142,7 +142,6 @@ class AioHttpRequest(AioBaseRequest):
         response: aiohttp.ClientResponse,
     ):
         request_id = ""
-        headers = dict(response.headers)
         if (
             response.status == HTTPStatus.OK
             and self.stream
@@ -168,7 +167,6 @@ class AioHttpRequest(AioBaseRequest):
                         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
                         code="Unknown",
                         message=data,
-                        headers=headers,
                     )
                     continue
                 if is_error:
@@ -177,7 +175,6 @@ class AioHttpRequest(AioBaseRequest):
                         status_code=status_code,
                         code=msg["code"],
                         message=msg["message"],
-                        headers=headers,
                     )
                 else:
                     yield DashScopeAPIResponse(
@@ -185,7 +182,6 @@ class AioHttpRequest(AioBaseRequest):
                         status_code=HTTPStatus.OK,
                         output=output,
                         usage=usage,
-                        headers=headers,
                     )
         elif (
             response.status == HTTPStatus.OK
@@ -205,7 +201,6 @@ class AioHttpRequest(AioBaseRequest):
                 request_id=request_id,
                 status_code=HTTPStatus.OK,
                 output=output,
-                headers=headers,
             )
         elif response.status == HTTPStatus.OK:
             json_content = await response.json()
@@ -222,7 +217,6 @@ class AioHttpRequest(AioBaseRequest):
                 status_code=HTTPStatus.OK,
                 output=output,
                 usage=usage,
-                headers=headers,
             )
         else:
             if "application/json" in response.content_type:
@@ -249,7 +243,6 @@ class AioHttpRequest(AioBaseRequest):
                     status_code=response.status,
                     code=error["code"],
                     message=message,
-                    headers=headers,
                 )
             else:
                 msg = await response.read()
@@ -258,7 +251,6 @@ class AioHttpRequest(AioBaseRequest):
                     status_code=response.status,
                     code="Unknown",
                     message=msg.decode("utf-8"),
-                    headers=headers,
                 )
 
     # pylint: disable=too-many-branches
@@ -266,8 +258,10 @@ class AioHttpRequest(AioBaseRequest):
         try:
             if self._external_aio_session is not None:
                 session = self._external_aio_session
+                should_close = False
             else:
                 session = await get_shared_aio_session()
+                should_close = False
 
             if self.stream:
                 request_timeout = aiohttp.ClientTimeout(
@@ -277,48 +271,52 @@ class AioHttpRequest(AioBaseRequest):
             else:
                 request_timeout = aiohttp.ClientTimeout(total=self.timeout)
 
-            logger.debug("Starting request: %s", self.url)
-            if self.method == HTTPMethod.POST:
-                is_form, obj = False, {}
-                if hasattr(self, "data") and self.data is not None:
-                    is_form, obj = self.data.get_aiohttp_payload()
-                if is_form:
-                    headers = {**self.headers, **obj.headers}
-                    response = await session.post(
+            try:
+                logger.debug("Starting request: %s", self.url)
+                if self.method == HTTPMethod.POST:
+                    is_form, obj = False, {}
+                    if hasattr(self, "data") and self.data is not None:
+                        is_form, obj = self.data.get_aiohttp_payload()
+                    if is_form:
+                        headers = {**self.headers, **obj.headers}
+                        response = await session.post(
+                            url=self.url,
+                            data=obj,
+                            headers=headers,
+                            timeout=request_timeout,
+                        )
+                    else:
+                        body = json.dumps(obj, ensure_ascii=False).encode(
+                            "utf-8",
+                        )
+                        response = await session.request(
+                            "POST",
+                            url=self.url,
+                            data=body,
+                            headers=self.headers,
+                            timeout=request_timeout,
+                        )
+                elif self.method == HTTPMethod.GET:
+                    params = {}
+                    if hasattr(self, "data") and self.data is not None:
+                        params = getattr(self.data, "parameters", {})
+                    response = await session.get(
                         url=self.url,
-                        data=obj,
-                        headers=headers,
-                        timeout=request_timeout,
-                    )
-                else:
-                    body = json.dumps(obj, ensure_ascii=False).encode(
-                        "utf-8",
-                    )
-                    response = await session.request(
-                        "POST",
-                        url=self.url,
-                        data=body,
+                        params=params,
                         headers=self.headers,
                         timeout=request_timeout,
                     )
-            elif self.method == HTTPMethod.GET:
-                params = {}
-                if hasattr(self, "data") and self.data is not None:
-                    params = getattr(self.data, "parameters", {})
-                response = await session.get(
-                    url=self.url,
-                    params=params,
-                    headers=self.headers,
-                    timeout=request_timeout,
-                )
-            else:
-                raise UnsupportedHTTPMethod(
-                    f"Unsupported http method: {self.method}",
-                )
-            logger.debug("Response returned: %s", self.url)
-            async with response:
-                async for rsp in self._handle_response(response):
-                    yield rsp
-        except Exception:
-            logger.exception("Request failed")
-            raise
+                else:
+                    raise UnsupportedHTTPMethod(
+                        f"Unsupported http method: {self.method}",
+                    )
+                logger.debug("Response returned: %s", self.url)
+                async with response:
+                    async for rsp in self._handle_response(response):
+                        yield rsp
+            finally:
+                if should_close:
+                    await session.close()
+        except Exception as e:
+            logger.debug(e)
+            raise e

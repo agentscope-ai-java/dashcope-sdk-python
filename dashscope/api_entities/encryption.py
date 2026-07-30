@@ -4,12 +4,10 @@
 import base64
 import json
 import os
-import threading
-import time
 
 import requests
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 
@@ -17,14 +15,8 @@ import dashscope
 from dashscope.common.constants import (
     ENCRYPTION_AES_SECRET_KEY_BYTES,
     ENCRYPTION_AES_IV_LENGTH,
-    DEFAULT_REQUEST_TIMEOUT_SECONDS,
 )
 from dashscope.common.logging import logger
-
-# Public key cache with TTL (1 hour), keyed by (base_url, api_key)
-_public_key_cache = {}
-_public_key_cache_lock = threading.Lock()
-_PUBLIC_KEY_CACHE_TTL = 3600  # seconds
 
 
 class Encryption:
@@ -94,29 +86,12 @@ class Encryption:
 
     @staticmethod
     def _get_public_keys():
-        cache_key = (dashscope.base_http_api_url, dashscope.api_key)
-
-        # Check cache validity
-        current_time = time.time()
-        with _public_key_cache_lock:
-            cached = _public_key_cache.get(cache_key)
-            if (
-                cached is not None
-                and (current_time - cached[1]) < _PUBLIC_KEY_CACHE_TTL
-            ):
-                return cached[0]
-
-        # Fetch from server
         url = dashscope.base_http_api_url + "/public-keys/latest"
         headers = {
             "Authorization": f"Bearer {dashscope.api_key}",
         }
 
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
-        )
+        response = requests.get(url, headers=headers)
         if response.status_code != 200:
             logger.error("exceptional public key response: %s", response)
             return None
@@ -127,10 +102,6 @@ class Encryption:
         if not response_data:
             logger.error("no valid data in public key response")
             return None
-
-        # Update cache
-        with _public_key_cache_lock:
-            _public_key_cache[cache_key] = (response_data, current_time)
 
         return response_data
 
@@ -214,14 +185,10 @@ class Encryption:
 
         base64_aes_key = base64.b64encode(aes_key).decode("utf-8")
 
-        # Encrypt with RSA-OAEP (secure against Bleichenbacher attacks)
+        # Encrypt with RSA
         encrypted_bytes = public_key.encrypt(
             base64_aes_key.encode("utf-8"),
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None,
-            ),
+            padding.PKCS1v15(),
         )
 
         return base64.b64encode(encrypted_bytes).decode("utf-8")
