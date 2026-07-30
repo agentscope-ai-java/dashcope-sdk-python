@@ -145,9 +145,9 @@ class Steps(ListObjectMixin, GetStatusMixin):
         """
         # pylint: disable=too-many-function-args
         return cls.retrieve(  # type: ignore[misc]
-            thread_id,
-            run_id,
             step_id,
+            thread_id=thread_id,
+            run_id=run_id,
             workspace=workspace,
             api_key=api_key,
             **kwargs,
