@@ -10,8 +10,6 @@ from dashscope.agentstudio.types import (
     Agent,
     AgentVersion,
     Credential,
-    Deployment,
-    DeploymentRun,
     Environment,
     File,
     ServerEvent,
@@ -66,14 +64,6 @@ def _coerce_vault(payload: Mapping[str, Any]) -> Vault:
 
 def _coerce_credential(payload: Mapping[str, Any]) -> Credential:
     return Credential(**dict(payload))
-
-
-def _coerce_deployment(payload: Mapping[str, Any]) -> Deployment:
-    return Deployment(**dict(payload))
-
-
-def _coerce_deployment_run(payload: Mapping[str, Any]) -> DeploymentRun:
-    return DeploymentRun(**dict(payload))
 
 
 # ---------------------------------------------------------------------------
