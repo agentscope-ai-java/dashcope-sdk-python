@@ -29,7 +29,9 @@ def close_shared_aio_session() -> None: ...
 class Message:
     role: str
     content: Union[str, List[Any]]
-    def __init__(self, role: str, content: Union[str, List[Any]] = None, **kwargs: Any) -> None: ...
+    def __init__(
+        self, role: str, content: Union[str, List[Any]] = None, **kwargs: Any
+    ) -> None: ...
 
 class DashScopeAPIResponse:
     status_code: int
@@ -58,7 +60,6 @@ class VideoSynthesisResponse(DashScopeAPIResponse): ...
 class ReRankResponse(DashScopeAPIResponse): ...
 class TranscriptionResponse(DashScopeAPIResponse): ...
 class ConversationResponse(DashScopeAPIResponse): ...
-
 class BatchTextEmbeddingResponse: ...
 
 # ---------------------------------------------------------------------------
@@ -519,25 +520,84 @@ class FineTunes:
         **kwargs: Any,
     ) -> Any: ...
     @classmethod
-    def cancel(cls, job_id: str, api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def cancel(
+        cls,
+        job_id: str,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def list(cls, page_no: int = ..., page_size: int = ..., api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def list(
+        cls,
+        page_no: int = ...,
+        page_size: int = ...,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def get(cls, job_id: str, api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def get(
+        cls,
+        job_id: str,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def delete(cls, job_id: str, api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def delete(
+        cls,
+        job_id: str,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
 
 class Deployments:
     @classmethod
-    def call(cls, model: str, capacity: int, version: str, suffix: str | None = None, api_key: str | None = None, **kwargs: Any) -> Any: ...
+    def call(
+        cls,
+        model: str,
+        capacity: int,
+        version: str,
+        suffix: str | None = None,
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def list(cls, page_no: int = ..., page_size: int = ..., api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def list(
+        cls,
+        page_no: int = ...,
+        page_size: int = ...,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def get(cls, deployed_model: str, api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def get(
+        cls,
+        deployed_model: str,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def delete(cls, deployed_model: str, api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def delete(
+        cls,
+        deployed_model: str,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
     @classmethod
-    def scale(cls, deployed_model: str, capacity: int, api_key: str | None = None, workspace: str | None = None, **kwargs: Any) -> Any: ...
+    def scale(
+        cls,
+        deployed_model: str,
+        capacity: int,
+        api_key: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> Any: ...
 
 # ---------------------------------------------------------------------------
 # Application
@@ -563,6 +623,7 @@ class Application:
 # ---------------------------------------------------------------------------
 class Assistant: ...
 class AssistantList: ...
+
 class Assistants:
     @classmethod
     def create(
@@ -575,9 +636,23 @@ class Assistants:
         **kwargs: Any,
     ) -> Assistant: ...
     @classmethod
-    def retrieve(cls, assistant_id: str, workspace: str | None = None, api_key: str | None = None, **kwargs: Any) -> Assistant: ...
+    def retrieve(
+        cls,
+        assistant_id: str,
+        workspace: str | None = None,
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> Assistant: ...
     @classmethod
-    def list(cls, limit: int | None = None, order: str | None = None, after: str | None = None, before: str | None = None, workspace: str | None = None, **kwargs: Any) -> AssistantList: ...
+    def list(
+        cls,
+        limit: int | None = None,
+        order: str | None = None,
+        after: str | None = None,
+        before: str | None = None,
+        workspace: str | None = None,
+        **kwargs: Any,
+    ) -> AssistantList: ...
 
 # ---------------------------------------------------------------------------
 # Threads (deprecated)
@@ -613,7 +688,9 @@ class Files: ...
 # ---------------------------------------------------------------------------
 class Tokenization:
     @classmethod
-    def call(cls, model: str, input: Any, **kwargs: Any) -> DashScopeAPIResponse: ...
+    def call(
+        cls, model: str, input: Any, **kwargs: Any
+    ) -> DashScopeAPIResponse: ...
 
 class Tokenizer:
     def encode(self, text: str, **kwargs: Any) -> List[int]: ...
