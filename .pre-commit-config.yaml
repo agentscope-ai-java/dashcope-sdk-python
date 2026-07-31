@@ -44,7 +44,6 @@ repos:
           | ^tests/legacy/
           | ^samples/
           | \.html$
-          | \.pyi$
           )
         args: [
           --ignore-missing-imports,
