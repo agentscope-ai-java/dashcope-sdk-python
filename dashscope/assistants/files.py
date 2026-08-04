@@ -281,4 +281,3 @@ class Files(CreateMixin, DeleteMixin, ListObjectMixin, GetStatusMixin):
             **kwargs,
         )
         return DeleteResponse(**response)
-
