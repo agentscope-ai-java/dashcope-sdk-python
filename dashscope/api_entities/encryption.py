@@ -15,7 +15,6 @@ import dashscope
 from dashscope.common.constants import (
     ENCRYPTION_AES_SECRET_KEY_BYTES,
     ENCRYPTION_AES_IV_LENGTH,
-    DEFAULT_REQUEST_TIMEOUT_SECONDS,
 )
 from dashscope.common.logging import logger
 
@@ -92,11 +91,7 @@ class Encryption:
             "Authorization": f"Bearer {dashscope.api_key}",
         }
 
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=DEFAULT_REQUEST_TIMEOUT_SECONDS,
-        )
+        response = requests.get(url, headers=headers)
         if response.status_code != 200:
             logger.error("exceptional public key response: %s", response)
             return None
