@@ -67,16 +67,9 @@ from .types.params import (
     SessionUpdateParams,
     EnvironmentCreateParams,
     EnvironmentUpdateParams,
+    DeploymentCreateParams,
+    DeploymentUpdateParams,
     SessionEventSendParams,
-    WebhookEndpointCreateParams,
-    WebhookEndpointUpdateParams,
-    WebhookEventListParams,
-)
-from .constants import (
-    WebhookDeliveryStatus,
-    WebhookDisabledReason,
-    WebhookEventType,
-    WebhookStatus,
 )
 
 __all__ = [
@@ -123,12 +116,7 @@ __all__ = [
     "SessionUpdateParams",
     "EnvironmentCreateParams",
     "EnvironmentUpdateParams",
+    "DeploymentCreateParams",
+    "DeploymentUpdateParams",
     "SessionEventSendParams",
-    "WebhookEndpointCreateParams",
-    "WebhookEndpointUpdateParams",
-    "WebhookEventListParams",
-    "WebhookStatus",
-    "WebhookDisabledReason",
-    "WebhookDeliveryStatus",
-    "WebhookEventType",
 ]
