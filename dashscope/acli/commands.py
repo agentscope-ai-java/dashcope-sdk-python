@@ -38,11 +38,7 @@ HELP_SECTIONS: list[tuple[str, list[tuple[str, str]]]] = [
                 "JSON output mode (replies forced to JSON when on)",
             ),
             ("/compress", "Compress context (LLM summary replaces history)"),
-            (
-                "/history",
-                "Conversation history (stats/list/search/export/clear)",
-            ),
-            ("/undo", "Undo the last file write/delete (checkpoint)"),
+            ("/history", "Conversation history (stats/list/export/clear)"),
             (
                 "/feedback good|bad",
                 "Rate task satisfaction (stored in experience memory)",
