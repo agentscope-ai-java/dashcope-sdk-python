@@ -501,120 +501,94 @@ class DeleteResponse(BaseModel):
     _fields = ("id", "type", "request_id")
 
 
-class DeploymentAgentReference(BaseModel):
-    """Agent version reference stored on a deployment run."""
-
-    _fields = ("id", "version")
-
-
-class DeploymentSchedule(BaseModel):
-    """Cron schedule returned with a deployment."""
-
-    _fields = (
-        "type",
-        "expression",
-        "timezone",
-        "last_run_at",
-        "next_run_at",
-    )
-
-
-class DeploymentResource(BaseModel):
-    """Resource mounted into sessions created by a deployment."""
-
-    _fields = ("type", "file_id", "mount_path")
-
-
-class DeploymentError(BaseModel):
-    """Error information attached to a failed run or automatic pause."""
-
-    _fields = ("code", "message")
-
-
-class DeploymentPausedReason(BaseModel):
-    """Why a deployment is paused (``manual`` or ``error``)."""
-
-    _fields = ("type", "error")
-
-    def __init__(self, **kwargs: Any) -> None:
-        error = kwargs.get("error")
-        if isinstance(error, Mapping):
-            kwargs["error"] = DeploymentError(**dict(error))
-        super().__init__(**kwargs)
-
-
-class Deployment(BaseModel):
-    """Managed Agent deployment."""
-
-    metadata: Optional[Dict[str, str]]
+class WebhookEndpoint(BaseModel):
+    """Managed Agent webhook endpoint."""
 
     _fields = (
         "id",
-        "type",
-        "name",
         "description",
-        "agent",
-        "environment_id",
-        "schedule",
-        "initial_events",
-        "resources",
-        "vault_ids",
-        "metadata",
+        "url",
+        "events",
         "status",
-        "paused_reason",
-        "archived_at",
+        "disabled_reason",
+        "consecutive_fail",
+        "last_success_at",
+        "last_failure_at",
+        "signing_secret",
         "created_at",
         "updated_at",
         "request_id",
     )
 
+
+class WebhookEndpointList(BaseModel):
+    """Non-paginated list of webhook endpoints in the current workspace."""
+
+    _fields = ("data", "request_id")
+
     def __init__(self, **kwargs: Any) -> None:
-        agent = kwargs.get("agent")
-        if isinstance(agent, Mapping):
-            kwargs["agent"] = Agent(**dict(agent))
-        schedule = kwargs.get("schedule")
-        if isinstance(schedule, Mapping):
-            kwargs["schedule"] = DeploymentSchedule(**dict(schedule))
-        resources = kwargs.get("resources")
-        if isinstance(resources, list):
-            kwargs["resources"] = [
-                DeploymentResource(**dict(resource))
-                if isinstance(resource, Mapping)
-                else resource
-                for resource in resources
+        data = kwargs.get("data")
+        if isinstance(data, list):
+            kwargs["data"] = [
+                WebhookEndpoint(**dict(item))
+                if isinstance(item, Mapping)
+                else item
+                for item in data
             ]
-        paused_reason = kwargs.get("paused_reason")
-        if isinstance(paused_reason, Mapping):
-            kwargs["paused_reason"] = DeploymentPausedReason(
-                **dict(paused_reason),
-            )
         super().__init__(**kwargs)
 
 
-class DeploymentRun(BaseModel):
-    """A single manual or scheduled deployment execution."""
+class WebhookSecretReset(BaseModel):
+    """Result returned after resetting a webhook signing secret."""
+
+    _fields = ("id", "signing_secret", "updated_at", "request_id")
+
+
+class WebhookEventData(BaseModel):
+    """Resource data carried by a webhook event envelope."""
 
     _fields = (
         "id",
         "type",
-        "deployment_id",
-        "agent",
-        "session_id",
-        "trigger_source",
+        "workspace_id",
+        "session_thread_id",
+        "vault_id",
+        "extensions",
+    )
+
+
+class WebhookDelivery(BaseModel):
+    """Delivery audit information attached to an endpoint event."""
+
+    _fields = (
+        "webhook_id",
         "status",
-        "error",
-        "started_at",
-        "finished_at",
+        "attempt_count",
+        "delivery_at",
+        "finish_at",
+        "failure_reason",
+    )
+
+
+class WebhookEvent(BaseModel):
+    """Webhook event envelope returned by test and endpoint audit APIs."""
+
+    _fields = (
+        "type",
+        "id",
+        "created_at",
+        "data",
+        "delivery",
         "request_id",
     )
 
     def __init__(self, **kwargs: Any) -> None:
-        agent = kwargs.get("agent")
-        if isinstance(agent, Mapping):
-            kwargs["agent"] = DeploymentAgentReference(**dict(agent))
-        error = kwargs.get("error")
-        if isinstance(error, Mapping):
-            kwargs["error"] = DeploymentError(**dict(error))
+        data = kwargs.get("data")
+        if isinstance(data, Mapping):
+            kwargs["data"] = WebhookEventData(**dict(data))
+        delivery = kwargs.get("delivery")
+        if isinstance(delivery, Mapping):
+            kwargs["delivery"] = WebhookDelivery(**dict(delivery))
         super().__init__(**kwargs)
 
 
