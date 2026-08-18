@@ -324,13 +324,6 @@ class TranslationRecognizerRealtime(BaseApi):
         source_language: str = None,
         translation_enabled: bool = False,
         workspace: str = None,
-        # Recognition parameters
-        disfluency_removal_enabled: bool = None,
-        diarization_enabled: bool = None,
-        speaker_count: int = None,
-        timestamp_alignment_enabled: bool = None,
-        special_word_filter: str = None,
-        audio_event_detection_enabled: bool = None,
         **kwargs,
     ):
         if model is None:
@@ -354,25 +347,6 @@ class TranslationRecognizerRealtime(BaseApi):
         self._worker = None
         self._silence_timer = None
         self._kwargs = kwargs
-        # Store recognition parameters
-        if disfluency_removal_enabled is not None:
-            self._kwargs[
-                "disfluency_removal_enabled"
-            ] = disfluency_removal_enabled
-        if diarization_enabled is not None:
-            self._kwargs["diarization_enabled"] = diarization_enabled
-        if speaker_count is not None:
-            self._kwargs["speaker_count"] = speaker_count
-        if timestamp_alignment_enabled is not None:
-            self._kwargs[
-                "timestamp_alignment_enabled"
-            ] = timestamp_alignment_enabled
-        if special_word_filter is not None:
-            self._kwargs["special_word_filter"] = special_word_filter
-        if audio_event_detection_enabled is not None:
-            self._kwargs[
-                "audio_event_detection_enabled"
-            ] = audio_event_detection_enabled
         self._workspace = workspace
         self._start_stream_timestamp = -1
         self._first_package_timestamp = -1
@@ -482,17 +456,7 @@ class TranslationRecognizerRealtime(BaseApi):
         )
         return responses
 
-    def start(
-        self,
-        # Recognition parameters
-        disfluency_removal_enabled: bool = None,
-        diarization_enabled: bool = None,
-        speaker_count: int = None,
-        timestamp_alignment_enabled: bool = None,
-        special_word_filter: str = None,
-        audio_event_detection_enabled: bool = None,
-        **kwargs,
-    ):
+    def start(self, **kwargs):
         """Real-time translation recognizer in asynchronous mode.
            Please call 'stop()' after you have completed translation & recognition.  # noqa: E501
 
@@ -529,25 +493,6 @@ class TranslationRecognizerRealtime(BaseApi):
         self._first_package_timestamp = -1
         self._stop_stream_timestamp = -1
         self._on_complete_timestamp = -1
-        # Update recognition parameters
-        if disfluency_removal_enabled is not None:
-            self._kwargs[
-                "disfluency_removal_enabled"
-            ] = disfluency_removal_enabled
-        if diarization_enabled is not None:
-            self._kwargs["diarization_enabled"] = diarization_enabled
-        if speaker_count is not None:
-            self._kwargs["speaker_count"] = speaker_count
-        if timestamp_alignment_enabled is not None:
-            self._kwargs[
-                "timestamp_alignment_enabled"
-            ] = timestamp_alignment_enabled
-        if special_word_filter is not None:
-            self._kwargs["special_word_filter"] = special_word_filter
-        if audio_event_detection_enabled is not None:
-            self._kwargs[
-                "audio_event_detection_enabled"
-            ] = audio_event_detection_enabled
         self._kwargs.update(**kwargs)
         self._recognition_once = False
         self._worker = threading.Thread(target=self.__receive_worker)
@@ -566,18 +511,11 @@ class TranslationRecognizerRealtime(BaseApi):
             self._running = False
             raise InvalidTask("Invalid task, task create failed.")
 
-    # pylint: disable=W0237,too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements
     def call(  # type: ignore[override]
         self,
         file: str,
         phrase_id: str = None,
-        # Recognition parameters
-        disfluency_removal_enabled: bool = None,
-        diarization_enabled: bool = None,
-        speaker_count: int = None,
-        timestamp_alignment_enabled: bool = None,
-        special_word_filter: str = None,
-        audio_event_detection_enabled: bool = None,
         **kwargs,
     ) -> TranslationRecognizerResultPack:
         """TranslationRecognizerRealtime in synchronous mode.
@@ -621,25 +559,6 @@ class TranslationRecognizerRealtime(BaseApi):
         self._recognition_once = True
         self._stream_data = Queue()
         self._phrase = phrase_id
-        # Update recognition parameters
-        if disfluency_removal_enabled is not None:
-            self._kwargs[
-                "disfluency_removal_enabled"
-            ] = disfluency_removal_enabled
-        if diarization_enabled is not None:
-            self._kwargs["diarization_enabled"] = diarization_enabled
-        if speaker_count is not None:
-            self._kwargs["speaker_count"] = speaker_count
-        if timestamp_alignment_enabled is not None:
-            self._kwargs[
-                "timestamp_alignment_enabled"
-            ] = timestamp_alignment_enabled
-        if special_word_filter is not None:
-            self._kwargs["special_word_filter"] = special_word_filter
-        if audio_event_detection_enabled is not None:
-            self._kwargs[
-                "audio_event_detection_enabled"
-            ] = audio_event_detection_enabled
         self._kwargs.update(**kwargs)
         results = TranslationRecognizerResultPack()
         error_message = None
@@ -870,13 +789,6 @@ class TranslationRecognizerChat(BaseApi):
         source_language: str = None,
         translation_enabled: bool = False,
         workspace: str = None,
-        # Recognition parameters
-        disfluency_removal_enabled: bool = None,
-        diarization_enabled: bool = None,
-        speaker_count: int = None,
-        timestamp_alignment_enabled: bool = None,
-        special_word_filter: str = None,
-        audio_event_detection_enabled: bool = None,
         **kwargs,
     ):
         if model is None:
@@ -900,25 +812,6 @@ class TranslationRecognizerChat(BaseApi):
         self._worker = None
         self._silence_timer = None
         self._kwargs = kwargs
-        # Store recognition parameters
-        if disfluency_removal_enabled is not None:
-            self._kwargs[
-                "disfluency_removal_enabled"
-            ] = disfluency_removal_enabled
-        if diarization_enabled is not None:
-            self._kwargs["diarization_enabled"] = diarization_enabled
-        if speaker_count is not None:
-            self._kwargs["speaker_count"] = speaker_count
-        if timestamp_alignment_enabled is not None:
-            self._kwargs[
-                "timestamp_alignment_enabled"
-            ] = timestamp_alignment_enabled
-        if special_word_filter is not None:
-            self._kwargs["special_word_filter"] = special_word_filter
-        if audio_event_detection_enabled is not None:
-            self._kwargs[
-                "audio_event_detection_enabled"
-            ] = audio_event_detection_enabled
         self._workspace = workspace
         self._start_stream_timestamp = -1
         self._first_package_timestamp = -1
@@ -1045,17 +938,7 @@ class TranslationRecognizerChat(BaseApi):
         )
         return responses
 
-    def start(
-        self,
-        # Recognition parameters
-        disfluency_removal_enabled: bool = None,
-        diarization_enabled: bool = None,
-        speaker_count: int = None,
-        timestamp_alignment_enabled: bool = None,
-        special_word_filter: str = None,
-        audio_event_detection_enabled: bool = None,
-        **kwargs,
-    ):
+    def start(self, **kwargs):
         """Real-time translation recognizer in asynchronous mode.
            Please call 'stop()' after you have completed translation & recognition.  # noqa: E501
 
@@ -1090,25 +973,6 @@ class TranslationRecognizerChat(BaseApi):
         self._first_package_timestamp = -1
         self._stop_stream_timestamp = -1
         self._on_complete_timestamp = -1
-        # Update recognition parameters
-        if disfluency_removal_enabled is not None:
-            self._kwargs[
-                "disfluency_removal_enabled"
-            ] = disfluency_removal_enabled
-        if diarization_enabled is not None:
-            self._kwargs["diarization_enabled"] = diarization_enabled
-        if speaker_count is not None:
-            self._kwargs["speaker_count"] = speaker_count
-        if timestamp_alignment_enabled is not None:
-            self._kwargs[
-                "timestamp_alignment_enabled"
-            ] = timestamp_alignment_enabled
-        if special_word_filter is not None:
-            self._kwargs["special_word_filter"] = special_word_filter
-        if audio_event_detection_enabled is not None:
-            self._kwargs[
-                "audio_event_detection_enabled"
-            ] = audio_event_detection_enabled
         self._kwargs.update(**kwargs)
         self._recognition_once = False
         self._worker = threading.Thread(target=self.__receive_worker)
