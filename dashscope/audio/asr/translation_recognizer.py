@@ -9,9 +9,8 @@ import uuid
 from http import HTTPStatus
 from queue import Queue
 from threading import Timer
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from dashscope.audio.asr.recognition import _merge_recognition_params
 from dashscope.client.base_api import BaseApi
 from dashscope.common.constants import ApiProtocol
 from dashscope.common.error import (
@@ -325,13 +324,6 @@ class TranslationRecognizerRealtime(BaseApi):
         source_language: str = None,
         translation_enabled: bool = False,
         workspace: str = None,
-        # Recognition parameters
-        disfluency_removal_enabled: Optional[bool] = None,
-        diarization_enabled: Optional[bool] = None,
-        speaker_count: Optional[int] = None,
-        timestamp_alignment_enabled: Optional[bool] = None,
-        special_word_filter: Optional[str] = None,
-        audio_event_detection_enabled: Optional[bool] = None,
         **kwargs,
     ):
         if model is None:
@@ -355,16 +347,6 @@ class TranslationRecognizerRealtime(BaseApi):
         self._worker = None
         self._silence_timer = None
         self._kwargs = kwargs
-        # Store recognition parameters
-        _merge_recognition_params(
-            self._kwargs,
-            disfluency_removal_enabled,
-            diarization_enabled,
-            speaker_count,
-            timestamp_alignment_enabled,
-            special_word_filter,
-            audio_event_detection_enabled,
-        )
         self._workspace = workspace
         self._start_stream_timestamp = -1
         self._first_package_timestamp = -1
@@ -474,17 +456,7 @@ class TranslationRecognizerRealtime(BaseApi):
         )
         return responses
 
-    def start(
-        self,
-        # Recognition parameters
-        disfluency_removal_enabled: Optional[bool] = None,
-        diarization_enabled: Optional[bool] = None,
-        speaker_count: Optional[int] = None,
-        timestamp_alignment_enabled: Optional[bool] = None,
-        special_word_filter: Optional[str] = None,
-        audio_event_detection_enabled: Optional[bool] = None,
-        **kwargs,
-    ):
+    def start(self, **kwargs):
         """Real-time translation recognizer in asynchronous mode.
            Please call 'stop()' after you have completed translation & recognition.  # noqa: E501
 
@@ -521,16 +493,6 @@ class TranslationRecognizerRealtime(BaseApi):
         self._first_package_timestamp = -1
         self._stop_stream_timestamp = -1
         self._on_complete_timestamp = -1
-        # Update recognition parameters
-        _merge_recognition_params(
-            self._kwargs,
-            disfluency_removal_enabled,
-            diarization_enabled,
-            speaker_count,
-            timestamp_alignment_enabled,
-            special_word_filter,
-            audio_event_detection_enabled,
-        )
         self._kwargs.update(**kwargs)
         self._recognition_once = False
         self._worker = threading.Thread(target=self.__receive_worker)
@@ -549,18 +511,11 @@ class TranslationRecognizerRealtime(BaseApi):
             self._running = False
             raise InvalidTask("Invalid task, task create failed.")
 
-    # pylint: disable=W0237,too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements
     def call(  # type: ignore[override]
         self,
         file: str,
         phrase_id: str = None,
-        # Recognition parameters
-        disfluency_removal_enabled: Optional[bool] = None,
-        diarization_enabled: Optional[bool] = None,
-        speaker_count: Optional[int] = None,
-        timestamp_alignment_enabled: Optional[bool] = None,
-        special_word_filter: Optional[str] = None,
-        audio_event_detection_enabled: Optional[bool] = None,
         **kwargs,
     ) -> TranslationRecognizerResultPack:
         """TranslationRecognizerRealtime in synchronous mode.
@@ -604,16 +559,6 @@ class TranslationRecognizerRealtime(BaseApi):
         self._recognition_once = True
         self._stream_data = Queue()
         self._phrase = phrase_id
-        # Update recognition parameters
-        _merge_recognition_params(
-            self._kwargs,
-            disfluency_removal_enabled,
-            diarization_enabled,
-            speaker_count,
-            timestamp_alignment_enabled,
-            special_word_filter,
-            audio_event_detection_enabled,
-        )
         self._kwargs.update(**kwargs)
         results = TranslationRecognizerResultPack()
         error_message = None
@@ -844,13 +789,6 @@ class TranslationRecognizerChat(BaseApi):
         source_language: str = None,
         translation_enabled: bool = False,
         workspace: str = None,
-        # Recognition parameters
-        disfluency_removal_enabled: Optional[bool] = None,
-        diarization_enabled: Optional[bool] = None,
-        speaker_count: Optional[int] = None,
-        timestamp_alignment_enabled: Optional[bool] = None,
-        special_word_filter: Optional[str] = None,
-        audio_event_detection_enabled: Optional[bool] = None,
         **kwargs,
     ):
         if model is None:
@@ -874,16 +812,6 @@ class TranslationRecognizerChat(BaseApi):
         self._worker = None
         self._silence_timer = None
         self._kwargs = kwargs
-        # Store recognition parameters
-        _merge_recognition_params(
-            self._kwargs,
-            disfluency_removal_enabled,
-            diarization_enabled,
-            speaker_count,
-            timestamp_alignment_enabled,
-            special_word_filter,
-            audio_event_detection_enabled,
-        )
         self._workspace = workspace
         self._start_stream_timestamp = -1
         self._first_package_timestamp = -1
@@ -1010,17 +938,7 @@ class TranslationRecognizerChat(BaseApi):
         )
         return responses
 
-    def start(
-        self,
-        # Recognition parameters
-        disfluency_removal_enabled: Optional[bool] = None,
-        diarization_enabled: Optional[bool] = None,
-        speaker_count: Optional[int] = None,
-        timestamp_alignment_enabled: Optional[bool] = None,
-        special_word_filter: Optional[str] = None,
-        audio_event_detection_enabled: Optional[bool] = None,
-        **kwargs,
-    ):
+    def start(self, **kwargs):
         """Real-time translation recognizer in asynchronous mode.
            Please call 'stop()' after you have completed translation & recognition.  # noqa: E501
 
@@ -1055,16 +973,6 @@ class TranslationRecognizerChat(BaseApi):
         self._first_package_timestamp = -1
         self._stop_stream_timestamp = -1
         self._on_complete_timestamp = -1
-        # Update recognition parameters
-        _merge_recognition_params(
-            self._kwargs,
-            disfluency_removal_enabled,
-            diarization_enabled,
-            speaker_count,
-            timestamp_alignment_enabled,
-            special_word_filter,
-            audio_event_detection_enabled,
-        )
         self._kwargs.update(**kwargs)
         self._recognition_once = False
         self._worker = threading.Thread(target=self.__receive_worker)

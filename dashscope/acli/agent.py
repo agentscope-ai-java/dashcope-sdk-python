@@ -326,10 +326,24 @@ class Agent:
             experience_tracker=self.experience_tracker,
             disabled_caps_provider=self.disabled_caps_provider,
             directives_provider=self.directives_provider,
+            scene_provider=self._scene_section,
             current_turn_tools=self._current_turn_tools,
             connected_mcp_services=self._connected_mcp_services,
         )
         return self._prompt_pipeline.render(ctx)
+
+    def _scene_section(self) -> str:
+        """Scene memory of the current session topic (best-effort).
+
+        Subagents and SDK callers may run without a session manager;
+        any failure simply yields no scene section.
+        """
+        try:
+            from dashscope.acli.session import get_session_manager
+
+            return get_session_manager().get_scene()
+        except Exception:
+            return ""
 
     def _reflection_section(self) -> str:
         """Inject reflection hints when repeated failures detected."""
@@ -524,9 +538,9 @@ class Agent:
             async for chunk in self.provider.chat_stream(
                 normalize_for_model(messages_with_system, self.model_name),
                 tools_schema,
-                response_format={"type": "json_object"}
-                if self.json_mode
-                else None,
+                response_format=(
+                    {"type": "json_object"} if self.json_mode else None
+                ),
             ):
                 if chunk.delta_content:
                     full_content += chunk.delta_content

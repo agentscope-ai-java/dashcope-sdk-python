@@ -10,10 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from dashscope.acli.utils.keywords import (
-    expand_scoring_terms,
-    extract_keywords,
-)
+from dashscope.acli.utils.keywords import expand_scoring_terms, extract_keywords
 
 
 class ExperienceTracker:
@@ -114,6 +111,9 @@ class ExperienceTracker:
                     score += 1
             if score > 0:
                 if exp.get("lesson"):
+                    score += 1
+                # Cautionary lessons are high-value recall targets.
+                if exp.get("outcome") == "failure":
                     score += 1
                 scored.append((score, index, exp))
 
