@@ -10,6 +10,12 @@ from typing import Any, Optional, Tuple, Union
 import httpx
 
 from dashscope.agentstudio.resources.agents import Agents, AsyncAgents
+from dashscope.agentstudio.resources.deployments import (
+    AsyncDeploymentRuns,
+    AsyncDeployments,
+    DeploymentRuns,
+    Deployments,
+)
 from dashscope.agentstudio.resources.environments import (
     Environments,
     AsyncEnvironments,
@@ -18,10 +24,6 @@ from dashscope.agentstudio.resources.files import Files, AsyncFiles
 from dashscope.agentstudio.resources.sessions import Sessions, AsyncSessions
 from dashscope.agentstudio.resources.skills import Skills, AsyncSkills
 from dashscope.agentstudio.resources.vaults import Vaults, AsyncVaults
-from dashscope.agentstudio.resources.webhook_endpoints import (
-    AsyncWebhookEndpoints,
-    WebhookEndpoints,
-)
 from dashscope.agentstudio.constants import (
     AGENTSTUDIO_BASE_URL_TEMPLATE,
     AGENTSTUDIO_DEFAULT_REGION,
@@ -120,12 +122,13 @@ class Client:
             http_client=http_client,
         )
         self.agents = Agents(self)
+        self.deployments = Deployments(self)
+        self.deployment_runs = DeploymentRuns(self)
         self.sessions = Sessions(self)
         self.environments = Environments(self)
         self.files = Files(self)
         self.skills = Skills(self)
         self.vaults = Vaults(self)
-        self.webhook_endpoints = WebhookEndpoints(self)
 
     def close(self) -> None:
         self.transport.close()
@@ -191,12 +194,13 @@ class AsyncClient:
             http_client=http_client,
         )
         self.agents = AsyncAgents(self)
+        self.deployments = AsyncDeployments(self)
+        self.deployment_runs = AsyncDeploymentRuns(self)
         self.sessions = AsyncSessions(self)
         self.environments = AsyncEnvironments(self)
         self.files = AsyncFiles(self)
         self.skills = AsyncSkills(self)
         self.vaults = AsyncVaults(self)
-        self.webhook_endpoints = AsyncWebhookEndpoints(self)
 
     async def aclose(self) -> None:
         await self.transport.aclose()
