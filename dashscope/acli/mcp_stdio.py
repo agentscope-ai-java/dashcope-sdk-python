@@ -13,12 +13,11 @@ from __future__ import annotations
 import asyncio
 import json
 
-from dashscope.acli import __version__
 from dashscope.acli.platforms.bailian.mcp import MCP_PROTOCOL_VERSION, MCPError
 
 __all__ = ["StdioMCPClient", "MCPError"]
 
-_CLIENT_INFO = {"name": "acli", "version": __version__}
+_CLIENT_INFO = {"name": "acli", "version": "0.1.0"}
 _CLOSE_TIMEOUT = 3.0
 _STDERR_TAIL = 500
 

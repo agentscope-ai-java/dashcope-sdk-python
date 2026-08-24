@@ -24,7 +24,6 @@ from dashscope.cli.common import err_console  # noqa: E402
 from dashscope.common.error import AuthenticationError  # noqa: E402
 from dashscope.cli import (  # noqa: E402
     application,
-    auth,
     deployments,
     embeddings,
     files,
@@ -371,7 +370,7 @@ def _route_to_expert(command, tui=None):
 app = typer.Typer(
     name="dashscope",
     help="DashScope command line tools.",
-    add_completion=True,
+    add_completion=False,
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
@@ -392,7 +391,6 @@ def callback(
 
 
 # Register sub-command groups
-app.add_typer(auth.app)
 app.add_typer(generation.app)
 app.add_typer(fine_tunes.app, name="ft")
 app.add_typer(fine_tunes.app, name="fine-tunes", hidden=True)
