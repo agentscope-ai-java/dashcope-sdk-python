@@ -42,7 +42,6 @@ class Agents:
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         mcp_servers: Optional[Sequence[Mapping[str, Any]]] = None,
         skills: Optional[Sequence[Mapping[str, Any]]] = None,
-        multiagent: Optional[Mapping[str, Any]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> Agent:
         body = AgentCreateParams(
@@ -53,7 +52,6 @@ class Agents:
             tools=tools,
             mcp_servers=mcp_servers,
             skills=skills,
-            multiagent=multiagent,
             metadata=metadata,
         ).to_dict()
         resp = self._client.transport.request("POST", _PATH_AGENTS, json=body)
@@ -91,7 +89,6 @@ class Agents:
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         mcp_servers: Optional[Sequence[Mapping[str, Any]]] = None,
         skills: Optional[Sequence[Mapping[str, Any]]] = None,
-        multiagent: Optional[Mapping[str, Any]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> Agent:
         """Update the latest version of an agent.
@@ -109,7 +106,6 @@ class Agents:
             tools=tools,
             mcp_servers=mcp_servers,
             skills=skills,
-            multiagent=multiagent,
             metadata=metadata,
         ).to_dict()
         resp = self._client.transport.request(
@@ -195,7 +191,6 @@ class AsyncAgents:
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         mcp_servers: Optional[Sequence[Mapping[str, Any]]] = None,
         skills: Optional[Sequence[Mapping[str, Any]]] = None,
-        multiagent: Optional[Mapping[str, Any]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> Agent:
         body = AgentCreateParams(
@@ -206,7 +201,6 @@ class AsyncAgents:
             tools=tools,
             mcp_servers=mcp_servers,
             skills=skills,
-            multiagent=multiagent,
             metadata=metadata,
         ).to_dict()
         resp = await self._client.transport.request(
@@ -248,7 +242,6 @@ class AsyncAgents:
         tools: Optional[Sequence[Mapping[str, Any]]] = None,
         mcp_servers: Optional[Sequence[Mapping[str, Any]]] = None,
         skills: Optional[Sequence[Mapping[str, Any]]] = None,
-        multiagent: Optional[Mapping[str, Any]] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> Agent:
         """Update the latest version of an agent.
@@ -266,7 +259,6 @@ class AsyncAgents:
             tools=tools,
             mcp_servers=mcp_servers,
             skills=skills,
-            multiagent=multiagent,
             metadata=metadata,
         ).to_dict()
         resp = await self._client.transport.request(
