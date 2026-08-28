@@ -368,7 +368,6 @@ class ToolRegistry:
                 "switch_provider",
                 "capability_enable",
                 "capability_disable",
-                "view_image",
             ],
         )
         include_tools.update(["mcp_connect", "mcp_disconnect"])
