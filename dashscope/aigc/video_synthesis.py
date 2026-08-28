@@ -47,12 +47,9 @@ class VideoSynthesis(BaseAsyncApi):
         REFERENCE_IMAGE = "reference_image"
         REFERENCE_VIDEO = "reference_video"
         REFERENCE_VOICE = "reference_voice"
-        REFERENCE_AUDIO = "reference_audio"
         VIDEO = "video"
         FIRST_CLIP = "first_clip"
         DRIVING_AUDIO = "driving_audio"
-        FILE = "file"
-        LINK = "link"
 
     @classmethod
     def call(  # type: ignore[override]
@@ -87,7 +84,6 @@ class VideoSynthesis(BaseAsyncApi):
         ratio: Optional[str] = None,
         shot_type: Optional[str] = None,
         audio_setting: Optional[str] = None,
-        enable_thinking: Optional[bool] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -130,7 +126,6 @@ class VideoSynthesis(BaseAsyncApi):
             shot_type (str, optional): Shot type for video generation.
             audio_setting (str, optional): Audio setting for video,
                 "auto" or "origin".
-            enable_thinking (bool, optional): Whether to use Agentic PE.
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -157,8 +152,6 @@ class VideoSynthesis(BaseAsyncApi):
             kwargs["shot_type"] = shot_type
         if audio_setting is not None:
             kwargs["audio_setting"] = audio_setting
-        if enable_thinking is not None:
-            kwargs["enable_thinking"] = enable_thinking
         return super().call(  # type: ignore[return-value]
             model,
             prompt,
@@ -270,8 +263,7 @@ class VideoSynthesis(BaseAsyncApi):
         if media:
             for i, m_file in enumerate(media):
                 if isinstance(m_file, dict):
-                    # exclude when media is a link
-                    if m_file.get("url") and m_file.get("type") != "link":
+                    if m_file.get("url"):
                         tasks.append(
                             {
                                 "type": "media",
@@ -405,7 +397,6 @@ class VideoSynthesis(BaseAsyncApi):
         ratio: Optional[str] = None,
         shot_type: Optional[str] = None,
         audio_setting: Optional[str] = None,
-        enable_thinking: Optional[bool] = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -444,7 +435,6 @@ class VideoSynthesis(BaseAsyncApi):
             shot_type (str, optional): Shot type for video generation.
             audio_setting (str, optional): Audio setting for video,
                 "auto" or "origin".
-            enable_thinking (bool, optional): Whether to use Agentic PE.
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -472,8 +462,6 @@ class VideoSynthesis(BaseAsyncApi):
             kwargs["shot_type"] = shot_type
         if audio_setting is not None:
             kwargs["audio_setting"] = audio_setting
-        if enable_thinking is not None:
-            kwargs["enable_thinking"] = enable_thinking
         task_group, function = _get_task_group_and_task(__name__)
 
         inputs, kwargs, task = cls._get_input(
@@ -668,7 +656,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         ratio: str = None,
         shot_type: str = None,
         audio_setting: str = None,
-        enable_thinking: bool = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Call video synthesis service and get result.
@@ -707,7 +694,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             shot_type (str, optional): Shot type for video generation.
             audio_setting (str, optional): Audio setting for video,
                 "auto" or "origin".
-            enable_thinking (bool, optional): Whether to use Agentic PE.
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -734,8 +720,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             kwargs["shot_type"] = shot_type
         if audio_setting is not None:
             kwargs["audio_setting"] = audio_setting
-        if enable_thinking is not None:
-            kwargs["enable_thinking"] = enable_thinking
         task_group, f = _get_task_group_and_task(__name__)
         # pylint: disable=protected-access
         inputs, kwargs, task = VideoSynthesis._get_input(
@@ -808,8 +792,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
         resolution: str = None,
         ratio: str = None,
         shot_type: str = None,
-        audio_setting: str = None,
-        enable_thinking: bool = None,
         **kwargs,
     ) -> VideoSynthesisResponse:
         """Create a video synthesis task, and return task information.
@@ -846,8 +828,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             resolution (str, optional): Output resolution.
             ratio (str, optional): Aspect ratio, e.g. "16:9".
             shot_type (str, optional): Shot type for video generation.
-            enable_thinking (bool, optional): Whether to use Agentic PE.
-            audio_setting (str, optional): Audio setting for video,
             **kwargs: Additional parameters passed to the API.
 
         Raises:
@@ -873,10 +853,6 @@ class AioVideoSynthesis(BaseAsyncAioApi):
             kwargs["ratio"] = ratio
         if shot_type is not None:
             kwargs["shot_type"] = shot_type
-        if audio_setting is not None:
-            kwargs["audio_setting"] = audio_setting
-        if enable_thinking is not None:
-            kwargs["enable_thinking"] = enable_thinking
         task_group, function = _get_task_group_and_task(__name__)
 
         # pylint: disable=protected-access
