@@ -18,7 +18,6 @@ from dashscope.common.constants import (
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
 )
 from dashscope.common.logging import logger
-from dashscope.common.env import resolve_base_url
 from dashscope.common.utils import get_sdk_headers
 
 
@@ -89,10 +88,7 @@ class Encryption:
 
     @staticmethod
     def _get_public_keys():
-        url = (
-            resolve_base_url(dashscope.base_http_api_url)
-            + "/public-keys/latest"
-        )
+        url = dashscope.base_http_api_url + "/public-keys/latest"
         headers = {
             "Authorization": f"Bearer {dashscope.api_key}",
             **get_sdk_headers(module="utils"),

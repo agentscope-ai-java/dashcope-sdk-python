@@ -10,7 +10,6 @@ from queue import Queue
 import dashscope
 from dashscope.client.base_api import BaseApi
 from dashscope.common.error import InvalidParameter, ModelRequired
-from dashscope.common.env import resolve_base_url
 import websocket  # pylint: disable=wrong-import-order
 
 # pylint: disable=ungrouped-imports
@@ -97,8 +96,9 @@ class TingWuRealtime(BaseApi):
         else:
             self.api_key = api_key  # type: ignore[has-type]
         if base_address is None:
-            base_address = dashscope.base_websocket_api_url
-        self.base_address = resolve_base_url(base_address, workspace)
+            self.base_address = dashscope.base_websocket_api_url
+        else:
+            self.base_address = base_address  # type: ignore[has-type]
 
         if model is None:
             raise ModelRequired("Model is required!")
