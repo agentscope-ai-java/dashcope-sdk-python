@@ -46,10 +46,6 @@ from dashscope.agentstudio.resources.vaults import (
     Credentials,
     Vaults,
 )
-from dashscope.agentstudio.resources.webhook_endpoints import (
-    AsyncWebhookEndpoints,
-    WebhookEndpoints,
-)
 
 __all__ = [
     "Agents",
@@ -74,8 +70,6 @@ __all__ = [
     "AsyncSessionEvents",
     "Vaults",
     "AsyncVaults",
-    "WebhookEndpoints",
-    "AsyncWebhookEndpoints",
     "_TypedEventStream",
     "_AioTypedEventStream",
 ]

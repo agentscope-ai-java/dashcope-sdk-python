@@ -240,7 +240,6 @@ class Application(BaseApi):
             workspace=workspace,
             api_key=api_key,
             is_service=False,
-            sdk_module="app",
             **parameters,
         )
         # call request service.

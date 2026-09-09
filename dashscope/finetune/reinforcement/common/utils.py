@@ -20,7 +20,6 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from dashscope.common.utils import get_sdk_headers
 from dashscope.finetune.reinforcement import logger
 from dashscope.finetune.reinforcement.common.errors import (
     InputError,
@@ -176,7 +175,6 @@ async def client_fc(
         headers={
             "Content-Type": content_type,
             "Authorization": "Bearer " + api_key,
-            **get_sdk_headers(module="finetune"),
         },
         data=request_data,
         timeout=HTTP_REQUEST_TIMEOUT,
@@ -597,10 +595,7 @@ async def to_bailian_data(files: List[FileSpec]) -> List[str]:
     Raises:
         OutputError: If file upload fails
     """
-    headers = {
-        "Authorization": f"Bearer {DASHSCOPE_API_KEY}",
-        **get_sdk_headers(module="finetune"),
-    }
+    headers = {"Authorization": f"Bearer {DASHSCOPE_API_KEY}"}
     form_data = FormData()
     uploaded_files = []
 
@@ -752,7 +747,7 @@ def set_api_key(api_key: Optional[str] = None) -> None:
         os.environ["DASHSCOPE_API_KEY"] = api_key
         logger.debug(
             f"Set environ DASHSCOPE_API_KEY: "
-            f"{api_key if LOG_LEVEL == 'DEBUG' else deep_mask(api_key)}",
+            f"{api_key if LOG_LEVEL=='DEBUG' else deep_mask(api_key)}",
         )
         return
 

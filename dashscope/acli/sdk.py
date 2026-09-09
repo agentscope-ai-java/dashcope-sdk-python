@@ -149,7 +149,7 @@ def run_once_sync(
 def run_interactive(
     system_prompt: Optional[str] = None,
     app_name: str = "Agent",
-    default_model: str = "qwen3.8-max",
+    default_model: str = "qwen3.7-plus",
     default_provider: str = "tongyi",
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
@@ -157,8 +157,6 @@ def run_interactive(
     prompt_symbol: str = "You> ",
     sdk_index: Optional[list[str]] = None,
     tui: Optional[bool] = None,
-    module: str = "",
-    guide_url: str = "",
 ) -> None:
     """Run the full acli interactive loop with a custom identity.
 
@@ -178,8 +176,6 @@ def run_interactive(
         prompt_symbol=prompt_symbol,
         sdk_index=sdk_index,
         tui=tui,
-        module=module,
-        guide_url=guide_url,
     )
 
 

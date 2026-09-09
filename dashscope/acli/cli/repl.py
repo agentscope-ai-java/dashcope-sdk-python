@@ -102,10 +102,7 @@ async def _run_loop(config: Config):
     sync_extensions_into_catalog(_ext)
     # _load_plugins() — deprecated; plugins load via the hooks mechanism
     provider = get_provider_chain(config)
-    executor = Executor(
-        auto_approve=config.auto_approve,
-        confirm_mode=config.confirm_mode,
-    )
+    executor = Executor(auto_approve=config.auto_approve)
 
     # Initialize memory
     # Memory client managed by handlers_profile
@@ -251,7 +248,7 @@ async def _run_loop(config: Config):
     if not WORKSPACE_CONFIG_FILE.exists():
         has_api_key = bool(config.api_key)
         using_defaults = (
-            config.provider == "tongyi" and config.model == "qwen3.8-max"
+            config.provider == "tongyi" and config.model == "qwen3.7-plus"
         )
         if not has_api_key or using_defaults:
             await _handle_setup(config, agent)
