@@ -23,13 +23,11 @@ from dashscope.common.constants import (
 )
 from dashscope.common.error import InvalidParameter, InvalidTask, ModelRequired
 from dashscope.common.logging import logger
-from dashscope.common.env import resolve_base_url
 from dashscope.common.utils import (
     _handle_http_failed_response,
     _handle_http_response,
     _handle_http_stream_response,
     default_headers,
-    get_api_module,
     join_url,
 )
 
@@ -44,12 +42,7 @@ class AsyncAioTaskGetMixin:
         **kwargs,
     ) -> DashScopeAPIResponse:
         base_url = kwargs.pop("base_address", None)
-        url = _normalization_url(
-            base_url,
-            "tasks",
-            task_id,
-            workspace=workspace,
-        )
+        url = _normalization_url(base_url, "tasks", task_id)
         kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
         kwargs["base_address"] = url
         if not api_key:
@@ -76,7 +69,7 @@ class AsyncAioTaskGetMixin:
         custom_headers = kwargs.pop("headers", None)
         headers = {
             **_workspace_header(workspace),
-            **default_headers(api_key, module="tasks"),
+            **default_headers(api_key),
         }
         if custom_headers:
             headers = {
@@ -140,8 +133,6 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             task=task,
             function=function,
             api_key=api_key,
-            workspace=workspace,
-            sdk_module=get_api_module(cls.__module__),
             **kwargs,
         )
         # call request service.
@@ -306,13 +297,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         """
         task_id = cls._get_task_id(task)
         base_url = kwargs.pop("base_address", None)
-        url = _normalization_url(
-            base_url,
-            "tasks",
-            task_id,
-            "cancel",
-            workspace=workspace,
-        )
+        url = _normalization_url(base_url, "tasks", task_id, "cancel")
         kwargs = cls._handle_kwargs(api_key, workspace, **kwargs)
         kwargs["base_address"] = url
         kwargs["http_method"] = HTTPMethod.POST
@@ -370,7 +355,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
         import aiohttp  # pylint: disable=import-outside-toplevel
 
         base_url = kwargs.pop("base_address", None)
-        url = _normalization_url(base_url, "tasks", workspace=workspace)
+        url = _normalization_url(base_url, "tasks")
         params = {"page_no": page_no, "page_size": page_size}
         if start_time is not None:
             params["start_time"] = start_time
@@ -388,7 +373,7 @@ class BaseAsyncAioApi(AsyncAioTaskGetMixin):
             api_key = get_default_api_key()
         headers = {
             **_workspace_header(workspace),
-            **default_headers(api_key, module="tasks"),
+            **default_headers(api_key),
         }
         async with aiohttp.ClientSession(trust_env=True) as session:
             response = await session.get(
@@ -501,8 +486,6 @@ class BaseAioApi:
             task=task,
             function=function,
             api_key=api_key,
-            workspace=workspace,
-            sdk_module=get_api_module(cls.__module__),
             **kwargs,
         )
         # call request service.
@@ -569,8 +552,6 @@ class BaseApi:
             task=task,
             function=function,
             api_key=api_key,
-            workspace=workspace,
-            sdk_module=get_api_module(cls.__module__),
             **kwargs,
         )
         # call request service.
@@ -585,11 +566,11 @@ def _workspace_header(workspace) -> Dict:
     return headers
 
 
-def _normalization_url(base_address, *args, workspace=None):
+def _normalization_url(base_address, *args):
     if base_address:
-        url = resolve_base_url(base_address, workspace)
+        url = base_address
     else:
-        url = resolve_base_url(dashscope.base_http_api_url, workspace)
+        url = dashscope.base_http_api_url
     return join_url(url, *args)
 
 
@@ -603,16 +584,11 @@ class AsyncTaskGetMixin:
         **kwargs,
     ) -> DashScopeAPIResponse:
         base_url = kwargs.pop("base_address", None)
-        status_url = _normalization_url(
-            base_url,
-            "tasks",
-            task_id,
-            workspace=workspace,
-        )
+        status_url = _normalization_url(base_url, "tasks", task_id)
         custom_headers = kwargs.pop("headers", None)
         headers = {
             **_workspace_header(workspace),
-            **default_headers(api_key, module="tasks"),
+            **default_headers(api_key),
         }
         if custom_headers:
             headers = {
@@ -705,19 +681,13 @@ class BaseAsyncApi(AsyncTaskGetMixin):
         """
         task_id = cls._get_task_id(task)
         base_url = kwargs.pop("base_address", None)
-        url = _normalization_url(
-            base_url,
-            "tasks",
-            task_id,
-            "cancel",
-            workspace=workspace,
-        )
+        url = _normalization_url(base_url, "tasks", task_id, "cancel")
         with requests.Session() as session:
             response = session.post(
                 url,
                 headers={
                     **_workspace_header(workspace),
-                    **default_headers(api_key, module="tasks"),
+                    **default_headers(api_key),
                 },
             )
             return _handle_http_response(response)
@@ -760,7 +730,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             DashScopeAPIResponse: The response data.
         """
         base_url = kwargs.pop("base_address", None)
-        url = _normalization_url(base_url, "tasks", workspace=workspace)
+        url = _normalization_url(base_url, "tasks")
         params = {"page_no": page_no, "page_size": page_size}
         if start_time is not None:
             params["start_time"] = start_time
@@ -781,7 +751,7 @@ class BaseAsyncApi(AsyncTaskGetMixin):
                 params=params,
                 headers={
                     **_workspace_header(workspace),
-                    **default_headers(api_key, module="tasks"),
+                    **default_headers(api_key),
                 },
             )
             if response.status_code == HTTPStatus.OK:
@@ -962,10 +932,8 @@ class BaseAsyncApi(AsyncTaskGetMixin):
             task=task,
             function=function,
             api_key=api_key,
-            workspace=workspace,
             async_request=True,
             query=False,
-            sdk_module=get_api_module(cls.__module__),
             **kwargs,
         )
         return request.call()
@@ -978,21 +946,19 @@ def _get(
     api_key=None,
     flattened_output=False,
     workspace: str = None,
-    module: str = "",
     **kwargs,
 ) -> Union[DashScopeAPIResponse, Dict]:
     timeout = kwargs.pop(
         REQUEST_TIMEOUT_KEYWORD,
         DEFAULT_REQUEST_TIMEOUT_SECONDS,
     )
-    url = resolve_base_url(url, workspace)
     with requests.Session() as session:
         logger.debug("Starting request: %s", url)
         response = session.get(
             url,
             headers={
                 **_workspace_header(workspace),
-                **default_headers(api_key, module=module),
+                **default_headers(api_key),
                 **kwargs.pop("headers", {}),
             },
             params=params,
@@ -1002,11 +968,11 @@ def _get(
         return _handle_http_response(response, flattened_output)
 
 
-def _get_url(custom_base_url, default_path, path, workspace=None):
+def _get_url(custom_base_url, default_path, path):
     if not custom_base_url:
-        base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+        base_url = dashscope.base_http_api_url
     else:
-        base_url = resolve_base_url(custom_base_url, workspace)
+        base_url = custom_base_url
     if path is not None:
         url = join_url(base_url, path)
     else:
@@ -1042,12 +1008,7 @@ class ListObjectMixin:
             Any: The object list.
         """
         custom_base_url = kwargs.pop("base_address", None)
-        url = _get_url(
-            custom_base_url,
-            cls.SUB_PATH.lower(),
-            path,
-            workspace=workspace,
-        )
+        url = _get_url(custom_base_url, cls.SUB_PATH.lower(), path)
         params = {}
         if limit is not None:
             if limit < 0:
@@ -1064,7 +1025,6 @@ class ListObjectMixin:
             params=params,
             api_key=api_key,
             workspace=workspace,
-            module=get_api_module(cls.__module__),
             **kwargs,
         )
 
@@ -1093,19 +1053,13 @@ class ListMixin:
             DashScopeAPIResponse: The object list in output.
         """
         custom_base_url = kwargs.pop("base_address", None)
-        url = _get_url(
-            custom_base_url,
-            cls.SUB_PATH.lower(),
-            path,
-            workspace=workspace,
-        )
+        url = _get_url(custom_base_url, cls.SUB_PATH.lower(), path)
         params = {"page_no": page_no, "page_size": page_size}
         return _get(
             url,
             params=params,
             api_key=api_key,
             workspace=workspace,
-            module=get_api_module(cls.__module__),
             **kwargs,
         )
 
@@ -1138,7 +1092,6 @@ class LogMixin:
             custom_base_url,
             join_url(cls.SUB_PATH.lower(), job_id, "logs"),
             path,
-            workspace=workspace,
         )
         params = {"offset": offset, "line": line}
         return _get(
@@ -1146,7 +1099,6 @@ class LogMixin:
             params=params,
             api_key=api_key,
             workspace=workspace,
-            module=get_api_module(cls.__module__),
             **kwargs,
         )
 
@@ -1175,9 +1127,9 @@ class GetMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
 
         if path is not None:
             url = join_url(base_url, path)
@@ -1190,7 +1142,6 @@ class GetMixin:
             params=params,
             flattened_output=flattened_output,
             workspace=workspace,
-            module=get_api_module(cls.__module__),
             **kwargs,
         )
 
@@ -1217,9 +1168,9 @@ class GetStatusMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         if path is not None:
             url = join_url(base_url, path)
         else:
@@ -1230,7 +1181,6 @@ class GetStatusMixin:
             api_key=api_key,
             flattened_output=flattened_output,
             workspace=workspace,
-            module=get_api_module(cls.__module__),
             **kwargs,
         )
 
@@ -1258,9 +1208,9 @@ class DeleteMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         if path is not None:
             url = join_url(base_url, path)
         else:
@@ -1275,10 +1225,7 @@ class DeleteMixin:
                 url,
                 headers={
                     **_workspace_header(workspace),
-                    **default_headers(
-                        api_key,
-                        module=get_api_module(cls.__module__),
-                    ),
+                    **default_headers(api_key),
                     **kwargs.pop("headers", {}),
                 },
                 timeout=timeout,
@@ -1312,7 +1259,6 @@ class CreateMixin:
             kwargs.pop("base_address", None),
             cls.SUB_PATH.lower(),
             path,
-            workspace=workspace,
         )
         timeout = kwargs.pop(
             REQUEST_TIMEOUT_KEYWORD,
@@ -1329,10 +1275,7 @@ class CreateMixin:
                 headers={
                     "Content-Type": "application/json; charset=utf-8",
                     **_workspace_header(workspace),
-                    **default_headers(
-                        api_key,
-                        module=get_api_module(cls.__module__),
-                    ),
+                    **default_headers(api_key),
                     **kwargs.pop("headers", {}),
                 },
                 timeout=timeout,
@@ -1375,9 +1318,9 @@ class UpdateMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         if path is not None:
             url = join_url(base_url, path)
         else:
@@ -1389,7 +1332,6 @@ class UpdateMixin:
         flattened_output = kwargs.pop("flattened_output", False)
         import json as _json  # pylint: disable=reimported
 
-        module = get_api_module(cls.__module__)
         with requests.Session() as session:
             logger.debug("Starting request: %s", url)
             body = _json.dumps(json, ensure_ascii=False).encode("utf-8")
@@ -1400,7 +1342,7 @@ class UpdateMixin:
                     headers={
                         "Content-Type": "application/json; charset=utf-8",
                         **_workspace_header(workspace),
-                        **default_headers(api_key, module=module),
+                        **default_headers(api_key),
                         **kwargs.pop("headers", {}),
                     },
                     timeout=timeout,
@@ -1412,7 +1354,7 @@ class UpdateMixin:
                     headers={
                         "Content-Type": "application/json; charset=utf-8",
                         **_workspace_header(workspace),
-                        **default_headers(api_key, module=module),
+                        **default_headers(api_key),
                         **kwargs.pop("headers", {}),
                     },
                     timeout=timeout,
@@ -1445,9 +1387,9 @@ class PutMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         if path is None:
             url = join_url(base_url, cls.SUB_PATH.lower(), target)
         else:
@@ -1467,10 +1409,7 @@ class PutMixin:
                 headers={
                     "Content-Type": "application/json; charset=utf-8",
                     **_workspace_header(workspace),
-                    **default_headers(
-                        api_key,
-                        module=get_api_module(cls.__module__),
-                    ),
+                    **default_headers(api_key),
                     **kwargs.pop("headers", {}),
                 },
                 timeout=timeout,
@@ -1504,9 +1443,9 @@ class FileUploadMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         url = join_url(base_url, cls.SUB_PATH.lower())
         js = None
         if descriptions:
@@ -1522,10 +1461,7 @@ class FileUploadMixin:
                 data=js,
                 headers={
                     **_workspace_header(workspace),
-                    **default_headers(
-                        api_key,
-                        module=get_api_module(cls.__module__),
-                    ),
+                    **default_headers(api_key),
                     **kwargs.pop("headers", {}),
                 },
                 files=files,
@@ -1557,9 +1493,9 @@ class CancelMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         if not path:
             url = join_url(base_url, cls.SUB_PATH.lower(), target, "cancel")
         else:
@@ -1575,10 +1511,7 @@ class CancelMixin:
                 url,
                 headers={
                     **_workspace_header(workspace),
-                    **default_headers(
-                        api_key,
-                        module=get_api_module(cls.__module__),
-                    ),
+                    **default_headers(api_key),
                     **kwargs.pop("headers", {}),
                 },
                 timeout=timeout,
@@ -1671,9 +1604,9 @@ class StreamEventMixin:
         """
         custom_base_url = kwargs.pop("base_address", None)
         if custom_base_url:
-            base_url = resolve_base_url(custom_base_url, workspace)
+            base_url = custom_base_url
         else:
-            base_url = resolve_base_url(dashscope.base_http_api_url, workspace)
+            base_url = dashscope.base_http_api_url
         url = join_url(base_url, cls.SUB_PATH.lower(), target, "stream")
         timeout = kwargs.pop(
             REQUEST_TIMEOUT_KEYWORD,
@@ -1685,10 +1618,7 @@ class StreamEventMixin:
                 url,
                 headers={
                     **_workspace_header(workspace),
-                    **default_headers(
-                        api_key,
-                        module=get_api_module(cls.__module__),
-                    ),
+                    **default_headers(api_key),
                     **kwargs.pop("headers", {}),
                 },
                 stream=True,

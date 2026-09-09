@@ -41,14 +41,6 @@ _IS_JEDITERM = (
 # guards against over-frequent flushes on bursty bulk output)
 _STREAM_FLUSH_INTERVAL = 0.8 if _IS_JEDITERM else 0.3
 _STREAM_FLUSH_LINES = 400 if _IS_JEDITERM else 20
-
-# Markdown table detection for streaming output. Raw table source from the
-# model is not visually aligned (spec doesn't require it) and mixes CJK /
-# wide emoji, so pipe text shown as-is looks broken; complete table blocks
-# are instead rendered via rich.markdown.Markdown, which lays columns out by
-# display width (cell_len) and handles CJK correctly.
-_TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
-_TABLE_SEP_RE = re.compile(r"^\s*\|?[\s:\-|]+\|?\s*$")
 # Wheel batching window: full repaints are costly on JediTerm; trade
 # frame rate for stability
 _WHEEL_FLUSH_INTERVAL = 0.12 if _IS_JEDITERM else 0.03
@@ -1676,18 +1668,11 @@ class AgenticCLIApp(App):
         # running loop) so a second confirm cannot clobber _confirm_future.
         self._confirm_lock: asyncio.Lock | None = None
         self._supplement_future: asyncio.Future | None = None
-        # Draft text parked out of the input box while a confirmation
-        # prompt owns the box; restored when the prompt resolves.
-        self._confirm_saved_draft: str | None = None
         # Inline input state — for input() calls without modal popups
         self._inline_input_lock = threading.Lock()
         self._inline_input_future: threading.Event | None = None
         self._inline_input_value: list[str] = [""]
         self._inline_input_active: bool = False
-        # Set on teardown: wizards parked in executor threads get an empty
-        # answer (and future prompts fail fast) instead of blocking the
-        # default-executor join at interpreter shutdown.
-        self._inline_input_aborted: bool = False
         # Calm streaming (old JediTerm fallback): writes during streaming
         # do not follow-scroll
         self._calm_streaming: bool = False
@@ -1888,6 +1873,7 @@ class AgenticCLIApp(App):
 
         # Check if we're waiting for confirmation response
         if self._confirm_future and not self._confirm_future.done():
+            input_widget.text = ""
             choice = command.lower() or "y"  # Empty = default to yes
             # Dangerous ops accept only y/n, matching the sync path (no
             # always-trust granted)
@@ -1897,13 +1883,9 @@ class AgenticCLIApp(App):
                 else ("y", "n", "u", "a", "s")
             )
             if choice in valid_choices:
-                input_widget.text = ""
                 self._confirm_future.set_result(choice)
                 self._confirm_future = None
             else:
-                # Remove the invalid answer only; the user's draft was
-                # already parked into _confirm_saved_draft at prompt time.
-                input_widget.text = ""
                 output = self.query_one("#output", RichLog)
                 if self._confirm_is_dangerous:
                     output.write(
@@ -2059,13 +2041,6 @@ class AgenticCLIApp(App):
             f"[bold]Tools:[/bold] [dim]{tool_count} registered[/dim]",
         )
 
-        # Scenario doc link (embedded mode only)
-        guide_url = getattr(self.config, "_embedded_guide_url", "")
-        if guide_url:
-            info_lines.append(
-                f"[bold]Guide:[/bold] [dim]{guide_url}[/dim]",
-            )
-
         info_lines.append(
             "\n[dim]Input: Enter to submit; Ctrl+J newline; "
             "Ctrl+C cancel/quit [/dim]",
@@ -2126,25 +2101,24 @@ class AgenticCLIApp(App):
 
         # Monkey-patch builtins.input and getpass.getpass so that blocking
         # handlers (e.g. /key, /dev xxx add, /setup, /update without args)
-        # can prompt via the TUI modal instead of hanging on stdin. Never
-        # reverted — see on_unmount.
+        # can prompt via the TUI modal instead of hanging on stdin.
         import builtins
         import getpass
 
+        self._original_input = builtins.input
+        self._original_getpass = getpass.getpass
         builtins.input = self._tui_input
         getpass.getpass = self._tui_getpass
 
     def on_unmount(self) -> None:
-        """Wake any wizard parked on input() in an executor thread.
+        """Restore original input() and getpass() on exit."""
+        import builtins
+        import getpass
 
-        The input()/getpass() patch deliberately stays installed: restoring
-        the originals here races the unwinding wizard, whose next prompt
-        could land on the real input() and block on stdin, stranding the
-        default executor at interpreter shutdown. Post-exit calls hit the
-        aborted flag in _tui_input and fail fast with EOFError.
-        """
-        self._inline_input_aborted = True
-        self._cancel_inline_input()
+        if hasattr(self, "_original_input"):
+            builtins.input = self._original_input
+        if hasattr(self, "_original_getpass"):
+            getpass.getpass = self._original_getpass
 
     async def _tui_confirm_callback(
         self,
@@ -2218,11 +2192,6 @@ class AgenticCLIApp(App):
 
         # Focus input and wait
         input_widget = self.query_one("#command-input", CommandInput)
-        # Park whatever the user was drafting out of the box so the
-        # confirmation owns a clean input; it is restored in finally.
-        self._confirm_saved_draft = input_widget.text or None
-        if self._confirm_saved_draft:
-            input_widget.text = ""
         input_widget.focus()
         self._confirm_is_dangerous = is_dangerous
         self._confirm_future = asyncio.get_running_loop().create_future()
@@ -2253,12 +2222,6 @@ class AgenticCLIApp(App):
             return "n"
         finally:
             self._confirm_future = None
-            # Give the user's draft back (skip if the box already holds
-            # newer content, e.g. typing resumed on another path).
-            saved_draft = self._confirm_saved_draft
-            self._confirm_saved_draft = None
-            if saved_draft and not input_widget.text:
-                input_widget.text = saved_draft
             # Restore spinner text
             spinner.text = old_spinner_text
             if not was_active:
@@ -2269,27 +2232,12 @@ class AgenticCLIApp(App):
     # How long an inline input() prompt waits before giving up.
     _INLINE_INPUT_TIMEOUT = 300.0
 
-    def _cancel_inline_input(self) -> None:
-        """Wake a thread parked in _tui_input with an empty answer. Every
-        wizard treats empty as keep-default/cancel, so the thread unwinds
-        through its remaining steps without blocking again. The future
-        object is left in place; the waiter clears it."""
-        with self._inline_input_lock:
-            future = self._inline_input_future
-            if future is not None:
-                self._inline_input_value[0] = ""
-                self._inline_input_active = False
-                future.set()
-
     def _tui_input(self, prompt: str = "", password: bool = False) -> str:
         """Thread-safe replacement for builtins.input() in TUI mode.
         Writes prompt inline to output and reads from command input box.
         Blocks the calling thread until input is received."""
-        if self._loop is None or self._inline_input_aborted:
-            # App is exiting: nothing can answer this prompt. EOFError
-            # mirrors a closed stdin — wizard handlers catch it as
-            # keep-default/cancel and unwind without blocking.
-            raise EOFError("input() called after TUI exit")
+        if self._loop is None:
+            return ""
 
         with self._inline_input_lock:
             if self._inline_input_active:
@@ -2906,9 +2854,6 @@ class AgenticCLIApp(App):
             buffer = ""
             full_output = ""
             pending_lines: list[str] = []
-            # Consecutive markdown table rows are held back here and rendered
-            # as a real table once the block ends (see _flush_table_block).
-            table_block: list[str] = []
             loop = asyncio.get_event_loop()
             last_flush = loop.time()
 
@@ -2921,26 +2866,6 @@ class AgenticCLIApp(App):
                     )
                     pending_lines.clear()
 
-            def _flush_table_block() -> None:
-                # Render a buffered markdown table block as a real table.
-                # Only a well-formed GFM table (>=2 rows, 2nd row is the
-                # |---| separator) is rendered; anything else falls back to
-                # plain cyan text so we never mangle non-table pipe lines.
-                if not table_block:
-                    return
-                lines = table_block[:]
-                table_block.clear()
-                sep = lines[1].strip() if len(lines) >= 2 else ""
-                if len(lines) >= 2 and "-" in sep and _TABLE_SEP_RE.match(sep):
-                    try:
-                        from rich.markdown import Markdown
-
-                        self._write_output(Markdown("\n".join(lines)))
-                        return
-                    except Exception:
-                        pass  # fall back to raw text below
-                pending_lines.extend(lines)
-
             async for chunk in self.agent.run_stream(command):
                 if not chunk:
                     continue
@@ -2949,9 +2874,7 @@ class AgenticCLIApp(App):
                 # ... --- diff ---)
                 stripped = chunk.strip()
                 if stripped.startswith("[") and "] →" in stripped:
-                    # Flush any pending text buffer first (a still-open
-                    # table block must land before the tool trail)
-                    _flush_table_block()
+                    # Flush any pending text buffer first
                     if buffer:
                         pending_lines.append(buffer)
                         full_output += buffer
@@ -2967,15 +2890,8 @@ class AgenticCLIApp(App):
                 # corresponds to a real line of output, not a fixed chunk size.
                 while "\n" in buffer:
                     line, _, rest = buffer.partition("\n")
-                    buffer = rest
-                    if _TABLE_ROW_RE.match(line):
-                        # Hold table rows back until the block ends.
-                        table_block.append(line)
-                        continue
-                    if table_block:
-                        # First non-table line terminates the block.
-                        _flush_table_block()
                     pending_lines.append(line)
+                    buffer = rest
                 now = loop.time()
                 # Every flush scrolls and repaints the whole visible area;
                 # too small a window (e.g. 0.1s) still causes several
@@ -2997,10 +2913,6 @@ class AgenticCLIApp(App):
                         getattr(self.agent, "turn_skills", 0),
                     )
 
-            if table_block:
-                # Table block still open at end of stream (no trailing
-                # newline after the last row is common).
-                _flush_table_block()
             _flush_lines()
             # Write remaining partial line
             if buffer:

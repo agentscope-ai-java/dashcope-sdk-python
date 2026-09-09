@@ -15,7 +15,6 @@ import websocket
 
 import dashscope
 from dashscope.common.constants import WEBSOCKET_ERROR_CODE
-from dashscope.common.env import resolve_base_url
 from dashscope.common.error import (
     InputRequired,
     InvalidTask,
@@ -23,7 +22,7 @@ from dashscope.common.error import (
     RequestFailure,
 )
 from dashscope.common.logging import logger
-from dashscope.common.utils import get_sdk_headers, get_user_agent
+from dashscope.common.utils import get_user_agent
 from dashscope.protocol.websocket import (
     ACTION_KEY,
     ERROR_MESSAGE,
@@ -184,7 +183,6 @@ class Request:
         self.headers = {
             "user-agent": ua,
             "Authorization": "Bearer " + self.apikey,
-            **get_sdk_headers(module="audio"),
         }
         if headers:
             self.headers = {**self.headers, **headers}
@@ -492,7 +490,7 @@ class SpeechSynthesizer:
             raise InputRequired("format is required!")
         if url is None:
             url = dashscope.base_websocket_api_url
-        self.url = resolve_base_url(url, workspace)
+        self.url = url
         self.apikey = dashscope.api_key
         if self.apikey is None:
             raise InputRequired("apikey is required!")

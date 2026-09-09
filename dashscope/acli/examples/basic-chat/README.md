@@ -51,13 +51,13 @@ Declares which LLM providers acli can use. A minimal config needs just one `[[pr
 name = "tongyi"
 base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 api_key_env = "DASHSCOPE_API_KEY"      # ← stores only the env var name; the shell provides sk-xxx
-default_model = "qwen3.8-max"
-models = ["qwen3.8-max", "qwen3.7-max", "qwen3.7-plus", "qwen-turbo", "qwen-vl-max"]
+default_model = "qwen3.7-max"
+models = ["qwen3.7-max", "qwen3.7-plus", "qwen-turbo", "qwen-vl-max"]
 vision_models = ["qwen-vl-max"]        # ← tells acli these models accept image input
 protocol = "openai"                     # ← openai / anthropic / dashscope
 ```
 
-Want Claude / GPT / a local Ollama? Just uncomment the corresponding `[[providers]]` block in the toml.
+Want Claude / GPT / GLM? Just uncomment the corresponding `[[providers]]` block in the toml.
 
 **Three ways to provide an API key** (in decreasing order of recommendation):
 
@@ -95,14 +95,14 @@ How to invoke:
 ```toml
 user_name = "dashscope"
 provider = "tongyi"
-model = "qwen3.8-max"
+model = "qwen3.7-max"
 memory_user_id = "acli-basic"
 ```
 
 ## Next Steps
 
 - **Add more providers**: add `[[providers]]` blocks in `custom-extensions.toml`
-- **Add HTTP tools**: add `[[capabilities]]` + `[[capabilities.tools]]` blocks (e.g. image generation, calling a remote workflow engine)
+- **Add HTTP tools**: add `[[capabilities]]` + `[[capabilities.tools]]` blocks (e.g. calling Coze, Zhipu image generation, etc.)
 - **Add vision capability**: add a capability tool with `type = "vision"` so the text agent can call a vision LLM on demand
 - **Add shell tools**: add `[[shell_tools]]` blocks to wrap common local commands
 - **Add hooks**: configure pre/post tool-call hooks in `.acli/hooks.toml` (e.g. auto `py_compile` after writing a `.py` file, confirm before `pip install`, block file deletion). See the template in `.acli/hooks.toml`, covering all 5 events (`before_tool_call` / `after_tool_call` / `on_error` / `on_message` / `on_response`) × 6 actions (run/block/confirm/warn/alert/log).

@@ -39,7 +39,7 @@ _HOST_PROVIDER_HINTS = {
 }
 
 DEFAULT_BASE_URLS = {
-    "tongyi": "https://dashscope.aliyuncs.com",
+    "tongyi": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "anthropic": "https://api.anthropic.com",
     "openai": "https://api.openai.com/v1",
 }
@@ -56,8 +56,7 @@ class ProviderProfile:
     base_url: str | None = None
     timeout: float = 120.0
     protocol: str = "openai"
-    max_retries: int = 3
-    module: str = "app"
+    max_retries: int = 2
 
 
 def _host_of(url: str | None) -> str:
@@ -166,7 +165,6 @@ def build_profiles_from_config(config) -> list[ProviderProfile]:
             base_url=base_url or None,
             timeout=timeout,
             protocol=protocol,
-            module=getattr(config, "_embedded_module", "") or "app",
         )
 
     # Primary profile.
