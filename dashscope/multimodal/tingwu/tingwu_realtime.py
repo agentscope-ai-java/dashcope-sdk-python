@@ -10,11 +10,12 @@ from queue import Queue
 import dashscope
 from dashscope.client.base_api import BaseApi
 from dashscope.common.error import InvalidParameter, ModelRequired
+from dashscope.common.env import resolve_base_url
 import websocket  # pylint: disable=wrong-import-order
 
 # pylint: disable=ungrouped-imports
 from dashscope.common.logging import logger
-from dashscope.common.utils import get_user_agent
+from dashscope.common.utils import get_sdk_headers, get_user_agent
 from dashscope.protocol.websocket import ActionType
 
 
@@ -96,9 +97,8 @@ class TingWuRealtime(BaseApi):
         else:
             self.api_key = api_key  # type: ignore[has-type]
         if base_address is None:
-            self.base_address = dashscope.base_websocket_api_url
-        else:
-            self.base_address = base_address  # type: ignore[has-type]
+            base_address = dashscope.base_websocket_api_url
+        self.base_address = resolve_base_url(base_address, workspace)
 
         if model is None:
             raise ModelRequired("Model is required!")
@@ -343,6 +343,7 @@ class _Request:
             "User-Agent": ua,
             "Authorization": f"Bearer {api_key}",
             "Accept": "application/json",
+            **get_sdk_headers(module="multimodal"),
         }
         log_headers = self.ws_headers.copy()
         log_headers["Authorization"] = "REDACTED"
