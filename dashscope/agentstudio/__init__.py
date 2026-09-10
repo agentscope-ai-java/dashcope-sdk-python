@@ -52,17 +52,11 @@ from .pagination import (
 )
 from .types import (
     Message,
-    PermissionPolicy,
-    SecurityAlert,
-    SecurityAlertList,
-    SecurityOverview,
     ServerEvent,
-    SessionResource,
-    StopReason,
     user_define_outcome,
     user_interrupt,
     user_message,
-    user_tool_approval_response,
+    user_tool_confirmation,
     user_custom_tool_result,
     user_tool_result,
 )
@@ -81,10 +75,6 @@ from .types.params import (
     WebhookEventListParams,
 )
 from .constants import (
-    PermissionPolicyType,
-    SSEEventType,
-    SessionStatus,
-    StopReasonType,
     WebhookDeliveryStatus,
     WebhookDisabledReason,
     WebhookEventType,
@@ -118,17 +108,11 @@ __all__ = [
     "AsyncCursorPage",
     # unified message type
     "Message",
-    "PermissionPolicy",
-    "SecurityAlert",
-    "SecurityAlertList",
-    "SecurityOverview",
     "ServerEvent",
-    "SessionResource",
-    "StopReason",
     # client event helpers (re-exported for convenience)
     "user_message",
     "user_interrupt",
-    "user_tool_approval_response",
+    "user_tool_confirmation",
     "user_custom_tool_result",
     "user_tool_result",
     "user_define_outcome",
@@ -151,8 +135,4 @@ __all__ = [
     "WebhookDisabledReason",
     "WebhookDeliveryStatus",
     "WebhookEventType",
-    "SSEEventType",
-    "SessionStatus",
-    "StopReasonType",
-    "PermissionPolicyType",
 ]
