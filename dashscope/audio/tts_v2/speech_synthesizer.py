@@ -15,7 +15,6 @@ import websocket
 
 import dashscope
 from dashscope.common.constants import WEBSOCKET_ERROR_CODE
-from dashscope.common.env import resolve_base_url
 from dashscope.common.error import (
     InputRequired,
     InvalidTask,
@@ -492,7 +491,7 @@ class SpeechSynthesizer:
             raise InputRequired("format is required!")
         if url is None:
             url = dashscope.base_websocket_api_url
-        self.url = resolve_base_url(url, workspace)
+        self.url = url
         self.apikey = dashscope.api_key
         if self.apikey is None:
             raise InputRequired("apikey is required!")
