@@ -460,14 +460,6 @@ def run(
         "--config",
         help="Path to YAML configuration file",
     ),
-    teacher_model: Optional[str] = typer.Option(
-        None,
-        "--teacher-model",
-        help=(
-            "Enable OPD with this teacher model (overrides YAML); "
-            "Rollout and Reward are optional"
-        ),
-    ),
     job_name: Optional[str] = typer.Option(
         None,
         help="Custom name for the tuning job",
@@ -499,8 +491,10 @@ def run(
     1. Configuration-driven: Use -c/--config to specify a YAML file
     2. Direct parameter: Provide all required arguments via CLI options
 
-    Rollout and Reward are required for regular reinforcement learning, but
-    optional for OPD.
+    Required parameters:
+    - rollout_classpath
+    - reward_classpaths (at least one)
+    - training_files (at least one)
     """
     output_format = validate_output_format(output_format)
     _apply_verbose(verbose)
@@ -511,7 +505,6 @@ def run(
 
     # Prepare workflow parameters
     run_kwargs = {
-        "teacher_model": teacher_model,
         "job_name": job_name,
     }
 

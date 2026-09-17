@@ -85,11 +85,9 @@ def _wait_for_deployment(
     except Exception as exc:
         logger.debug("wait_for_deployment error", exc_info=exc)
         err_console.print(
-            f"[red]Error:[/red] Failed to check deployment status: {exc}. "
             f"You can get deployment status via: "
             f"[cyan]dashscope deployments get {deployed_model}[/cyan]",
         )
-        raise typer.Exit(1)
 
 
 def _print_deployments(output):
