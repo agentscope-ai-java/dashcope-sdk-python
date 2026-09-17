@@ -48,7 +48,7 @@ setuptools.setup(
     license="Apache 2.0",
     url=url,
     packages=setuptools.find_packages(
-        exclude=("tests", "tests.*"),
+        exclude=("tests"),
     ),  # pylint: disable=superfluous-parens
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -61,6 +61,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
     ],
     platforms="Posix; MacOS X; Windows",
     python_requires=">=3.9",

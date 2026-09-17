@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Miscellaneous command handlers (trust, history, report)."""
-# pylint: disable=too-many-branches,too-many-statements
+# pylint: disable=protected-access,too-many-branches,too-many-statements
 # pylint: disable=too-many-return-statements
 
 from __future__ import annotations
@@ -16,72 +16,64 @@ console = Console()
 
 
 def _handle_trust_command(cmd: str, agent: Agent) -> None:
-    """Inspect / mutate the Executor's turn-scoped trust cache."""
+    """Inspect / mutate the Executor's session-scoped trust cache."""
     parts = cmd.strip().split()
     ex = agent.executor
     sub = parts[1] if len(parts) > 1 else ""
 
     if not sub or sub == "list":
-        allow, commands, deny = ex.trust_snapshot()
-        if allow:
-            console.print("[bold green]Trusted tools this turn:[/bold green]")
-            for name in sorted(allow):
-                console.print(f"  ✓ {escape(name)}")
-        if commands:
+        if ex._always_allow:
             console.print(
-                "[bold green]Trusted commands this turn:[/bold green]",
+                "[bold green]Trusted tools this session:[/bold green]",
             )
-            for name in sorted(commands):
-                console.print(f"  ✓ {escape(name)}")
-        if deny:
-            console.print("[bold red]Denied tools this turn:[/bold red]")
-            for name in sorted(deny):
-                console.print(f"  ✗ {escape(name)}")
-        if not allow and not commands and not deny:
+            for name in sorted(ex._always_allow):
+                console.print(f"  ✓ {name}")
+        if ex._always_deny:
+            console.print("[bold red]Denied tools this session:[/bold red]")
+            for name in sorted(ex._always_deny):
+                console.print(f"  ✗ {name}")
+        if not ex._always_allow and not ex._always_deny:
             console.print(
-                "[dim]No trust/deny cache this turn "
-                "(auto-cleared when the turn ends)[/dim]",
+                "[dim]No trust/deny cache this session "
+                "(auto-cleared when a new session starts)[/dim]",
             )
         console.print(
             "\n[dim]Usage:\n"
             "  /trust              — list cache\n"
             "  /trust clear        — clear now (no need to wait for "
-            "the turn to end)\n"
-            "  /trust allow <tool> — pre-trust a whole tool for this turn\n"
-            "  /trust deny  <tool> — pre-deny a tool for this turn\n"
+            "the session to end)\n"
+            "  /trust allow <tool> — pre-trust; applies to the next "
+            "session only\n"
+            "  /trust deny  <tool> — pre-deny; applies to the next "
+            "session only\n"
             "                        (pressing [s]top in the prompt aborts "
-            "this turn; nothing is added to the deny cache)\n"
-            "  \\[a]lways at a run_command prompt trusts that one command "
-            "only,\n"
-            "  never the whole shell — /trust allow run_command does.[/dim]",
+            "this session; nothing is added to the deny cache)[/dim]",
         )
         return
 
     if sub == "clear":
-        allow, commands, deny = ex.trust_snapshot()
-        ex.clear_session_trust()
-        console.print(
-            f"[dim]Cleared {len(allow) + len(commands) + len(deny)} "
-            "cache entries[/dim]",
-        )
+        n = len(ex._always_allow) + len(ex._always_deny)
+        ex._always_allow.clear()
+        ex._always_deny.clear()
+        console.print(f"[dim]Cleared {n} cache entries[/dim]")
         return
 
     if sub in ("allow", "deny") and len(parts) >= 3:
         tool = parts[2]
         if sub == "allow":
-            ex.trust_tool(tool)
+            ex._always_deny.discard(tool)
+            ex._always_allow.add(tool)
             console.print(
-                f"[green]✓ {escape(tool)} trusted for this turn[/green]",
+                f"[green]✓ {tool} trusted "
+                f"(applies to next session only)[/green]",
             )
-            if tool == "run_command":
-                console.print(
-                    "[dim yellow]  this pre-approves every shell command "
-                    "for the turn; unlike \\[a]lways at the prompt, which "
-                    "is scoped to one command[/dim yellow]",
-                )
         else:
-            ex.deny_tool(tool)
-            console.print(f"[red]✗ {escape(tool)} denied for this turn[/red]")
+            ex._always_allow.discard(tool)
+            ex._always_deny.add(tool)
+            console.print(
+                f"[red]✗ {tool} denied "
+                f"(applies to next session only)[/red]",
+            )
         return
 
     console.print(
