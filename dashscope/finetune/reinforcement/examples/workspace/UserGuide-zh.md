@@ -1,4 +1,4 @@
-# Agentic Reinforcement Learning: 用户指南 [[English]](./UserGuide.md)
+# Agentic Reinforcement Learning: 用户指南 [[English]](./UserGuide.md) [[日本語]](./UserGuide-ja.md)
 
 ---
 

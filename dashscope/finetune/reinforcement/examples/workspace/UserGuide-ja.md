@@ -1,69 +1,69 @@
-# Agentic Reinforcement Learning: User Guide [[中文]](./UserGuide-zh.md) [[日本語]](./UserGuide-ja.md)
+# Agentic Reinforcement Learning: ユーザーガイド [[English]](./UserGuide.md) [[中文]](./UserGuide-zh.md)
 
 ---
 
-## 1. Introduction
+## 1. はじめに
 
-The **Agentic RL SDK/CLI** provides a comprehensive toolchain for building, training, and managing Reinforcement Learning (RL) models for Large Language Models (LLMs). It simplifies the complex workflow of defining agent behaviors, collecting trajectories, and optimizing policies.
+**Agentic RL SDK/CLI** は、大規模言語モデル（LLM）向けの強化学習（RL）モデルを構築・トレーニング・管理するための包括的なツールチェーンを提供します。エージェントの振る舞いを定義し、トラジェクトリ（軌跡）を収集し、ポリシーを最適化するという複雑なワークフローを簡素化します。
 
-The SDK consists of two core modules:
-1.  **Functions Module**: Manages custom Python code for **Rollout** (trajectory generation), **Reward** (scoring), and **Group Reward** (batch scoring). It supports automatic registration, testing, and built-in **Observability (Tracing)**.
-2.  **Tuning Module**: Handles dataset management, hyperparameter configuration, job submission, and lifecycle management (status, logs, cancellation).
+SDK は 2 つのコアモジュールで構成されています：
+1.  **Functions モジュール**：**Rollout**（トラジェクトリ生成）、**Reward**（スコアリング）、**Group Reward**（バッチスコアリング）用のカスタム Python コードを管理します。自動登録・テスト、および組み込みの**可観測性（Tracing）**をサポートします。
+2.  **Tuning モジュール**：データセット管理、ハイパーパラメータ設定、ジョブの投入、ライフサイクル管理（ステータス、ログ、キャンセル）を扱います。
 
-**Workflow**:
-1. Register custom functions. Regular reinforcement training requires a
-   Rollout and at least one Reward; Rollout and Reward are optional for OPD.
-2. Use the Tuning Module to upload datasets, configure the job, and submit it
-   for training.
+**ワークフロー**：
+1. カスタム関数を登録します。通常の強化学習トレーニングには Rollout と
+   少なくとも1つの Reward が必要です。OPD では Rollout と Reward はどちらも任意です。
+2. Tuning モジュールを使ってデータセットをアップロードし、ジョブを設定して
+   トレーニングに投入します。
 
 ---
 
-## 2. Installation & Setup
+## 2. インストールとセットアップ
 
-### 2.1 Install via PyPI
+### 2.1 PyPI からインストール
 ```bash
 pip install dashscope>=1.25.19
 ```
 
-### 2.2 Install from Source (For Development)
+### 2.2 ソースからインストール（開発用）
 ```bash
 git clone https://github.com/dashscope/dashscope-sdk-python.git
 cd dashscope-sdk-python
-pip install -e .  # Install in editable mode for development
+pip install -e .  # 開発用に editable モードでインストール
 ```
 
-### 2.3 Authorization
-1.  Obtain your **DashScope API Key**.
-2.  Set the environment variable:
+### 2.3 認証
+1.  **DashScope API Key** を取得します。
+2.  環境変数を設定します：
     ```bash
     export DASHSCOPE_API_KEY='your-api-key-here'
     ```
 
-### 2.4 Project Structure
-A recommended workspace structure ensures smooth deployment and local testing:
+### 2.4 プロジェクト構成
+以下の推奨ワークスペース構成により、スムーズなデプロイとローカルテストが可能になります：
 
 ```text
 workspace/
-├── data/                   # Datasets
+├── data/                   # データセット
 │   ├── training.jsonl
 │   └── validation.jsonl
-├── functions/              # Custom functions; optional only for OPD
+├── functions/              # カスタム関数。OPD の場合のみ省略可能
 │   ├── reward/
 │   │   ├── group_reward.py
 │   │   └── reward.py
 │   └── rollout/
 │       └── rollout.py
-├── requirements.txt        # Dependencies for Function Components
-├── rl-job.yaml             # Regular Agentic RL configuration
-└── opd-job.yaml            # OPD configuration
+├── requirements.txt        # Function コンポーネントの依存関係
+├── rl-job.yaml             # 通常の Agentic RL 設定
+└── opd-job.yaml            # OPD 設定
 ```
 
-Regular reinforcement training requires a custom Rollout and at least one
-Reward. Only OPD may omit Rollout and Reward, or configure either one
-independently.
+通常の強化学習トレーニングには、カスタム Rollout と少なくとも1つの
+Reward が必要です。Rollout と Reward を省略したり、どちらか一方だけを
+単独で設定できるのは OPD のみです。
 
-### 2.5 Dependency Packages (requirements.txt Guidelines)
-This file is **mandatory** for deploying Function Components to the cloud. It must reside in the workspace root.
+### 2.5 依存パッケージ（requirements.txt のガイドライン）
+このファイルは Function コンポーネントをクラウドにデプロイする際に**必須**です。ワークスペースのルートに配置する必要があります。
 
 **requirements.txt:**
 ```txt
@@ -78,12 +78,12 @@ httpx==0.28.1
 tenacity==9.1.4
 ```
 
-**Key Notes:**
-*   **Default Packages**: `dashscope` are pre-installed in the runtime environment. Do NOT include them in your `requirements.txt`.
-*   **Protobuf**: Must be within the specified range to avoid compatibility issues.
+**主な注意点：**
+*   **デフォルトのパッケージ**：`dashscope` はランタイム環境にあらかじめインストールされています。`requirements.txt` に含めないでください。
+*   **Protobuf**：互換性の問題を避けるため、指定されたバージョン範囲内である必要があります。
 
-#### Dependencies for Observability (Tracing)
-To use observability spans (processor / LLM / tool), add the following dependencies to your `requirements.txt` (recommended pinned versions for reproducible deployments):
+#### 可観測性（Tracing）のための依存関係
+可観測性のスパン（processor / LLM / tool）を使用するには、`requirements.txt` に以下の依存関係を追加してください（再現可能なデプロイのため、バージョン固定を推奨します）：
 
 ```txt
 opentelemetry-api==1.41.1
@@ -93,12 +93,12 @@ opentelemetry-processor-baggage==0.62b1
 loongsuite-util-genai==0.4.0
 ```
 
-### 2.6 Logging Configuration
-Configure logging verbosity via the `LOG_LEVEL` environment variable:
+### 2.6 ロギング設定
+`LOG_LEVEL` 環境変数でログの詳細度を設定します：
 
 ```bash
-export LOG_LEVEL="DEBUG"   # Most verbose (masks sensitive info like API keys)
-export LOG_LEVEL="INFO"    # Default
+export LOG_LEVEL="DEBUG"   # 最も詳細（API キーなどの機密情報はマスクされます）
+export LOG_LEVEL="INFO"    # デフォルト
 export LOG_LEVEL="WARNING"
 export LOG_LEVEL="ERROR"
 export LOG_LEVEL="CRITICAL"
@@ -106,38 +106,39 @@ export LOG_LEVEL="CRITICAL"
 
 ---
 
-## 3. Writing Functions
-Reference: workspace/functions directory, output rollout.py, reward.py, etc.
+## 3. 関数の実装
 
-### 3.1 Implementing Functions
+参照：workspace/functions ディレクトリ、出力先は rollout.py、reward.py など
 
-Functions must inherit from the abstract base classes provided by the SDK.
+### 3.1 関数の実装
 
-#### Rollout Processor
-Generates agent trajectories (interactions with the environment/LLM).
+関数は SDK が提供する抽象基底クラスを継承する必要があります。
+
+#### Rollout プロセッサ
+エージェントのトラジェクトリ（環境／LLM とのやり取り）を生成します。
 
 ```python
 from dashscope.finetune.reinforcement import AbstractRolloutProcessor, RolloutInput, RolloutOutput
 
 class DemoRolloutProcessor(AbstractRolloutProcessor):
     async def process(self, input: RolloutInput) -> RolloutOutput:
-        # Generate trajectory (supports async/def)
+        # トラジェクトリを生成する（async/def どちらもサポート）
         pass
 ```
 
-#### Reward Processor
-Scores individual steps or final outputs.
+#### Reward プロセッサ
+個々のステップまたは最終出力をスコアリングします。
 
 ```python
 from dashscope.finetune.reinforcement import AbstractRewardProcessor, RewardInput, RewardOutput
 
 class DemoRewardProcessor(AbstractRewardProcessor):
     def process(self, input: RewardInput) -> RewardOutput:
-        # Calculate reward score
+        # 報酬スコアを計算する
         pass
 ```
 
-#### Advanced Reward Processor with Decorators
+#### デコレーターを使った高度な Reward プロセッサ
 ```python
 from dashscope.finetune.reinforcement import reward_func, sub_reward_func, aggregate_func
 
@@ -150,17 +151,17 @@ class SafetyProcessor(AbstractRewardProcessor):
     async def refusal(self, input: RewardInput) -> RewardOutput: ...
 
     @aggregate_func
-    async def aggregate(self, sub_rewards: dict[str, RewardOutput]) -> RewardOutput: # Custom aggregation logic
+    async def aggregate(self, sub_rewards: dict[str, RewardOutput]) -> RewardOutput: # カスタム集約ロジック
         weights = self.get_weights()
         scores = self.get_scores(sub_rewards)
         reward_metrics = self.get_reward_metrics(sub_rewards)
 
-        total = ...  # Calculate total reward
+        total = ...  # 合計報酬を計算する
         return RewardOutput(...)
 ```
 
-#### Group Reward Processor
-Scores a batch of trajectories collectively (e.g., for ranking).
+#### Group Reward プロセッサ
+複数のトラジェクトリをまとめてスコアリングします（例：ランキング用途）。
 
 ```python
 from dashscope.finetune.reinforcement import AbstractGroupRewardProcessor, GroupRewardInput, GroupRewardOutput
@@ -170,50 +171,50 @@ class DemoGroupRewardProcessor(AbstractGroupRewardProcessor):
         pass
 
     async def process(self, input: GroupRewardInput) -> GroupRewardOutput:
-        # Calculate group rewards
+        # グループ報酬を計算する
         pass
 ```
 
-### 3.2 Observability (Tracing)
+### 3.2 可観測性（Tracing）
 
-Enable deep visibility into your agent's execution using OpenTelemetry. Trace data is exported to **ARMS** (Alibaba Cloud Real-Time Monitoring Service) after ARMS authorization is completed in the console. See [ARMS documentation](https://help.aliyun.com/zh/arms/?spm=5176.30275541.J_ZGek9Blx07Hclc3Ddt9dg.3.3ce02f3dmKOpPK&scm=20140722.S_card@@%E4%BA%A7%E5%93%81@@596792.S_new~UND~card.ID_card@@%E4%BA%A7%E5%93%81@@596792-RL_arms-LOC_2024SPSearchCard-OR_ser-PAR1_0bc1409817757870159831522e3953-V_4-RE_new5-P0_0-P1_0).
+OpenTelemetry を使って、エージェントの実行状況を詳細に可視化できます。コンソールで ARMS 認可を完了すると、トレースデータは **ARMS**（アリババクラウド リアルタイムモニタリングサービス）にエクスポートされます。詳細は [ARMS ドキュメント](https://help.aliyun.com/zh/arms/?spm=5176.30275541.J_ZGek9Blx07Hclc3Ddt9dg.3.3ce02f3dmKOpPK&scm=20140722.S_card@@%E4%BA%A7%E5%93%81@@596792.S_new~UND~card.ID_card@@%E4%BA%A7%E5%93%81@@596792-RL_arms-LOC_2024SPSearchCard-OR_ser-PAR1_0bc1409817757870159831522e3953-V_4-RE_new5-P0_0-P1_0) を参照してください。
 
-#### Prerequisites
-1.  Add observability dependencies to `requirements.txt` (see Section 2.5, “Dependencies for Observability (Tracing)”).
+#### 前提条件
+1.  可観測性の依存関係を `requirements.txt` に追加してください（セクション 2.5「可観測性（Tracing）のための依存関係」を参照）。
 
-#### Instrumentation Decorators
-Import from `dashscope.finetune.reinforcement.component.observability`.
+#### インストルメンテーション用デコレーター
+`dashscope.finetune.reinforcement.component.observability` からインポートします。
 
-| Decorator | Usage | Description |
+| デコレーター | 使用場所 | 説明 |
 | :--- | :--- | :--- |
-| `@observe_processor` | On `process()` method | Auto-traces input/output, latency, and status. Determines span kind (ROLLOUT/REWARD) automatically. |
-| `trace_client()` | In `setup()` or before first LLM call | Wraps LLM clients (OpenAI, DashScope, LangChain-like). Auto-traces all downstream calls. **Recommended.** |
-| `@observe_llm` | On custom LLM funcs | Use if `trace_client` doesn't support your wrapper. Requires `model` and `messages` as kwargs. |
-| `trace_tool()` | In `setup()` (after tools are created) | Wraps tools (LangChain/MCP/LangGraph-like). Auto-traces tool invocations. |
-| `@observe_tool` | On plain functions | Use for simple Python functions not wrapped as BaseTools. |
+| `@observe_processor` | `process()` メソッド上 | 入出力・レイテンシ・ステータスを自動的にトレースします。span の種類（ROLLOUT/REWARD）も自動判定します。 |
+| `trace_client()` | `setup()` 内、または最初の LLM 呼び出しの前 | LLM クライアント（OpenAI、DashScope、LangChain ライク）をラップします。以降のすべての呼び出しを自動的にトレースします。**推奨**。 |
+| `@observe_llm` | カスタム LLM 関数上 | `trace_client` がお使いのラッパーに対応していない場合に使用します。`model` と `messages` をキーワード引数として渡す必要があります。 |
+| `trace_tool()` | `setup()` 内（ツール作成後） | ツール（LangChain/MCP/LangGraph ライク）をラップします。ツール呼び出しを自動的にトレースします。 |
+| `@observe_tool` | 通常の関数上 | BaseTools としてラップされていない単純な Python 関数に使用します。 |
 
-> **Setup:** Called once on server startup; supports both sync and async. Sync setup is offloaded to avoid blocking the event loop.
+> **Setup：** サーバー起動時に一度だけ呼び出されます。同期・非同期の両方に対応しています。同期の setup はイベントループをブロックしないようオフロードされます。
 
-#### What `trace_client()` supports (duck typing)
-`trace_client(client)` is detected by structure (not by class name). It supports:
+#### `trace_client()` がサポートするもの（ダックタイピング）
+`trace_client(client)` はクラス名ではなく構造によって判定されます。以下をサポートします：
 
-- **Full OpenAI client** exposing `.chat.completions.create`
-- **Completions resource** exposing `.create` and **no** `.chat` (e.g. `ChatOpenAI.client`)
-- **LangChain-like wrapper** exposing `.client` and/or `.async_client`
-- **DashScope Generation** class (pass the class itself, which has `call` as a classmethod)
+- **完全な OpenAI クライアント**（`.chat.completions.create` を公開しているもの）
+- **Completions リソース**（`.create` を公開し `.chat` を持たないもの、例：`ChatOpenAI.client`）
+- **LangChain ライクなラッパー**（`.client` および/または `.async_client` を公開しているもの）
+- **DashScope の Generation クラス**（クラス自体を渡します。`call` がクラスメソッドとして存在します）
 
-#### What `trace_tool()` supports
-`trace_tool(tools)` accepts the following shapes:
+#### `trace_tool()` がサポートするもの
+`trace_tool(tools)` は以下の形式を受け付けます：
 
-- A single tool object (e.g. LangChain `BaseTool`)
-- A list/tuple of tools
-- A dict mapping names to tools
-- A LangGraph `ToolNode` (tools are expanded internally)
-- MCP tools returned by `langchain-mcp-adapters` (provider is auto-set to `"mcp"`)
+- 単一のツールオブジェクト（例：LangChain の `BaseTool`）
+- ツールのリスト／タプル
+- 名前とツールをマッピングした辞書
+- LangGraph の `ToolNode`（内部でツールが展開されます）
+- `langchain-mcp-adapters` が返す MCP ツール（provider は自動的に `"mcp"` に設定されます）
 
-> **MCP note:** MCP Server and Client run in separate processes. `@observe_tool` on the Server-side function has no effect on the Client side. Always call `trace_tool(tools)` after `get_tools()` on the Client side.
+> **MCP に関する注意：** MCP のサーバーとクライアントは別プロセスで動作します。サーバー側の関数に `@observe_tool` を付けても、クライアント側には影響しません。クライアント側では、必ず `get_tools()` の後に `trace_tool(tools)` を呼び出してください。
 
-#### Example: Instrumented Rollout Processor
+#### 例：インストルメント化された Rollout プロセッサ
 
 ```python
 import openai
@@ -228,11 +229,11 @@ from dashscope.finetune.reinforcement.component.observability import (
 class MyRolloutProcessor(AbstractRolloutProcessor):
 
     async def setup(self) -> None:
-        # 1. Trace LLM Client
+        # 1. LLM クライアントをトレース
         self._client = openai.AsyncOpenAI(base_url="...", api_key="...")
         trace_client(self._client)
 
-        # 2. Trace Tools (e.g., MCP)
+        # 2. ツールをトレース（例：MCP）
         from langchain_mcp_adapters.client import MultiServerMCPClient
 
         client = MultiServerMCPClient({...})
@@ -244,7 +245,7 @@ class MyRolloutProcessor(AbstractRolloutProcessor):
         messages = input.messages or []
         model = input.model_resource.model_name
 
-        # This call is automatically traced due to trace_client(self._client)
+        # trace_client(self._client) により、この呼び出しは自動的にトレースされます
         response = await self._client.chat.completions.create(
             model=model,
             messages=messages,
@@ -260,30 +261,30 @@ class MyRolloutProcessor(AbstractRolloutProcessor):
 
 ---
 
-## 4. SDK & CLI Reference
-* [SDK] Interface class: dashscope.finetune.agentic_rl.AgenticRL
-* [CLI] Entry point: dashscope rl
+## 4. SDK / CLI リファレンス
+* [SDK] インターフェースクラス：dashscope.finetune.agentic_rl.AgenticRL
+* [CLI] エントリーポイント：dashscope rl
 
-### 4.1 Job Configuration
+### 4.1 ジョブ設定
 
-Regular reinforcement training and OPD use the same SDK/CLI workflow. Select
-the corresponding YAML configuration; code arguments override YAML values.
+通常の強化学習トレーニングと OPD は、同じ SDK/CLI ワークフローを使用します。
+対応する YAML 設定を選択してください。コードで指定した引数は YAML の値より優先されます。
 
-| Training type | Configuration | Custom functions |
+| トレーニング種別 | 設定ファイル | カスタム関数 |
 |---|---|---|
-| Regular reinforcement | `rl-job.yaml` | Rollout is required, with at least one Reward |
-| OPD | `opd-job.yaml` | Rollout and Reward are independently optional and may both be omitted |
+| 通常の強化学習 | `rl-job.yaml` | Rollout は必須、Reward は少なくとも1つ必要 |
+| OPD | `opd-job.yaml` | Rollout と Reward はそれぞれ独立して任意で、両方省略も可能 |
 
 **[SDK] \_\_init\_\_**
 ```python
 def __init__(self, api_key: str = None): ...
 ```
-Initializes the AgenticRL instance.
+AgenticRL インスタンスを初期化します。
 
-**Parameters**:
-- `api_key`: API key for authentication (uses environment variable if not provided)
+**パラメータ**：
+- `api_key`：認証用の API キー（指定しない場合は環境変数を使用）
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
 rl = AgenticRL(api_key="your_api_key")
@@ -293,43 +294,43 @@ rl = AgenticRL(api_key="your_api_key")
 ```python
 def init(self, config_path: Optional[str] = None, **kwargs) -> Self: ...
 ```
-Initializes the instance from a YAML configuration file.
+YAML 設定ファイルからインスタンスを初期化します。
 
-**Parameters**:
-- `config_path`: Path to YAML configuration file
-- `**kwargs`: Configuration overrides
+**パラメータ**：
+- `config_path`：YAML 設定ファイルのパス
+- `**kwargs`：設定の上書き
 
-**Returns**: Self instance
+**戻り値**：Self インスタンス
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
-config_path = "opd-job.yaml"  # Use "rl-job.yaml" for regular reinforcement
+config_path = "opd-job.yaml"  # 通常の強化学習には "rl-job.yaml" を使用
 rl = AgenticRL().init(config_path, job_name="custom_job")
 result = await rl.run()
 ```
 
-When `opd-job.yaml` is selected, keep or remove the Rollout and Reward blocks
-to choose the required capabilities:
+`opd-job.yaml` を選択した場合、Rollout と Reward のブロックを保持または
+削除することで、必要な機能を選択します：
 
-| Function blocks kept | OPD mode | Trajectory source | Task reward |
+| 保持する関数ブロック | OPD モード | トラジェクトリの供給元 | タスク報酬 |
 |---|---|---|---|
-| Neither | Teacher only | Platform | Disabled |
-| Reward only | Teacher + Reward | Platform | Custom Reward |
-| Rollout only | Teacher + Rollout | Custom Rollout | Disabled |
-| Rollout and Reward | Teacher + Rollout + Reward | Custom Rollout | Custom Reward |
+| どちらもなし | Teacher のみ | プラットフォーム | 無効 |
+| Reward のみ | Teacher + Reward | プラットフォーム | カスタム Reward |
+| Rollout のみ | Teacher + Rollout | カスタム Rollout | 無効 |
+| Rollout と Reward | Teacher + Rollout + Reward | カスタム Rollout | カスタム Reward |
 
-The committed `opd-job.yaml` keeps both blocks. Delete either block, or both,
-to select another OPD combination:
+コミットされている `opd-job.yaml` は両方のブロックを保持しています。他の
+OPD の組み合わせを選択するには、どちらか一方または両方のブロックを削除してください：
 
 ```yaml
 teacher_model: qwen3.5-397b-a17b
 
 functions:
-# Remove this block to use platform generation.
+# このブロックを削除するとプラットフォーム生成を使用します。
 - type: rollout
   # ...
-# Remove this block to disable custom task rewards.
+# このブロックを削除するとカスタムタスク報酬を無効化します。
 - type: reward
   # ...
 
@@ -338,30 +339,30 @@ training:
 ```
 
 ```bash
-# Regular reinforcement
+# 通常の強化学習
 dashscope rl run -c rl-job.yaml
 
 # OPD
 dashscope rl run -c opd-job.yaml
 ```
 
-### 4.2 Registering Functions
+### 4.2 関数の登録
 
-Uploads code and registers Function Components (functions).
+コードをアップロードし、Function コンポーネント（関数）を登録します。
 
 **[SDK] [register_functions](submit_job.py)**
 ```python
 def register_functions(self, functions: Optional[Union[List[Union[RolloutFunctionComponent, RewardFunctionComponent]], RolloutFunctionComponent, RewardFunctionComponent]] = None, lazy_load: Optional[bool] = True) -> tuple: ...
 ```
-Registers function components.
+Function コンポーネントを登録します。
 
-**Parameters**:
-- `functions`: Function components to register
-- `lazy_load`: Defer loading until execution
+**パラメータ**：
+- `functions`：登録する Function コンポーネント
+- `lazy_load`：実行時までロードを遅延させる
 
-**Returns**: Tuple of entity/instance IDs
+**戻り値**：entity/instance ID のタプル
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL, AgenticRLFunctionComponent, FunctionType, FunctionComponentModel
 
@@ -388,13 +389,13 @@ rollout_iids, reward_iids, group_iids = await rl.register_functions(
                 classpath="functions.reward.group_reward.DemoGroupRewardProcessor"),
         ),
     ],
-    lazy_load=False  # Set False to get instance IDs immediately for testing
+    lazy_load=False  # テストのためすぐに instance ID を取得したい場合は False にする
 )
 ```
 
 **[CLI] register_functions**
 
-**Usage: dashscope register_functions [OPTIONS]**
+**使い方: dashscope register_functions [OPTIONS]**
 ```bash
  🧩 Register Rollout/Reward function components, returns entity_id & instance_id
 
@@ -413,7 +414,7 @@ rollout_iids, reward_iids, group_iids = await rl.register_functions(
 │ --help                                                 Show this message and exit.                                                                                                                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-**Example**:
+**例**：
 ```bash
 dashscope rl register_functions \
   --rollout-classpath "functions.rollout.rollout2.DemoRolloutProcessor" \
@@ -422,35 +423,35 @@ dashscope rl register_functions \
   --output-format json
 ```
 
-### 4.3 Testing Functions
+### 4.3 関数のテスト
 
-#### 4.3.1 Remote Testing
+#### 4.3.1 リモートテスト
 **[SDK] [test_functions](test_functions.py)**
 
-Test registered instances with sample data.
+登録済みのインスタンスをサンプルデータでテストします。
 
 ```python
 def test_functions(cls, instance_id: str, type: FunctionType, input_data: Dict[str, Any], api_key: str = None): ...
 ```
 
-**Parameters**:
-- `instance_id`: Function instance ID
-- `type`: Function type (ROLLOUT/REWARD/GROUP_REWARD)
-- `input_data`: Test input data
-- `api_key`: API key for authentication
+**パラメータ**：
+- `instance_id`：Function インスタンス ID
+- `type`：関数の種類（ROLLOUT/REWARD/GROUP_REWARD）
+- `input_data`：テスト用の入力データ
+- `api_key`：認証用の API キー
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL, FunctionType
 
-# Test Rollout
+# Rollout をテスト
 result = await AgenticRL.test_functions(
     instance_id=rollout_iids[0],
     functype=FunctionType.ROLLOUT,
-    input_data="resouces/rollout_input.json" # path to JSON file
+    input_data="resouces/rollout_input.json" # JSON ファイルへのパス
 )
 
-# Test Reward
+# Reward をテスト
 reward_input = {
     "func_type": "reward",
     "agent_output": {
@@ -467,7 +468,7 @@ result = await AgenticRL.test_functions(
 
 **[CLI] test_functions**
 
-**Usage: dashscope test_functions [OPTIONS] INSTANCE_ID**
+**使い方: dashscope test_functions [OPTIONS] INSTANCE_ID**
 ```bash
  🧪 Test a registered Rollout/Reward function instance with custom input data.
 
@@ -483,15 +484,15 @@ result = await AgenticRL.test_functions(
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-**Example**:
+**例**：
 ```bash
 dashscope rl test_functions "ro-ins-xxx" \
   --type rollout \
   --input "resources/rollout_input.json"
 ```
 
-### 4.4 One-Step Workflow
-Automatically registers functions, uploads data, and submits the job.
+### 4.4 ワンステップ・ワークフロー
+関数の登録、データのアップロード、ジョブの投入を自動的に行います。
 
 **[SDK] [run](submit_job.py)**
 ```python
@@ -510,21 +511,21 @@ async def run(
     **kwargs,
 ) -> FineTune: ...
 ```
-Full workflow execution (registration + upload + submission).
+一連のワークフローを実行します（登録 + アップロード + 投入）。
 
-**Parameters**:
-- `model`: Base model name
-- `training_datasets`: Training dataset objects
-- `validation_datasets`: Validation dataset objects
-- `functions`: Function components
-- `hyper_parameters`: Training hyper_parameters
-- `resources`: Training resource configuration
-- `job_name`: Custom job name
-- `teacher_model`: Teacher model; enables OPD while Rollout and Reward remain optional
+**パラメータ**：
+- `model`：ベースモデル名
+- `training_datasets`：トレーニングデータセットオブジェクト
+- `validation_datasets`：検証データセットオブジェクト
+- `functions`：Function コンポーネント
+- `hyper_parameters`：トレーニングのハイパーパラメータ
+- `resources`：トレーニングのリソース設定
+- `job_name`：カスタムジョブ名
+- `teacher_model`：Teacher モデル。指定すると OPD が有効になり、Rollout と Reward は任意になります
 
-**Returns**: `FineTune` job object
+**戻り値**：`FineTune` ジョブオブジェクト
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL, AgenticRLFunctionComponent, FunctionType, FunctionComponentModel
 
@@ -575,7 +576,7 @@ job = await rl.run(
 
 **[CLI] run**
 
-**Usage: dashscope rl run [OPTIONS]**
+**使い方: dashscope rl run [OPTIONS]**
 ```bash
  🚀 Launch the complete RL tuning workflow (function registration → dataset upload → job submission)
 
@@ -606,7 +607,7 @@ job = await rl.run(
 │ --rollout-runtime                  TEXT   Rollout runtime as JSON string                                                                                                                                             │
 │ --reward-runtimes                  TEXT   Reward runtimes as JSON string                                                                                                                                             │
 │ --group-reward-runtimes            TEXT   Group-reward runtimes as JSON string                                                                                                                                       │
-│ --hyper-parameters                 TEXT   JSON string of hyper_parameters                                                                                                                                             │
+│ --hyper-parameters                 TEXT   JSON string of hyper_parameters                                                                                                                                            │
 │ --job-name                         TEXT   Custom name for the tuning job                                                                                                                                             │
 │ --api-key                          TEXT   DashScope API Key (uses DASHSCOPE_API_KEY env var if omitted) [env var: DASHSCOPE_API_KEY]                                                                                 │
 │ --workspace-dir                    TEXT   Workspace directory for job artifacts [default: ./]                                                                                                                        │
@@ -616,27 +617,27 @@ job = await rl.run(
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-**Example**: Run Full Workflow (Auto)
+**例**：フルワークフローの実行（自動）
 ```bash
 dashscope rl run \
   --config "rl-job.yaml" \
   --verbose
 ```
 
-### 4.5 Job Management
+### 4.5 ジョブ管理
 
 **[SDK] get**
 ```python
 def get(cls, job_id: str, api_key: str = None, workspace: str = None, **kwargs) -> FineTune: ...
 ```
-Gets job information.
+ジョブ情報を取得します。
 
-**Parameters**:
-- `job_id`: ID of job to retrieve
-- `api_key`: API key for authentication
-- `workspace`: Workspace identifier
+**パラメータ**：
+- `job_id`：取得対象のジョブ ID
+- `api_key`：認証用の API キー
+- `workspace`：ワークスペース識別子
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
 job = AgenticRL.get("job-12345")
@@ -644,7 +645,7 @@ job = AgenticRL.get("job-12345")
 
 **[CLI] get**
 
-**Usage: dashscope get [OPTIONS] JOB_ID**
+**使い方: dashscope get [OPTIONS] JOB_ID**
 ```bash
  📊 Query the current status and metadata of a specific job
 
@@ -658,7 +659,7 @@ job = AgenticRL.get("job-12345")
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-**Example**:
+**例**：
 ```bash
 dashscope rl get "$JOB_ID" -o json
 ```
@@ -667,14 +668,14 @@ dashscope rl get "$JOB_ID" -o json
 ```python
 def cancel(cls, job_id: str, api_key: str = None, workspace: str = None, **kwargs) -> FineTuneCancel: ...
 ```
-Cancels a running job.
+実行中のジョブをキャンセルします。
 
-**Parameters**:
-- `job_id`: ID of job to cancel
-- `api_key`: API key for authentication
-- `workspace`: Workspace identifier
+**パラメータ**：
+- `job_id`：キャンセル対象のジョブ ID
+- `api_key`：認証用の API キー
+- `workspace`：ワークスペース識別子
 
-**Example**:
+**例**：
 ```python
 from dashscope.finetune.agentic_rl import AgenticRL
 AgenticRL.cancel("job-12345")
@@ -682,7 +683,7 @@ AgenticRL.cancel("job-12345")
 
 **[CLI] cancel**
 
-**Usage: dashscope cancel [OPTIONS] JOB_ID**
+**使い方: dashscope cancel [OPTIONS] JOB_ID**
 ```bash
  🛑 Cancel a running job
 
@@ -695,18 +696,18 @@ AgenticRL.cancel("job-12345")
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-**Example**:
+**例**：
 ```bash
 dashscope rl cancel "$JOB_ID"
 ```
 
 ---
 
-## 5. CLI Reference
+## 5. CLI リファレンス
 
-The CLI mirrors the SDK functionality. Use `dashscope rl --help` for details.
+CLI は SDK の機能をそのまま反映しています。詳細は `dashscope rl --help` を実行して確認してください。
 
-### Usage: dashscope [OPTIONS] COMMAND [ARGS]...
+### 使い方: dashscope [OPTIONS] COMMAND [ARGS]...
 ```bash
 
  🚀 Agentic RL Fine-Tuning CLI
@@ -730,22 +731,22 @@ The CLI mirrors the SDK functionality. Use `dashscope rl --help` for details.
 
 ---
 
-## 6. FAQ & Troubleshooting
+## 6. FAQ とトラブルシューティング
 
-**Q: Function registration fails.**
-*   **Check**: Is the classpath correct (`module.path:ClassName`)?
-*   **Check**: Does `requirements.txt` exist in the workspace root?
-*   **Check**: Are all dependencies listed in `requirements.txt`?
+**Q：関数の登録に失敗する。**
+*   **確認**：classpath は正しいですか（`module.path:ClassName`）？
+*   **確認**：`requirements.txt` はワークスペースのルートに存在しますか？
+*   **確認**：必要な依存関係がすべて `requirements.txt` に記載されていますか？
 
-**Q: Job submission fails.**
-*   **Check**: Are the Entity IDs and File IDs valid?
-*   **Check**: Is the base model available in your region?
-*   **Check**: Do `reward_runtimes` list length match `reward_ids` list length?
+**Q：ジョブの投入に失敗する。**
+*   **確認**：Entity ID と File ID は有効ですか？
+*   **確認**：ベースモデルはお使いのリージョンで利用可能ですか？
+*   **確認**：`reward_runtimes` のリストの長さは `reward_ids` のリストの長さと一致していますか？
 
-**Q: How to optimize performance?**
-*   Use `async def process` for I/O bound tasks.
-*   Increase `concurrency` in runtime config if CPU/Memory allows.
-*   Keep observability payloads bounded (avoid excessive input/output capture) to reduce overhead.
+**Q：パフォーマンスを最適化するには？**
+*   I/O バウンドなタスクには `async def process` を使用してください。
+*   CPU/メモリに余裕があれば、ランタイム設定の `concurrency` を増やしてください。
+*   可観測性のペイロードは適切な範囲に収め（入出力の過剰なキャプチャを避け）、オーバーヘッドを減らしてください。
 
-**Q: Where are my traces?**
-*   Traces are sent to **ARMS** after ARMS authorization is completed in the Bailian Console. Ensure your `requirements.txt` includes the observability dependencies and that you are using the observability APIs (`observe_processor`, `trace_client`, `trace_tool`, etc.).
+**Q：トレースはどこで確認できますか？**
+*   百煉（Bailian）コンソールで ARMS 認可を完了すると、トレースは **ARMS** に送信されます。`requirements.txt` に可観測性の依存関係が含まれていること、および可観測性 API（`observe_processor`、`trace_client`、`trace_tool` など）を使用していることを確認してください。

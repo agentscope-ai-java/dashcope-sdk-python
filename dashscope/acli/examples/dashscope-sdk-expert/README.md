@@ -1,5 +1,7 @@
 # DashScope SDK Expert — acli Configuration-Driven Example
 
+> **English** | [中文](README_zh.md) | [日本語](README_ja.md)
+
 **Online guide**: https://help.aliyun.com/en/model-studio/dashscope-sdk-expert
 
 This example shows how to build a scenario-specific AI expert agent using **AgenticCLI (acli)**'s native configuration mechanisms.

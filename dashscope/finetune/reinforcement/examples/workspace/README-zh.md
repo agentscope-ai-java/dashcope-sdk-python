@@ -1,4 +1,4 @@
-# Agentic RL SDK/CLI 使用指南 [[English]](./README.md)
+# Agentic RL SDK/CLI 使用指南 [[English]](./README.md) [[日本語]](./README-ja.md)
 
 ## 1. 安装 SDK
 

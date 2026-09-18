@@ -1,19 +1,20 @@
-> **English** | [中文](README_zh.md) | [日本語](README_ja.md)
+> [English](README.md) | [中文](README_zh.md) | **日本語**
 
-## maintain docs
-1. build docs
+## ドキュメントのメンテナンス
+
+1. ドキュメントのビルド
     ```shell
-    # in root directory:
+    # リポジトリのルートディレクトリで：
     make docs
     ```
 
-2. doc string format
+2. docstring のフォーマット
 
-    We adopt the google style docstring format as the standard, please refer to the following documents.
-    1. Google Python style guide docstring [link](http://google.github.io/styleguide/pyguide.html#381-docstrings)
-    2. Google docstring example [link](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
-    3. sample：torch.nn.modules.conv [link](https://pytorch.org/docs/stable/_modules/torch/nn/modules/conv.html#Conv1d)
-    4. load function as an example：
+    標準として Google スタイルの docstring フォーマットを採用しています。詳細は以下のドキュメントを参照してください。
+    1. Google Python style guide docstring [リンク](http://google.github.io/styleguide/pyguide.html#381-docstrings)
+    2. Google docstring の例 [リンク](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
+    3. サンプル：torch.nn.modules.conv [リンク](https://pytorch.org/docs/stable/_modules/torch/nn/modules/conv.html#Conv1d)
+    4. load 関数を例にすると：
 
     ```python
     def load(file, file_format=None, **kwargs):

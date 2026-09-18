@@ -1,19 +1,20 @@
-> **English** | [中文](README_zh.md) | [日本語](README_ja.md)
+> [English](README.md) | **中文** | [日本語](README_ja.md)
 
-## maintain docs
-1. build docs
+## 维护文档
+
+1. 构建文档
     ```shell
-    # in root directory:
+    # 在仓库根目录下执行：
     make docs
     ```
 
-2. doc string format
+2. 文档字符串（docstring）格式
 
-    We adopt the google style docstring format as the standard, please refer to the following documents.
-    1. Google Python style guide docstring [link](http://google.github.io/styleguide/pyguide.html#381-docstrings)
-    2. Google docstring example [link](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
-    3. sample：torch.nn.modules.conv [link](https://pytorch.org/docs/stable/_modules/torch/nn/modules/conv.html#Conv1d)
-    4. load function as an example：
+    我们采用 Google 风格的 docstring 格式作为标准，请参考以下文档。
+    1. Google Python 风格指南 docstring [链接](http://google.github.io/styleguide/pyguide.html#381-docstrings)
+    2. Google docstring 示例 [链接](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html)
+    3. 示例：torch.nn.modules.conv [链接](https://pytorch.org/docs/stable/_modules/torch/nn/modules/conv.html#Conv1d)
+    4. 以 load 函数为例：
 
     ```python
     def load(file, file_format=None, **kwargs):

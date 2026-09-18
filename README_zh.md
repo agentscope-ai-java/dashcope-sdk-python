@@ -1,6 +1,6 @@
 # DashScope Python SDK
 
-> [English](README.md) | **中文**
+> [English](README.md) | **中文** | [日本語](README_ja.md)
 
 DashScope Python SDK 提供了访问[阿里云百炼（Model Studio）](https://help.aliyun.com/zh/model-studio/) API 的完整接口，覆盖文本生成、多模态理解、向量（Embedding）、重排（Rerank）、图像/视频生成、语音合成与识别等能力。
 
@@ -31,6 +31,7 @@ pip install -e .
 ## 快速开始
 
 ```python
+# pip install dashscope
 from http import HTTPStatus
 from dashscope import Generation
 
@@ -47,6 +48,65 @@ if responses.status_code == HTTPStatus.OK:
     print(responses.output.choices[0].message.content)
 else:
     print(f"Error: {responses.code} - {responses.message}")
+```
+
+### 流式输出
+
+传入 `stream=True` 即可获得一个增量响应的生成器。设置 `incremental_output=True` 后，每个分片只携带新生成的内容（而不是从开头累计的全部文本）：
+
+```python
+from dashscope import Generation
+
+responses = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "写一首关于大海的诗"}],
+    result_format="message",
+    stream=True,
+    incremental_output=True,
+)
+for response in responses:
+    print(response.output.choices[0].message.content, end="")
+```
+
+### 异步（asyncio）
+
+每一个基于 `call` 的类都有一个 `Aio` 前缀的异步版本（`AioGeneration`、`AioImageSynthesis`、`AioMultiModalConversation`、`AioVideoSynthesis`、`AioMultiModalEmbedding`、`AioTextReRank` 等），参数完全一致，配合 `await` 使用：
+
+```python
+import asyncio
+from dashscope import AioGeneration
+
+async def main():
+    response = await AioGeneration.call(
+        model="qwen-plus",
+        messages=[{"role": "user", "content": "Who are you?"}],
+        result_format="message",
+    )
+    print(response.output.choices[0].message.content)
+
+asyncio.run(main())
+```
+
+### 错误处理
+
+缺少必填参数（如未传 `model`、`messages`/`prompt`，或没有配置 API Key）会立即抛出 `DashScopeException` 的子类；而 API 层面的失败（模型名不合法、限流等）不会抛异常，而是体现在返回结果里，因此需要检查 `status_code`：
+
+```python
+from http import HTTPStatus
+from dashscope import Generation
+from dashscope.common.error import DashScopeException
+
+try:
+    response = Generation.call(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
+except DashScopeException as e:
+    # 本地校验失败时抛出，例如 InputRequired、ModelRequired、AuthenticationError
+    print(f"请求参数有误: {e}")
+else:
+    if response.status_code != HTTPStatus.OK:
+        # 服务端返回的错误，例如模型名不合法、触发限流、余额不足
+        print(f"接口报错 {response.status_code}: {response.code} - {response.message}")
+    else:
+        print(response.output.choices[0].message.content)
 ```
 
 ## API Key 鉴权
@@ -67,16 +127,22 @@ dashscope.api_key = 'YOUR-DASHSCOPE-API-KEY'
 
 2. 通过环境变量设置 API Key
 
-a. 直接使用以下环境变量设置 API Key
-
 ```shell
+# a. 直接设置 API Key
 export DASHSCOPE_API_KEY='YOUR-DASHSCOPE-API-KEY'
+
+# b. 或者改为指定 API Key 所在的文件路径
+export DASHSCOPE_API_KEY_FILE_PATH='~/.dashscope/api_key'
 ```
 
-b. 通过环境变量指定 API Key 文件路径
+设置以上任一环境变量后，`Generation.call(...)`（以及其他所有 SDK 调用）都会自动读取，无需再传 `api_key=` 参数：
 
-```shell
-export DASHSCOPE_API_KEY_FILE_PATH='~/.dashscope/api_key'
+```python
+from dashscope import Generation
+
+# 自动读取 DASHSCOPE_API_KEY（或 DASHSCOPE_API_KEY_FILE_PATH）
+response = Generation.call(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
+print(response.output.choices[0].message.content)
 ```
 
 3. 将 API Key 保存到文件
@@ -138,6 +204,14 @@ export DASHSCOPE_API_REGION='ap-southeast-1'   # 默认：cn-beijing
 export DASHSCOPE_WORKSPACE_ID='ws-xxx123'      # 用于解析端点子域名
 ```
 
+```python
+import dashscope
+
+# 自动读取 DASHSCOPE_API_REGION / DASHSCOPE_WORKSPACE_ID
+print(dashscope.base_http_api_url)
+# https://ws-xxx123.ap-southeast-1.maas.aliyuncs.com/api/v1
+```
+
 当通过 `DASHSCOPE_API_REGION` 设置了 MaaS 区域时，SDK 会构造对应的区域端点，并把 `DASHSCOPE_WORKSPACE_ID` 代入其中。你也可以直接覆盖每一个 base URL：
 
 | 环境变量 | 覆盖的对象 |
@@ -194,6 +268,359 @@ SDK 内置了交互式 AI 助手 **DashScope SDK Expert**，基于随包提供�
 
 最新模型列表请访问[百炼模型广场](https://bailian.console.aliyun.com/)。
 
+## 使用示例
+
+更多可运行脚本见 [`samples/`](samples)。
+
+### 多模态理解（视觉）
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+        {"text": "图中描绘的是什么景象?"},
+    ],
+}]
+response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
+### 使用本地文件
+
+任何接受 URL 的字段（messages 中的 `image`、`audio`、`video`，`ImageSynthesis` 的 `images` 等）同样支持本地文件路径——SDK 会自动上传到 OSS，无需手动设置请求头：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "/path/to/local/image.jpg"},
+        {"text": "图中是什么内容？"},
+    ],
+}]
+response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
+### 文本向量（Embedding）
+
+```python
+from dashscope import TextEmbedding
+
+resp = TextEmbedding.call(
+    model=TextEmbedding.Models.text_embedding_v3,
+    input=["风急天高猿啸哀", "渚清沙白鸟飞回"],
+    text_type="document",
+)
+for e in resp.output["embeddings"]:
+    print(e["text_index"], e["embedding"][:3])
+```
+
+### 多模态向量（Embedding）
+
+```python
+from dashscope import MultiModalEmbedding
+
+resp = MultiModalEmbedding.call(
+    model="multimodal-embedding-v1",
+    input=[{"image": "https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png"}],
+)
+print(resp.output)
+```
+
+### 文本重排（ReRank）
+
+```python
+from dashscope import TextReRank
+
+resp = TextReRank.call(
+    model=TextReRank.Models.gte_rerank,
+    query="哈尔滨在哪？",
+    documents=[
+        "黑龙江离俄罗斯很近",
+        "哈尔滨是中国黑龙江省的省会，位于中国东北",
+    ],
+    return_documents=True,
+    top_n=1,
+)
+for r in resp.output.results:
+    print(r.index, r.relevance_score, r.document)
+```
+
+### 代码生成
+
+`CodeGeneration` 面向特定编程场景（`Scenes`）：自然语言生成代码、代码解释、生成注释、生成 commit message、生成单元测试、代码问答、自然语言生成 SQL。
+
+```python
+from dashscope import CodeGeneration
+
+response = CodeGeneration.call(
+    model=CodeGeneration.Models.tongyi_lingma_v1,
+    scene=CodeGeneration.Scenes.nl2code,
+    message=[
+        {"role": "user", "content": "计算给定路径下所有文件的总大小"},
+        {"role": "attachment", "meta": {"language": "python"}},
+    ],
+)
+print(response.output)
+```
+
+### 图像生成
+
+```python
+from http import HTTPStatus
+from dashscope import ImageSynthesis
+
+rsp = ImageSynthesis.call(
+    model="wanx2.1-t2i-turbo",
+    prompt="一间有着精致窗户的花店，漂亮的木质门，摆放着花朵",
+    n=1,
+    size="1024*1024",
+)
+if rsp.status_code == HTTPStatus.OK:
+    for result in rsp.output.results:
+        print(result.url)
+```
+
+### 视频生成
+
+视频生成是异步任务；`call` 会阻塞直到任务完成，也可以用 `async_call` + `wait`/`fetch` 手动轮询。
+
+```python
+from http import HTTPStatus
+from dashscope import VideoSynthesis
+
+rsp = VideoSynthesis.call(
+    model="wan2.7-t2v",
+    prompt="一只小猫在月光下奔跑",
+    audio=True,
+    watermark=True,
+)
+if rsp.status_code == HTTPStatus.OK:
+    print(rsp.output.video_url)
+```
+
+### 语音合成（TTS）
+
+Qwen-TTS 系列模型通过 `MultiModalConversation` 调用，传入 `text`/`voice` 而非 `messages`：
+
+```python
+from dashscope import MultiModalConversation
+
+response = MultiModalConversation.call(
+    model="qwen3-tts-flash",
+    text="Today is a wonderful day to build something people love!",
+    voice="Cherry",
+    language_type="English",
+)
+print(response.output.audio.url)
+```
+
+CosyVoice 系列模型使用专门的 `SpeechSynthesizer`：
+
+```python
+from dashscope.audio.tts import SpeechSynthesizer
+
+result = SpeechSynthesizer.call(
+    model="cosyvoice-v1",
+    text="Hello, Bailian.",
+    format=SpeechSynthesizer.AudioFormat.format_wav,
+)
+with open("output.wav", "wb") as f:
+    f.write(result.get_audio_data())
+```
+
+### 流式语音合成（CosyVoice v2）
+
+流式传入文本，并通过回调实时接收生成中的音频数据：
+
+```python
+from dashscope.audio.tts_v2 import ResultCallback, SpeechSynthesizer
+
+class Callback(ResultCallback):
+    def on_data(self, data: bytes) -> None:
+        with open("output.mp3", "ab") as f:
+            f.write(data)
+
+synthesizer = SpeechSynthesizer(model="cosyvoice-v2", voice="longxiaochun_v2", callback=Callback())
+for text in ["你好，", "这是流式", "语音合成。"]:
+    synthesizer.streaming_call(text)
+synthesizer.streaming_complete()
+```
+
+### 语音识别（ASR）
+
+`qwen3-asr-flash` 等语音理解模型通过 `MultiModalConversation` 调用：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [{"audio": "https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3"}],
+}]
+response = MultiModalConversation.call(
+    model="qwen3-asr-flash",
+    messages=messages,
+    result_format="message",
+)
+print(response.output.choices[0].message.content)
+```
+
+基于文件的批量语音识别使用 `Transcription`：
+
+```python
+from dashscope.audio.asr import Transcription
+
+response = Transcription.call(
+    model=Transcription.Models.paraformer_v1,
+    file_urls=["https://example.com/audio.wav"],
+)
+if response.output.task_status == "SUCCEEDED":
+    print(response.output.results)
+```
+
+### 流式语音识别
+
+对于实时/流式音频源，逐帧发送 PCM 数据，并通过回调接收识别结果（这里以分块读取文件来演示该模式——请将文件读取循环替换为你的实时音频源）：
+
+```python
+from dashscope.audio.asr import Recognition, RecognitionCallback
+
+class Callback(RecognitionCallback):
+    def on_event(self, result) -> None:
+        print(result.get_sentence())
+
+recognition = Recognition(
+    model="paraformer-realtime-v1",
+    format="pcm",
+    sample_rate=16000,
+    callback=Callback(),
+)
+recognition.start()
+with open("audio.pcm", "rb") as f:
+    while chunk := f.read(3200):
+        recognition.send_audio_frame(chunk)
+recognition.stop()
+```
+
+### 百炼应用（Agent 应用）
+
+调用你在[百炼应用中心](https://bailian.console.aliyun.com/)搭建的应用：
+
+```python
+from http import HTTPStatus
+from dashscope import Application
+
+responses = Application.call(
+    app_id="YOUR-APP-ID",
+    prompt="总结文件内容",
+    stream=True,
+    incremental_output=True,
+    file_list=["https://example.com/document.pdf"],
+)
+for response in responses:
+    if response.status_code != HTTPStatus.OK:
+        print(f"code={response.code}, message={response.message}")
+    else:
+        print(response.output.text, end="")
+```
+
+### AgentStudio（托管 Agent）
+
+`dashscope.agentstudio` 用于管理在百炼 AgentStudio 中搭建的 Agent——创建 Agent/会话并流式接收对话事件，或创建按 cron 计划定时运行 Agent 的"部署（deployment）"：
+
+```python
+from dashscope.agentstudio import Client
+from dashscope.agentstudio.types import user_message
+
+client = Client(api_key="sk-xxx")
+agent = client.agents.create(name="demo", model="qwen-plus")
+session = client.sessions.create(agent=agent.id)
+client.sessions.events.send(session.id, [user_message("Hello!")])
+with client.sessions.events.stream(session.id) as stream:
+    for event in stream:
+        print(event.type, event.to_dict())
+        if event.type == "session_status":
+            break
+```
+
+注意：`Client()` 读取的是环境变量 `DASHSCOPE_WORKSPACE`（不带 `_ID` 后缀）——与[区域配置](#区域与端点配置)中使用的 `DASHSCOPE_WORKSPACE_ID` 是两个不同的变量。完整的定时部署示例见 [`samples/agentstudio_deployments.py`](samples/agentstudio_deployments.py)。
+
+### 本地分词（Tokenization）
+
+无需调用接口，即可在本地对 Qwen 系列模型进行分词计数或编解码（需要 `pip install "dashscope[tokenizer]"`）：
+
+```python
+from dashscope.tokenizers.tokenizer import get_tokenizer
+
+tokenizer = get_tokenizer("qwen-turbo")  # 适用于任意 qwen-* 模型
+tokens = tokenizer.encode("这个是千问tokenizer")
+print(len(tokens))               # token 数量
+print(tokenizer.decode(tokens))  # 解码还原文本
+```
+
+### 模型微调（Fine-tuning）
+
+上传训练文件、创建微调任务，并轮询直至完成（Agentic RL 微调需要 `pip install "dashscope[rl]"`；经典有监督微调无需额外安装）：
+
+```python
+from dashscope import Files, FineTunes
+
+file_response = Files.upload(file_path="train.jsonl", purpose="fine_tune")
+file_id = file_response.output["uploaded_files"][0]["file_id"]
+
+job = FineTunes.call(
+    model="qwen-turbo",
+    training_file_ids=file_id,
+    hyper_parameters={"n_epochs": 10, "learning_rate": 0.001},
+)
+print(job.output.job_id, job.output.status)
+
+result = FineTunes.wait(job.output.job_id)  # 每 30 秒轮询一次，直至完成
+print(result.output.status)
+```
+
+关于基于自定义 rollout/reward 函数的 Agentic RL 微调（YAML 驱动的训练任务、链路追踪/可观测性），请参见 [`dashscope/finetune/reinforcement/examples/workspace/README-zh.md`](dashscope/finetune/reinforcement/examples/workspace/README-zh.md)（快速开始）和 [`UserGuide-zh.md`](dashscope/finetune/reinforcement/examples/workspace/UserGuide-zh.md)（完整参考）。
+
+### 部署微调模型
+
+将微调任务产出的模型部署上线，之后即可像调用普通模型一样调用它：
+
+```python
+from dashscope import Deployments, Generation
+
+deployment = Deployments.call(model=result.output.finetuned_output, capacity=1)
+deployed_model = deployment.output.deployed_model
+
+# 轮询直至 deployment.output.status == "RUNNING"，之后即可像调用普通模型一样调用：
+status = Deployments.get(deployed_model).output.status
+response = Generation.call(model=deployed_model, messages=[{"role": "user", "content": "Hi"}])
+```
+
+## CLI 用法
+
+每一项 SDK 能力都可以通过 `dashscope` 子命令直接使用（随基础包一起安装），便于脚本化或快速验证，无需编写 Python 代码：
+
+```shell
+# 文本生成
+dashscope generation create -m qwen-plus -p "Who are you?"
+dashscope generation create -m qwen-plus -p "写一首关于大海的诗" --stream
+
+# 查看 / 检索可用模型
+dashscope models list
+dashscope models get qwen-plus
+
+# 上传用于微调的文件
+dashscope files upload -f ./train.jsonl -p fine_tune
+```
+
+运行 `dashscope --help` 或 `dashscope <command> --help`（如 `dashscope generation --help`）可查看全部命令组（`generation`、`ft`、`files`、`deployments`、`models`、`embeddings`、`rerank`、`tokenization`、`application`、`image-synthesis`、`video-synthesis`、`multimodal-conversation`、`transcription`、`speech-synthesis`、`rl` 等）及其参数。不带任何参数运行 `dashscope` 则会启动交互式 [AI 助手](#ai-助手dashscope-sdk-expert)。
+
 ## Shell 命令补全
 
 运行对应命令一次，然后重启 Shell（或重新 source 配置文件）：
@@ -211,22 +638,33 @@ dashscope --show-completion bash
 
 ## 日志
 
-如需输出 DashScope 日志，请配置日志级别：
+在导入 `dashscope` 之前设置 `DASHSCOPE_LOGGING_LEVEL`（`info` 或 `debug`），SDK 会自动附加一个控制台日志 handler：
+
 ```shell
 export DASHSCOPE_LOGGING_LEVEL='info'
+```
 
+```python
+from dashscope import Generation
+
+# 请求详情会自动打印到控制台，例如：
+# 2024-01-01 12:00:00,000 - dashscope - ... - INFO - request: POST https://...
+response = Generation.call(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
 ```
 
 ## 输出
 
-输出包含以下字段：
-```
-     request_id (str): 请求 ID。
-     status_code (int): HTTP 状态码，200 表示请求成功，其他值表示错误。
-     code (str): 出错时的错误码，否则为空字符串。
-     message (str): 出错时设置为错误信息。
-     output (Any): 请求输出。
-     usage (Any): 请求用量信息。
+每一次 SDK 调用（流式场景下为每一个分片）都会返回一个包含以下字段的响应对象：
+
+```python
+response = Generation.call(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
+
+response.request_id    # str: 请求 ID，反馈问题时会用到
+response.status_code   # int: HTTP 状态码，200 表示成功
+response.code          # str: 失败时的错误码，成功时为空字符串
+response.message       # str: 失败时的错误信息，成功时为空字符串
+response.output        # Any: 请求输出，具体结构取决于调用的接口
+response.usage         # Any: Token / 用量信息
 ```
 
 ## 许可证
