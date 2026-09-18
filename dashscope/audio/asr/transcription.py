@@ -60,6 +60,15 @@ class Transcription(BaseAsyncApi):
 
         Returns:
             TranscriptionResponse: The result of batch transcription.
+
+        Examples:
+            >>> from dashscope.audio.asr import Transcription
+            >>> response = Transcription.call(
+            ...     model=Transcription.Models.paraformer_v1,
+            ...     file_urls=["https://example.com/audio.wav"],
+            ... )
+            >>> if response.output.task_status == "SUCCEEDED":
+            ...     print(response.output.results)
         """
         kwargs.update(cls._fill_resource_id(phrase_id, **kwargs))
         kwargs = cls._tidy_kwargs(**kwargs)
@@ -107,6 +116,18 @@ class Transcription(BaseAsyncApi):
 
         Returns:
             TranscriptionResponse: The response including task_id.
+
+        Examples:
+            >>> from http import HTTPStatus
+            >>> from dashscope.audio.asr import Transcription
+            >>> task = Transcription.async_call(
+            ...     model=Transcription.Models.paraformer_v1,
+            ...     file_urls=["https://example.com/audio.wav"],
+            ... )
+            >>> if task.status_code == HTTPStatus.OK:
+            ...     rsp = Transcription.wait(task)
+            ...     if rsp.output.task_status == "SUCCEEDED":
+            ...         print(rsp.output.results)
         """
         kwargs.update(cls._fill_resource_id(phrase_id, **kwargs))
         kwargs = cls._tidy_kwargs(**kwargs)

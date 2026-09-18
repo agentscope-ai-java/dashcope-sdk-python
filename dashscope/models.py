@@ -26,6 +26,11 @@ class Models(ListMixin, GetMixin):
 
         Returns:
             DashScopeAPIResponse: The model information.
+
+        Examples:
+            >>> from dashscope import Models
+            >>> resp = Models.get("qwen-plus")
+            >>> print(resp.output["model_id"])
         """
         from http import HTTPStatus
 
@@ -73,6 +78,11 @@ class Models(ListMixin, GetMixin):
 
         Returns:
             DashScopeAPIResponse: The models.
+
+        Examples:
+            >>> from dashscope import Models
+            >>> resp = Models.list(page=1, page_size=10)
+            >>> print(resp.output["models"])
         """
         # type: ignore
         return super().list(page, page_size, api_key=api_key, **kwargs)  # type: ignore[return-value] # pylint: disable=line-too-long # noqa: E501

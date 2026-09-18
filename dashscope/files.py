@@ -40,6 +40,11 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
 
         Returns:
             DashScopeAPIResponse: The upload information
+
+        Examples:
+            >>> from dashscope import Files
+            >>> resp = Files.upload(file_path="train.jsonl", purpose="fine-tune")
+            >>> print(resp.output["uploaded_files"][0]["file_id"])
         """
         if purpose == FilePurpose.fine_tune:
             if not is_validate_fine_tune_file(file_path):
@@ -76,8 +81,7 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
         """List uploaded files.
 
         Args:
-            api_key (str, optional):
-            The api api_key, can be None,
+            api_key (str, optional): The api api_key, can be None,
                 if None, will get by default rule(TODO: api key doc).
             page (int, optional): Page number. Defaults to 1.
             page_size (int, optional): Items per page. Defaults to 10.
@@ -85,6 +89,11 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
 
         Returns:
             DashScopeAPIResponse: The fine-tune jobs in the result.
+
+        Examples:
+            >>> from dashscope import Files
+            >>> resp = Files.list(page=1, page_size=10)
+            >>> print(resp.output["files"])
         """
         return super().list(  # type: ignore[return-value]
             page,
@@ -111,6 +120,11 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
 
         Returns:
             DashScopeAPIResponse: The job info
+
+        Examples:
+            >>> from dashscope import Files
+            >>> resp = Files.get(file_id="file-id-xxxx")
+            >>> print(resp.output["file_id"])
         """
         # type: ignore
         return super().get(file_id, api_key, workspace=workspace, **kwargs)  # type: ignore[return-value] # pylint: disable=line-too-long # noqa: E501
@@ -132,5 +146,11 @@ class Files(FileUploadMixin, ListMixin, DeleteMixin, GetMixin):
 
         Returns:
             DashScopeAPIResponse: Delete result.
+
+        Examples:
+            >>> from http import HTTPStatus
+            >>> from dashscope import Files
+            >>> resp = Files.delete(file_id="file-id-xxxx")
+            >>> print(resp.status_code == HTTPStatus.OK)
         """  # type: ignore
         return super().delete(file_id, api_key, workspace=workspace, **kwargs)  # type: ignore[return-value] # pylint: disable=line-too-long # noqa: E501

@@ -131,6 +131,16 @@ class SpeechSynthesizer(BaseApi):
 
         Returns:
             SpeechSynthesisResult: The result of systhesis.
+
+        Examples:
+            >>> from dashscope.audio.tts import SpeechSynthesizer
+            >>> result = SpeechSynthesizer.call(
+            ...     model="cosyvoice-v1",
+            ...     text="Hello, Bailian.",
+            ...     format=SpeechSynthesizer.AudioFormat.format_wav,
+            ... )
+            >>> with open("output.wav", "wb") as f:
+            ...     f.write(result.get_audio_data())
         """
         _callback = callback
         _audio_data: bytes = None

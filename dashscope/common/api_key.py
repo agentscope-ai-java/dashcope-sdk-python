@@ -43,6 +43,28 @@ def get_default_api_key():
 
 
 def save_api_key(api_key: str, api_key_file_path: Optional[str] = None):
+    """Persist an API key to a file so it does not need to be set on every run.
+
+    Args:
+        api_key (str): The DashScope API key to save.
+        api_key_file_path (str, optional): Destination file path. Defaults to
+            ``~/.dashscope/api_key``, which is also where the SDK looks for a
+            key when neither ``dashscope.api_key`` nor
+            ``dashscope.api_key_file_path`` is set.
+
+    Examples:
+        >>> from dashscope import save_api_key
+        >>> save_api_key(api_key="YOUR-DASHSCOPE-API-KEY")
+
+        Save to a custom location and point the SDK at it:
+
+        >>> save_api_key(
+        ...     api_key="YOUR-DASHSCOPE-API-KEY",
+        ...     api_key_file_path="~/.dashscope/prod_api_key",
+        ... )
+        >>> import dashscope
+        >>> dashscope.api_key_file_path = "~/.dashscope/prod_api_key"
+    """
     if api_key_file_path is None:
         os.makedirs(DEFAULT_DASHSCOPE_CACHE_PATH, exist_ok=True)
         # pylint: disable=unspecified-encoding

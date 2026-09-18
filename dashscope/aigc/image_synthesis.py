@@ -114,6 +114,19 @@ class ImageSynthesis(BaseAsyncApi):
 
         Returns:
             ImageSynthesisResponse: The image(s) synthesis result.
+
+        Examples:
+            >>> from http import HTTPStatus
+            >>> from dashscope import ImageSynthesis
+            >>> rsp = ImageSynthesis.call(
+            ...     model="wanx2.1-t2i-turbo",
+            ...     prompt="a flower shop with delicate windows and a wooden door",
+            ...     n=1,
+            ...     size="1024*1024",
+            ... )
+            >>> if rsp.status_code == HTTPStatus.OK:
+            ...     for result in rsp.output.results:
+            ...         print(result.url)
         """
         if size is not None:
             kwargs["size"] = size
@@ -186,9 +199,23 @@ class ImageSynthesis(BaseAsyncApi):
         color_palette: str = None,
         **kwargs,
     ) -> ImageSynthesisResponse:
-        """
+        """Call image(s) synthesis and block until the result is returned
+        directly (no async task polling).
+
         Note: This method currently now only supports wan2.2-t2i-flash and wan2.2-t2i-plus.  # noqa: E501  # pylint: disable=line-too-long
             Using other models will result in an error，More raw image models may be added for use later  # pylint: disable=line-too-long
+
+        Examples:
+            >>> from http import HTTPStatus
+            >>> from dashscope import ImageSynthesis
+            >>> rsp = ImageSynthesis.sync_call(
+            ...     model="wan2.2-t2i-flash",
+            ...     prompt="a flower shop with delicate windows and a wooden door",
+            ...     n=1,
+            ...     size="1024*1024",
+            ... )
+            >>> if rsp.status_code == HTTPStatus.OK:
+            ...     print(rsp.output)
         """
         if size is not None:
             kwargs["size"] = size
@@ -782,9 +809,23 @@ class AioImageSynthesis(BaseAsyncAioApi):
         color_palette: str = None,  # pylint: disable=unused-argument
         **kwargs,
     ) -> ImageSynthesisResponse:
-        """
+        """Async coroutine version of ``ImageSynthesis.sync_call``.
+
         Note: This method currently now only supports wan2.2-t2i-flash and wan2.2-t2i-plus.  # noqa: E501  # pylint: disable=line-too-long
             Using other models will result in an error，More raw image models may be added for use later  # pylint: disable=line-too-long
+
+        Examples:
+            >>> import asyncio
+            >>> from dashscope import AioImageSynthesis
+            >>> async def main():
+            ...     rsp = await AioImageSynthesis.sync_call(
+            ...         model="wan2.2-t2i-flash",
+            ...         prompt="a flower shop with delicate windows and a wooden door",
+            ...         n=1,
+            ...         size="1024*1024",
+            ...     )
+            ...     print(rsp.output)
+            >>> asyncio.run(main())
         """
         if size is not None:
             kwargs["size"] = size

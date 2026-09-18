@@ -101,6 +101,35 @@ class MultiModalConversation(BaseApi):
             Union[MultiModalConversationResponse,
                   Generator[MultiModalConversationResponse, None, None]]: If
             stream is True, return Generator, otherwise
+
+        Examples:
+            Vision understanding, describing an image:
+
+            >>> from dashscope import MultiModalConversation
+            >>> messages = [{
+            ...     "role": "user",
+            ...     "content": [
+            ...         {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+            ...         {"text": "What does this picture describe?"},
+            ...     ],
+            ... }]
+            >>> response = MultiModalConversation.call(
+            ...     model="qwen-vl-max",
+            ...     messages=messages,
+            ... )
+            >>> print(response.output.choices[0].message.content[0]["text"])
+
+            Text-to-speech with a Qwen-TTS model (this class also serves as
+            the entry point for qwen-tts models, taking ``text``/``voice``
+            instead of ``messages``):
+
+            >>> response = MultiModalConversation.call(
+            ...     model="qwen3-tts-flash",
+            ...     text="Today is a wonderful day to build something people love!",
+            ...     voice="Cherry",
+            ...     language_type="English",
+            ... )
+            >>> print(response.output.audio.url)
         """
         if stream is not None:
             kwargs["stream"] = stream

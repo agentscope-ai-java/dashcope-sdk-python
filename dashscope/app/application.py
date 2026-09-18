@@ -153,6 +153,22 @@ class Application(BaseApi):
             Union[CompletionResponse,
                   Generator[CompletionResponse, None, None]]: If
             stream is True, return Generator, otherwise GenerationResponse.
+
+        Examples:
+            >>> from http import HTTPStatus
+            >>> from dashscope import Application
+            >>> responses = Application.call(
+            ...     app_id="YOUR-APP-ID",
+            ...     prompt="Summarize this file",
+            ...     stream=True,
+            ...     incremental_output=True,
+            ...     file_list=["https://example.com/document.pdf"],
+            ... )
+            >>> for response in responses:
+            ...     if response.status_code != HTTPStatus.OK:
+            ...         print(f"code={response.code}, message={response.message}")
+            ...     else:
+            ...         print(response.output.text, end="")
         """
 
         api_key, app_id = Application._validate_params(api_key, app_id)

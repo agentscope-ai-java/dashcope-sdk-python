@@ -86,6 +86,21 @@ class TextReRank(BaseApi):
 
         Returns:
             RerankResponse: The rerank result.
+
+        Examples:
+            >>> from dashscope import TextReRank
+            >>> resp = TextReRank.call(
+            ...     model=TextReRank.Models.gte_rerank,
+            ...     query="What is the capital of China?",
+            ...     documents=[
+            ...         "The capital of China is Beijing.",
+            ...         "China is a large country in East Asia.",
+            ...     ],
+            ...     return_documents=True,
+            ...     top_n=1,
+            ... )
+            >>> for r in resp.output.results:
+            ...     print(r.index, r.relevance_score, r.document)
         """
 
         task_group, function, rerank_input, parameters = _build_rerank_request(

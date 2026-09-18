@@ -54,6 +54,17 @@ class TextEmbedding(BaseApi):
 
         Returns:
             DashScopeAPIResponse: The embedding result.
+
+        Examples:
+            >>> from dashscope import TextEmbedding
+            >>> resp = TextEmbedding.call(
+            ...     model=TextEmbedding.Models.text_embedding_v3,
+            ...     input=["The wind is swift, the sky is high, the gibbons wail", "The islets are clear, the sand is white, the birds wheel"],
+            ...     text_type="document",
+            ...     dimension=1024,
+            ... )
+            >>> for e in resp.output["embeddings"]:
+            ...     print(e["text_index"], e["embedding"][:3])
         """
         embedding_input = {}
         if isinstance(input, str):

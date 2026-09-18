@@ -15,7 +15,18 @@ DashScope SDK DOCUMENTATION
    :maxdepth: 2
    :caption: API Doc
 
-   AIGC <api/dashscope.aigc>
+   Configuration <api/dashscope>
+   Text Generation & Multimodal <api/dashscope.aigc>
+   Embeddings <api/dashscope.embeddings>
+   ReRank <api/dashscope.rerank>
+   Audio (Speech) <api/dashscope.audio>
+   Application <api/dashscope.app>
+   Files <api/dashscope.files>
+   Models <api/dashscope.models>
+   Fine-tuning <api/dashscope.finetune>
+   Tokenizers <api/dashscope.tokenizers>
+   Assistants (deprecated) <api/dashscope.assistants>
+   Threads (deprecated) <api/dashscope.threads>
 
 
 

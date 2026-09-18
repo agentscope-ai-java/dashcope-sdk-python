@@ -138,6 +138,34 @@ class VideoSynthesis(BaseAsyncApi):
 
         Returns:
             VideoSynthesisResponse: The video synthesis result.
+
+        Examples:
+            Text-to-video, blocking until the task completes:
+
+            >>> from http import HTTPStatus
+            >>> from dashscope import VideoSynthesis
+            >>> rsp = VideoSynthesis.call(
+            ...     model="wan2.7-t2v",
+            ...     prompt="a kitten running under the moonlight",
+            ...     audio=True,
+            ...     watermark=True,
+            ... )
+            >>> if rsp.status_code == HTTPStatus.OK:
+            ...     print(rsp.output.video_url)
+
+            Image-to-video, driving generation from a first-frame image:
+
+            >>> media = [{
+            ...     "type": VideoSynthesis.MediaType.FIRST_FRAME,
+            ...     "url": "https://wanx.alicdn.com/material/20250318/first_frame.png",
+            ... }]
+            >>> rsp = VideoSynthesis.call(
+            ...     model="wan2.7-i2v",
+            ...     prompt="a kitten running under the moonlight",
+            ...     media=media,
+            ... )
+            >>> if rsp.status_code == HTTPStatus.OK:
+            ...     print(rsp.output.video_url)
         """
         if size is not None:
             kwargs["size"] = size
@@ -453,6 +481,19 @@ class VideoSynthesis(BaseAsyncApi):
         Returns:
             DashScopeAPIResponse: The video synthesis
                 task id in the response.
+
+        Examples:
+            Submit a task without blocking, then poll for the result with
+            ``wait`` (or ``fetch`` for a single non-blocking status check):
+
+            >>> from dashscope import VideoSynthesis
+            >>> task = VideoSynthesis.async_call(
+            ...     model="wan2.7-t2v",
+            ...     prompt="a kitten running under the moonlight",
+            ... )
+            >>> print(task.output.task_id)
+            >>> rsp = VideoSynthesis.wait(task)
+            >>> print(rsp.output.video_url)
         """
         if size is not None:
             kwargs["size"] = size

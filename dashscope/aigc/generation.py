@@ -131,6 +131,30 @@ class Generation(BaseApi):
             Union[GenerationResponse,
                   Generator[GenerationResponse, None, None]]: If
             stream is True, return Generator, otherwise GenerationResponse.
+
+        Examples:
+            >>> from dashscope import Generation
+            >>> response = Generation.call(
+            ...     model="qwen-plus",
+            ...     messages=[
+            ...         {"role": "system", "content": "You are a helpful assistant."},
+            ...         {"role": "user", "content": "Who are you?"},
+            ...     ],
+            ...     result_format="message",
+            ... )
+            >>> print(response.output.choices[0].message.content)
+
+            Streaming output, printing only the newly generated tokens:
+
+            >>> responses = Generation.call(
+            ...     model="qwen-plus",
+            ...     messages=[{"role": "user", "content": "Write a haiku about the sea."}],
+            ...     result_format="message",
+            ...     stream=True,
+            ...     incremental_output=True,
+            ... )
+            >>> for response in responses:
+            ...     print(response.output.choices[0].message.content, end="")
         """
         if (prompt is None or not prompt) and (
             messages is None or not messages

@@ -89,46 +89,55 @@ class CodeGeneration(BaseApi):
 
         Args:
             model (str): The requested model, such as tongyi-lingma-v1
-            scene (str): Scene type, single choice, such as custom
-                examples:
-                    custom：User defined prompt
-                    nl2code：Natural language generated code
-                    code2comment：annotation
-                    code2explain：explain
-                    commit2msg：Automatically generate commit
-                    uinttest：Generating Unit Tests
-                    codeqa：Code Q&A
-                    nl2sql：Generate SQL code using natural language
+            scene (str): Task type, one of ``CodeGeneration.Scenes``:
+                ``custom`` (freeform prompt), ``nl2code`` (natural language
+                to code), ``code2comment`` (add comments), ``code2explain``
+                (explain code), ``commit2msg`` (generate a commit message
+                from a diff), ``unittest`` (generate unit tests), ``codeqa``
+                (code Q&A), ``nl2sql`` (natural language to SQL). Each scene
+                expects a different ``message`` shape; see Examples below.
             api_key (str, optional): The api api_key, can be None,
                 if None, will get by default rule(TODO: api key doc).
-            message (list): The generation messages.
-                scene == custom, examples:
-                    [{"role": "user", "content": "根据下面的功能描述生成一个python函数。代码的功能是计算给定路径下所有文件的总大小。"}]  # noqa E501  # pylint: disable=line-too-long
-                scene == nl2code, examples:
-                    [{"role": "user", "content": "计算给定路径下所有文件的总大小"}, {"role": "attachment", "meta": {"language": "java"}}]  # noqa E501  # pylint: disable=line-too-long
-                scene == code2comment, examples:
-                    [{"role": "user", "content": "1. 生成中文注释\n2. 仅生成代码部分，不需要额外解释函数功能\n"}, {"role": "attachment", "meta": {"code": "\t\t@Override\n\t\tpublic  CancelExportTaskResponse  cancelExportTask(\n\t\t\t\tCancelExportTask  cancelExportTask)  {\n\t\t\tAmazonEC2SkeletonInterface  ec2Service  =  ServiceProvider.getInstance().getServiceImpl(AmazonEC2SkeletonInterface.class);\n\t\t\treturn  ec2Service.cancelExportTask(cancelExportTask);\n\t\t}", "language": "java"}}]  # noqa E501  # pylint: disable=line-too-long
-                scene == code2explain, examples:
-                    [{"role": "user", "content": "要求不低于200字"}, {"role": "attachment", "meta": {"code": "@Override\n                                public  int  getHeaderCacheSize()\n                                {\n                                        return  0;\n                                }\n\n", "language": "java"}}]  # noqa E501  # pylint: disable=line-too-long
-                scene == commit2msg, examples:
-                    [{"role": "attachment", "meta": {"diff_list": [{"diff": "--- src/com/siondream/core/PlatformResolver.java\n+++ src/com/siondream/core/PlatformResolver.java\n@@ -1,11 +1,8 @@\npackage com.siondream.core;\n-\n-import com.badlogic.gdx.files.FileHandle;\n\npublic interface PlatformResolver {\npublic void openURL(String url);\npublic void rateApp();\npublic void sendFeedback();\n-\tpublic FileHandle[] listFolder(String path);\n}\n", "old_file_path": "src/com/siondream/core/PlatformResolver.java", "new_file_path": "src/com/siondream/core/PlatformResolver.java"}]}}]  # noqa E501  # pylint: disable=line-too-long
-                scene == unittest, examples:
-                    [{"role": "attachment", "meta": {"code": "public static <T> TimestampMap<T> parseTimestampMap(Class<T> typeClass, String input, DateTimeZone timeZone) throws IllegalArgumentException {\n        if (typeClass == null) {\n            throw new IllegalArgumentException(\"typeClass required\");\n        }\n\n        if (input == null) {\n            return null;\n        }\n\n        TimestampMap result;\n\n        typeClass = AttributeUtils.getStandardizedType(typeClass);\n        if (typeClass.equals(String.class)) {\n            result = new TimestampStringMap();\n        } else if (typeClass.equals(Byte.class)) {\n            result = new TimestampByteMap();\n        } else if (typeClass.equals(Short.class)) {\n            result = new TimestampShortMap();\n        } else if (typeClass.equals(Integer.class)) {\n            result = new TimestampIntegerMap();\n        } else if (typeClass.equals(Long.class)) {\n            result = new TimestampLongMap();\n        } else if (typeClass.equals(Float.class)) {\n            result = new TimestampFloatMap();\n        } else if (typeClass.equals(Double.class)) {\n            result = new TimestampDoubleMap();\n        } else if (typeClass.equals(Boolean.class)) {\n            result = new TimestampBooleanMap();\n        } else if (typeClass.equals(Character.class)) {\n            result = new TimestampCharMap();\n        } else {\n            throw new IllegalArgumentException(\"Unsupported type \" + typeClass.getClass().getCanonicalName());\n        }\n\n        if (input.equalsIgnoreCase(EMPTY_VALUE)) {\n            return result;\n        }\n\n        StringReader reader = new StringReader(input + ' ');// Add 1 space so\n                                                            // reader.skip\n                                                            // function always\n                                                            // works when\n                                                            // necessary (end of\n                                                            // string not\n                                                            // reached).\n\n        try {\n            int r;\n            char c;\n            while ((r = reader.read()) != -1) {\n                c = (char) r;\n                switch (c) {\n                    case LEFT_BOUND_SQUARE_BRACKET:\n                    case LEFT_BOUND_BRACKET:\n                        parseTimestampAndValue(typeClass, reader, result, timeZone);\n                        break;\n                    default:\n                        // Ignore other chars outside of bounds\n                }\n            }\n        } catch (IOException ex) {\n            throw new RuntimeException(\"Unexpected expection while parsing timestamps\", ex);\n        }\n\n        return result;\n    }", "language": "java"}}]  # noqa E501  # pylint: disable=line-too-long
-                scene == codeqa, examples:
-                    [{"role": "user", "content": "I'm writing a small web server in Python, using BaseHTTPServer and a custom subclass of BaseHTTPServer.BaseHTTPRequestHandler. Is it possible to make this listen on more than one port?\nWhat I'm doing now:\nclass MyRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):\n  def doGET\n  [...]\n\nclass ThreadingHTTPServer(ThreadingMixIn, HTTPServer): \n    pass\n\nserver = ThreadingHTTPServer(('localhost', 80), MyRequestHandler)\nserver.serve_forever()"}]  # noqa E501  # pylint: disable=line-too-long
-                scene == nl2sql, examples:
-                    [{"role": "user", "content": "小明的总分数是多少"}, {"role": "attachment", "meta": {"synonym_infos": {"学生姓名": "姓名|名字|名称", "学生分数": "分数|得分"}, "recall_infos": [{"content": "student_score.id='小明'", "score": "0.83"}], "schema_infos": [{"table_id": "student_score", "table_desc": "学生分数表", "columns": [{"col_name": "id", "col_caption": "学生id", "col_desc": "例值为:1,2,3", "col_type": "string"}, {"col_name": "name", "col_caption": "学生姓名", "col_desc": "例值为:张三,李四,小明", "col_type": "string"}, {"col_name": "score", "col_caption": "学生分数", "col_desc": "例值为:98,100,66", "col_type": "string"}]}]}}]  # noqa E501  # pylint: disable=line-too-long
+            message (list): The generation messages. Typically a ``user``
+                message carrying the instruction, optionally followed by an
+                ``attachment`` message whose ``meta`` supplies the code,
+                diff, or schema the scene operates on (see Examples below
+                for the exact shape per scene).
             workspace (str): The dashscope workspace id.
             **kwargs:
-                n(
-                    int,
-                    `optional`
-                ): The number of output results, currently only supports 1, with a default value of 1  # noqa E501
+                n (int, `optional`): The number of output results,
+                    currently only supports 1, with a default value of 1.
 
         Returns:
             Union[DashScopeAPIResponse,
                   Generator[DashScopeAPIResponse, None, None]]: If
             stream is True, return Generator, otherwise DashScopeAPIResponse.
+
+        Examples:
+            Natural language to code (``nl2code``):
+
+            >>> from dashscope import CodeGeneration
+            >>> response = CodeGeneration.call(
+            ...     model=CodeGeneration.Models.tongyi_lingma_v1,
+            ...     scene=CodeGeneration.Scenes.nl2code,
+            ...     message=[
+            ...         {"role": "user", "content": "Compute the total size of all files under a given path"},
+            ...         {"role": "attachment", "meta": {"language": "python"}},
+            ...     ],
+            ... )
+            >>> print(response.output)
+
+            Explain existing code (``code2explain``):
+
+            >>> response = CodeGeneration.call(
+            ...     model=CodeGeneration.Models.tongyi_lingma_v1,
+            ...     scene=CodeGeneration.Scenes.code2explain,
+            ...     message=[
+            ...         {"role": "user", "content": "Explain in at least 200 words"},
+            ...         {"role": "attachment", "meta": {"code": "public int getHeaderCacheSize() { return 0; }", "language": "java"}},
+            ...     ],
+            ... )
+            >>> print(response.output)
         """
         if (scene is None or not scene) or (message is None or not message):
             raise InputRequired("scene and message is required!")

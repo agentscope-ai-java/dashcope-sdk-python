@@ -105,6 +105,14 @@ class MultiModalEmbedding(BaseApi):
 
         Returns:
             DashScopeAPIResponse: The embedding result.
+
+        Examples:
+            >>> from dashscope import MultiModalEmbedding
+            >>> resp = MultiModalEmbedding.call(
+            ...     model="multimodal-embedding-v1",
+            ...     input=[{"image": "https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png"}],
+            ... )
+            >>> print(resp.output)
         """
         if input is None or not input:
             raise InputRequired("prompt is required!")
@@ -231,6 +239,17 @@ class AioMultiModalEmbedding(BaseAioApi):
 
         Returns:
             DashScopeAPIResponse: The embedding result.
+
+        Examples:
+            >>> import asyncio
+            >>> from dashscope import AioMultiModalEmbedding
+            >>> async def main():
+            ...     resp = await AioMultiModalEmbedding.call(
+            ...         model="multimodal-embedding-v1",
+            ...         input=[{"image": "https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png"}],
+            ...     )
+            ...     print(resp.output)
+            >>> asyncio.run(main())
         """
         if input is None or not input:
             raise InputRequired("prompt is required!")

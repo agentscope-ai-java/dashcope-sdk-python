@@ -201,6 +201,21 @@ class Assistants(
 
         Returns:
             Assistant: The `Assistant` object.
+
+        Examples:
+            >>> from dashscope import Assistants, Threads, Runs
+            >>> assistant = Assistants.create(
+            ...     model="qwen-max",
+            ...     name="smart helper",
+            ...     description="A tool helper.",
+            ...     instructions="You are a helpful assistant.",
+            ... )
+            >>> thread = Threads.create(
+            ...     messages=[{"role": "user", "content": "How do I make beef stew?"}],
+            ... )
+            >>> run = Runs.create(thread.id, assistant_id=assistant.id)
+            >>> run_status = Runs.wait(run.id, thread_id=thread.id)
+            >>> print(run_status)
         """
         warnings.warn(
             _DEPRECATION_MSG,
