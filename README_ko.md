@@ -567,6 +567,24 @@ async def main():
 asyncio.run(main())
 ```
 
+### 텍스트 이해（NLU）
+
+`Understanding`은 커스텀 모델을 학습시키지 않고도 고정된 레이블 집합에 대해 제로샷 정보 추출 또는 분류를 수행합니다:
+
+```python
+from dashscope import Understanding
+
+response = Understanding.call(
+    model=Understanding.Models.opennlu_v1,
+    sentence="老师今天表扬我了",
+    labels="积极，消极",
+    task="classification",
+)
+print(response.output["text"])
+```
+
+`task`를 `"extraction"`（기본값）으로 설정하면 `sentence`를 분류하는 대신 `labels`와 일치하는 부분을 추출합니다.
+
 ### 코드 생성
 
 `CodeGeneration`은 특정 코딩 시나리오（`Scenes`）를 지원합니다: 자연어를 코드로 변환, 코드 설명, 주석 생성, 커밋 메시지 생성, 단위 테스트 생성, 코드 질의응답, 자연어를 SQL로 변환.
@@ -854,6 +872,25 @@ recognition.stop()
 
 음성 클로닝, 발음 교정, 실시간 음성 번역, 커스텀 ASR 핫워드에 대해서는 [고급 음성 기능 가이드](docs/guides/realtime-audio_ko.md)를 참고하세요.
 
+### TingWu（회의 및 산업용 오디오 분석）
+
+`TingWu`는 파일 URL을 대상으로 도메인 특화 오디오 분석 작업（산업 점검, 자동차 서비스 통화 등）을 수행합니다:
+
+```python
+from dashscope.multimodal.tingwu.tingwu import TingWu
+
+response = TingWu.call(
+    model="tingwu-automotive-service-inspection",
+    user_defined_input={
+        "fileUrl": "http://example.com/call-recording.mp3",
+        "appid": "your-app-id",
+    },
+)
+print(response)
+```
+
+실시간 오디오 소스를 대상으로 하는 스트리밍/실시간 TingWu 세션에 대해서는 [TingWu 가이드](docs/guides/tingwu_ko.md)를 참고하세요.
+
 ### Bailian 애플리케이션（에이전트 앱）
 
 [Bailian 애플리케이션 센터](https://bailian.console.aliyun.com/)에서 만든 앱을 호출합니다:
@@ -902,7 +939,9 @@ with client.sessions.events.stream(session.id) as stream:
 API를 호출하지 않고 로컬에서 Qwen 계열 모델의 토큰 수를 세거나 인코딩/디코딩할 수 있습니다（`pip install "dashscope[tokenizer]"` 필요）:
 
 ```python
-from dashscope.tokenizers.tokenizer import get_tokenizer
+from dashscope.tokenizers.tokenizer import get_tokenizer, list_tokenizers
+
+print(list_tokenizers())  # 로컬 tokenizer가 지원하는 모델 계열
 
 tokenizer = get_tokenizer("qwen-turbo")  # 모든 qwen-* 모델에서 사용 가능
 tokens = tokenizer.encode("这个是千问tokenizer")

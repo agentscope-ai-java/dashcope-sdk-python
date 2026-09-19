@@ -560,6 +560,24 @@ async def main():
 asyncio.run(main())
 ```
 
+### テキスト理解（NLU）
+
+`Understanding` は、カスタムモデルを学習させることなく、固定のラベル集合に対するゼロショット情報抽出や分類を実行します：
+
+```python
+from dashscope import Understanding
+
+response = Understanding.call(
+    model=Understanding.Models.opennlu_v1,
+    sentence="老师今天表扬我了",
+    labels="积极，消极",
+    task="classification",
+)
+print(response.output["text"])
+```
+
+`task="extraction"`（デフォルト）を指定すると、`sentence` を分類する代わりに `labels` に一致する部分を抽出します。
+
 ### コード生成
 
 `CodeGeneration` は特定のコーディングシーン（`Scenes`）に対応しています：自然言語からのコード生成、コードの説明、コメント生成、コミットメッセージ生成、単体テスト生成、コードに関する質問応答、自然言語から SQL への変換など。
@@ -847,6 +865,25 @@ recognition.stop()
 
 音声クローン、発音修正、リアルタイム音声翻訳、カスタム ASR ホットワードについては、[高度な音声機能ガイド](docs/guides/realtime-audio_ja.md)を参照してください。
 
+### TingWu（会議・産業音声分析）
+
+`TingWu` は、ファイル URL に対してドメイン特化型の音声分析タスク（産業点検、自動車サービス通話など）を実行します：
+
+```python
+from dashscope.multimodal.tingwu.tingwu import TingWu
+
+response = TingWu.call(
+    model="tingwu-automotive-service-inspection",
+    user_defined_input={
+        "fileUrl": "http://example.com/call-recording.mp3",
+        "appid": "your-app-id",
+    },
+)
+print(response)
+```
+
+ライブ音声ソースに対するストリーミング／リアルタイムの TingWu セッションについては、[TingWu ガイド](docs/guides/tingwu_ja.md)を参照してください。
+
 ### 百煉アプリケーション（エージェントアプリ）
 
 [百煉のアプリケーションセンター](https://bailian.console.aliyun.com/) で作成したアプリを呼び出します。
@@ -895,7 +932,9 @@ with client.sessions.events.stream(session.id) as stream:
 API を呼び出さずに、ローカルで Qwen 系モデルのトークン数カウントやエンコード/デコードができます（`pip install "dashscope[tokenizer]"` が必要）：
 
 ```python
-from dashscope.tokenizers.tokenizer import get_tokenizer
+from dashscope.tokenizers.tokenizer import get_tokenizer, list_tokenizers
+
+print(list_tokenizers())  # ローカルトークナイザーが対応するモデル系列
 
 tokenizer = get_tokenizer("qwen-turbo")  # 任意の qwen-* モデルで利用可能
 tokens = tokenizer.encode("这个是千问tokenizer")

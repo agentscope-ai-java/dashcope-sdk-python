@@ -100,5 +100,12 @@ from dashscope.assistants.files import Files
 attached = Files.create(assistant_id=assistant.id, file_id="file-id-xxxx")
 print(attached)
 
-info = Files.get(assistant_id=assistant.id, file_id="file-id-xxxx")
+info = Files.get(file_id="file-id-xxxx", assistant_id=assistant.id)
+
+files = Files.list(assistant.id, limit=10, order="asc")
+for f in files.data:
+    print(f.id, f.assistant_id)
+
+deleted = Files.delete(file_id="file-id-xxxx", assistant_id=assistant.id)
+print(deleted.deleted)
 ```

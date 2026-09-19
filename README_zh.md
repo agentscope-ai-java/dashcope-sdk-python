@@ -558,6 +558,24 @@ async def main():
 asyncio.run(main())
 ```
 
+### 文本理解（NLU）
+
+`Understanding` 可以在固定标签集合上进行零样本信息抽取或分类，无需训练自定义模型：
+
+```python
+from dashscope import Understanding
+
+response = Understanding.call(
+    model=Understanding.Models.opennlu_v1,
+    sentence="老师今天表扬我了",
+    labels="积极，消极",
+    task="classification",
+)
+print(response.output["text"])
+```
+
+将 `task` 设为 `"extraction"`（默认值）即可从 `sentence` 中抽取匹配 `labels` 的片段，而不是对其分类。
+
 ### 代码生成
 
 `CodeGeneration` 面向特定编程场景（`Scenes`）：自然语言生成代码、代码解释、生成注释、生成 commit message、生成单元测试、代码问答、自然语言生成 SQL。
@@ -845,6 +863,25 @@ recognition.stop()
 
 关于音色复刻、发音纠正、实时语音翻译以及自定义 ASR 热词，请参见[高级语音功能指南](docs/guides/realtime-audio_zh.md)。
 
+### 听悟（会议与工业音频分析）
+
+`TingWu` 针对文件 URL 运行特定领域的音频分析任务（工业质检、汽车服务通话等）：
+
+```python
+from dashscope.multimodal.tingwu.tingwu import TingWu
+
+response = TingWu.call(
+    model="tingwu-automotive-service-inspection",
+    user_defined_input={
+        "fileUrl": "http://example.com/call-recording.mp3",
+        "appid": "your-app-id",
+    },
+)
+print(response)
+```
+
+关于基于实时音频源的流式听悟会话，请参见[听悟指南](docs/guides/tingwu_zh.md)。
+
 ### 百炼应用（Agent 应用）
 
 调用你在[百炼应用中心](https://bailian.console.aliyun.com/)搭建的应用：
@@ -893,7 +930,9 @@ with client.sessions.events.stream(session.id) as stream:
 无需调用接口，即可在本地对 Qwen 系列模型进行分词计数或编解码（需要 `pip install "dashscope[tokenizer]"`）：
 
 ```python
-from dashscope.tokenizers.tokenizer import get_tokenizer
+from dashscope.tokenizers.tokenizer import get_tokenizer, list_tokenizers
+
+print(list_tokenizers())  # 本地分词器支持的模型系列
 
 tokenizer = get_tokenizer("qwen-turbo")  # 适用于任意 qwen-* 模型
 tokens = tokenizer.encode("这个是千问tokenizer")

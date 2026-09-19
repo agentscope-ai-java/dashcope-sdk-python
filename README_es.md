@@ -568,6 +568,24 @@ async def main():
 asyncio.run(main())
 ```
 
+### Comprensión de texto (NLU)
+
+`Understanding` ejecuta extracción de información o clasificación zero-shot sobre un conjunto de etiquetas fijo, sin necesidad de entrenar un modelo personalizado:
+
+```python
+from dashscope import Understanding
+
+response = Understanding.call(
+    model=Understanding.Models.opennlu_v1,
+    sentence="老师今天表扬我了",
+    labels="积极，消极",
+    task="classification",
+)
+print(response.output["text"])
+```
+
+Usa `task="extraction"` (el valor por defecto) para extraer de `sentence` los fragmentos que coincidan con `labels`, en lugar de clasificarlo.
+
 ### Generación de código
 
 `CodeGeneration` da soporte a escenarios de programación específicos (`Scenes`): generación de código a partir de lenguaje natural, explicación de código, generación de comentarios, mensajes de commit, pruebas unitarias, preguntas y respuestas sobre código, y generación de SQL a partir de lenguaje natural.
@@ -855,6 +873,25 @@ recognition.stop()
 
 Para clonación de voz, corrección de pronunciación, traducción de voz en tiempo real y palabras clave (hot words) personalizadas para ASR, consulta la [guía de audio avanzado](docs/guides/realtime-audio_es.md).
 
+### TingWu (análisis de audio de reuniones e industrial)
+
+`TingWu` ejecuta tareas de análisis de audio específicas de dominio (inspecciones industriales, llamadas de servicio automotriz) sobre una URL de archivo:
+
+```python
+from dashscope.multimodal.tingwu.tingwu import TingWu
+
+response = TingWu.call(
+    model="tingwu-automotive-service-inspection",
+    user_defined_input={
+        "fileUrl": "http://example.com/call-recording.mp3",
+        "appid": "your-app-id",
+    },
+)
+print(response)
+```
+
+Para sesiones de TingWu en streaming/tiempo real sobre una fuente de audio en vivo, consulta la [guía de TingWu](docs/guides/tingwu_es.md).
+
 ### Aplicación de Bailian (App de agente)
 
 Llama a una app que hayas creado en el [Centro de Aplicaciones de Bailian](https://bailian.console.aliyun.com/):
@@ -903,7 +940,9 @@ Nota: `Client()` lee la variable de entorno `DASHSCOPE_WORKSPACE` (sin el sufijo
 Cuenta o codifica/decodifica tokens para modelos Qwen localmente, sin una llamada a la API (requiere `pip install "dashscope[tokenizer]"`):
 
 ```python
-from dashscope.tokenizers.tokenizer import get_tokenizer
+from dashscope.tokenizers.tokenizer import get_tokenizer, list_tokenizers
+
+print(list_tokenizers())  # series de modelos soportadas por el tokenizador local
 
 tokenizer = get_tokenizer("qwen-turbo")  # funciona con cualquier modelo qwen-*
 tokens = tokenizer.encode("这个是千问tokenizer")

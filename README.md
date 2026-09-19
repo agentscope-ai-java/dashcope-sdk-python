@@ -567,6 +567,24 @@ async def main():
 asyncio.run(main())
 ```
 
+### Text Understanding (NLU)
+
+`Understanding` runs zero-shot information extraction or classification against a fixed label set, without training a custom model:
+
+```python
+from dashscope import Understanding
+
+response = Understanding.call(
+    model=Understanding.Models.opennlu_v1,
+    sentence="老师今天表扬我了",
+    labels="积极，消极",
+    task="classification",
+)
+print(response.output["text"])
+```
+
+Set `task="extraction"` (the default) to pull spans matching `labels` out of `sentence` instead of classifying it.
+
 ### Code Generation
 
 `CodeGeneration` powers task-specific coding scenarios (`Scenes`): natural-language-to-code, code explanation, comment generation, commit messages, unit tests, code Q&A, and natural-language-to-SQL.
@@ -854,6 +872,25 @@ recognition.stop()
 
 For voice cloning, pronunciation fixes, real-time speech translation, and custom ASR hot words, see the [Advanced Audio guide](docs/guides/realtime-audio.md).
 
+### TingWu (Meeting & Industrial Audio Analysis)
+
+`TingWu` runs domain-specific audio analysis tasks (industrial inspections, automotive service calls) against a file URL:
+
+```python
+from dashscope.multimodal.tingwu.tingwu import TingWu
+
+response = TingWu.call(
+    model="tingwu-automotive-service-inspection",
+    user_defined_input={
+        "fileUrl": "http://example.com/call-recording.mp3",
+        "appid": "your-app-id",
+    },
+)
+print(response)
+```
+
+For streaming/real-time TingWu sessions over a live audio source, see the [TingWu guide](docs/guides/tingwu.md).
+
 ### Bailian Application (Agent App)
 
 Call an app you built in [Bailian's Application Center](https://bailian.console.aliyun.com/):
@@ -902,7 +939,9 @@ Note: `Client()` reads the `DASHSCOPE_WORKSPACE` environment variable (no `_ID` 
 Count or encode/decode tokens for Qwen models locally, without an API call (requires `pip install "dashscope[tokenizer]"`):
 
 ```python
-from dashscope.tokenizers.tokenizer import get_tokenizer
+from dashscope.tokenizers.tokenizer import get_tokenizer, list_tokenizers
+
+print(list_tokenizers())  # model series supported by the local tokenizer
 
 tokenizer = get_tokenizer("qwen-turbo")  # works for any qwen-* model
 tokens = tokenizer.encode("这个是千问tokenizer")
