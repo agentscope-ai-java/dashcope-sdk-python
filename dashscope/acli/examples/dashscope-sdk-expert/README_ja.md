@@ -1,6 +1,6 @@
 # DashScope SDK Expert —— 設定駆動型の acli の例
 
-> [English](README.md) | [中文](README_zh.md) | **日本語**
+> [English](README.md) | [中文](README_zh.md) | **日本語** | [Español](README_es.md) | [한국어](README_ko.md)
 
 **オンラインガイド**：https://help.aliyun.com/en/model-studio/dashscope-sdk-expert
 

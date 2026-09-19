@@ -1,6 +1,6 @@
 # Advanced Configuration
 
-> **English** | [中文](configuration_zh.md) | [日本語](configuration_ja.md)
+> **English** | [中文](configuration_zh.md) | [日本語](configuration_ja.md) | [Español](configuration_es.md) | [한국어](configuration_ko.md)
 
 This guide covers SDK-wide configuration beyond authentication and region
 selection. For API key setup, see [API Key Authentication](../../README.md#api-key-authentication);

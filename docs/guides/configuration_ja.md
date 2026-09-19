@@ -1,6 +1,6 @@
 # 高度な設定
 
-> [English](configuration.md) | [中文](configuration_zh.md) | **日本語**
+> [English](configuration.md) | [中文](configuration_zh.md) | **日本語** | [Español](configuration_es.md) | [한국어](configuration_ko.md)
 
 このガイドでは、認証とリージョン選択以外の SDK 全体の設定について説明します。API Key の設定については [API Key 認証](../../README.md#api-key-authentication) を、リージョン／エンドポイントの切り替えについては [リージョンとエンドポイントの設定](../../README.md#region-and-endpoint-configuration) を参照してください。
 

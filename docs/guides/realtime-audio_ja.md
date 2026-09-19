@@ -1,6 +1,6 @@
 # 高度な音声機能：音声クローン、発音修正、リアルタイム翻訳、ホットワード
 
-> [English](realtime-audio.md) | [中文](realtime-audio_zh.md) | **日本語**
+> [English](realtime-audio.md) | [中文](realtime-audio_zh.md) | **日本語** | [Español](realtime-audio_es.md) | [한국어](realtime-audio_ko.md)
 
 このガイドでは、[README](../../README.md#speech-synthesis-tts) に記載した基本的な TTS/ASR の例を超える、高度な音声機能について説明します。いずれも実際に検証済みの SDK 機能ですが、専用のサンプルスクリプトが存在しないため、ここでの例はソースコードのシグネチャとそれぞれの docstring から直接作成しています。
 

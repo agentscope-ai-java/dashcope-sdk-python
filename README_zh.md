@@ -1,6 +1,6 @@
 # DashScope Python SDK
 
-> [English](README.md) | **中文** | [日本語](README_ja.md)
+> [English](README.md) | **中文** | [日本語](README_ja.md) | [Español](README_es.md) | [한국어](README_ko.md)
 
 DashScope Python SDK 提供了访问[阿里云百炼（Model Studio）](https://help.aliyun.com/zh/model-studio/) API 的完整接口，覆盖文本生成、多模态理解、向量（Embedding）、重排（Rerank）、图像/视频生成、语音合成与识别等能力。
 
@@ -149,11 +149,11 @@ try:
     response = Generation.call(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
 except DashScopeException as e:
     # 本地校验失败时抛出，例如 InputRequired、ModelRequired、AuthenticationError
-    print(f"请求参数有误: {e}")
+    print(f"Invalid request: {e}")
 else:
     if response.status_code != HTTPStatus.OK:
         # 服务端返回的错误，例如模型名不合法、触发限流、余额不足
-        print(f"接口报错 {response.status_code}: {response.code} - {response.message}")
+        print(f"API error {response.status_code}: {response.code} - {response.message}")
     else:
         print(response.output.choices[0].message.content)
 ```

@@ -1,6 +1,6 @@
 # DashScope Python SDK
 
-> [English](README.md) | [中文](README_zh.md) | **日本語**
+> [English](README.md) | [中文](README_zh.md) | **日本語** | [Español](README_es.md) | [한국어](README_ko.md)
 
 DashScope Python SDK は、[Alibaba Cloud Model Studio（百煉／Bailian）](https://www.alibabacloud.com/help/en/model-studio/) の API を包括的に利用できるインターフェースを提供します。テキスト生成、マルチモーダル理解、Embedding（埋め込み）、リランキング、画像・動画生成、音声合成・音声認識など、幅広い機能をカバーしています。
 

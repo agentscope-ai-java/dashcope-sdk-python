@@ -1,6 +1,6 @@
 # 开发指南
 
-> [English](develop.md) | **中文** | [日本語](develop_ja.md)
+> [English](develop.md) | **中文** | [日本語](develop_ja.md) | [Español](develop_es.md) | [한국어](develop_ko.md)
 
 ## 1. 代码风格
 

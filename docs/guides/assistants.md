@@ -1,6 +1,6 @@
 # Assistants API (Deprecated)
 
-> **English** | [中文](assistants_zh.md) | [日本語](assistants_ja.md)
+> **English** | [中文](assistants_zh.md) | [日本語](assistants_ja.md) | [Español](assistants_es.md) | [한국어](assistants_ko.md)
 
 > **Deprecated.** The Assistants API (`dashscope.assistants` and `dashscope.threads`) is deprecated and will be removed in a future release. Please migrate to [`Generation`](../../README.md#quick-start) or [`MultiModalConversation`](../../README.md#multimodal-understanding-vision) with the `messages` parameter. See the [migration reference](https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference) for details.
 

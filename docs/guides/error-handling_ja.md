@@ -1,6 +1,6 @@
 # エラーハンドリングリファレンス
 
-> [English](error-handling.md) | [中文](error-handling_zh.md) | **日本語**
+> [English](error-handling.md) | [中文](error-handling_zh.md) | **日本語** | [Español](error-handling_es.md) | [한국어](error-handling_ko.md)
 
 これは [README のエラーハンドリングの節](../../README.md#error-handling)
 （`DashScopeException` を捕捉し、`status_code` を確認する基本パターン）を

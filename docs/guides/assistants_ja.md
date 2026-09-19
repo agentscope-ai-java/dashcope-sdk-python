@@ -1,6 +1,6 @@
 # Assistants API（非推奨）
 
-> [English](assistants.md) | [中文](assistants_zh.md) | **日本語**
+> [English](assistants.md) | [中文](assistants_zh.md) | **日本語** | [Español](assistants_es.md) | [한국어](assistants_ko.md)
 
 > **非推奨。** Assistants API（`dashscope.assistants` および `dashscope.threads`）は非推奨であり、将来のリリースで削除される予定です。`messages` パラメータを使用する [`Generation`](../../README_ja.md#クイックスタート) または [`MultiModalConversation`](../../README_ja.md#マルチモーダル理解ビジョン) への移行をお願いします。詳細は[移行リファレンス](https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference)を参照してください。
 

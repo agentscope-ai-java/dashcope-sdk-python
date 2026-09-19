@@ -1,6 +1,6 @@
 # Assistants API（已废弃）
 
-> [English](assistants.md) | **中文** | [日本語](assistants_ja.md)
+> [English](assistants.md) | **中文** | [日本語](assistants_ja.md) | [Español](assistants_es.md) | [한국어](assistants_ko.md)
 
 > **已废弃。** Assistants API（`dashscope.assistants` 与 `dashscope.threads`）已被废弃，将在未来版本中移除。请迁移到带有 `messages` 参数的 [`Generation`](../../README_zh.md#快速开始) 或 [`MultiModalConversation`](../../README_zh.md#多模态理解视觉)。详情请参见[迁移参考文档](https://help.aliyun.com/zh/model-studio/synchronous-call-api-reference)。
 

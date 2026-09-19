@@ -1,6 +1,6 @@
 # Response Object Model
 
-> **English** | [中文](response-types_zh.md) | [日本語](response-types_ja.md)
+> **English** | [中文](response-types_zh.md) | [日本語](response-types_ja.md) | [Español](response-types_es.md) | [한국어](response-types_ko.md)
 
 The README's [Output](../../README.md#output) section covers the common
 fields every response shares. This goes one level deeper into how those

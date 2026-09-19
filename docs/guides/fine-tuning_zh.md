@@ -1,6 +1,6 @@
 # 模型微调与部署全流程
 
-> [English](fine-tuning.md) | **中文** | [日本語](fine-tuning_ja.md)
+> [English](fine-tuning.md) | **中文** | [日本語](fine-tuning_ja.md) | [Español](fine-tuning_es.md) | [한국어](fine-tuning_ko.md)
 
 本指南介绍使用 `FineTunes` 微调模型并通过 `Deployments` 部署上线的完整流程。快速开始版本（上传 → 创建 → 等待）请参见[主 README 中的“模型微调”一节](../../README_zh.md#模型微调fine-tuning)。
 

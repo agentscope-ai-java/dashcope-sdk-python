@@ -1,6 +1,6 @@
 # 開発ガイド
 
-> [English](develop.md) | [中文](develop_zh.md) | **日本語**
+> [English](develop.md) | [中文](develop_zh.md) | **日本語** | [Español](develop_es.md) | [한국어](develop_ko.md)
 
 ## 1. コードスタイル
 

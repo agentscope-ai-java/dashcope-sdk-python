@@ -1,6 +1,6 @@
 # ファインチューニングとデプロイのライフサイクル
 
-> [English](fine-tuning.md) | [中文](fine-tuning_zh.md) | **日本語**
+> [English](fine-tuning.md) | [中文](fine-tuning_zh.md) | **日本語** | [Español](fine-tuning_es.md) | [한국어](fine-tuning_ko.md)
 
 このガイドでは、`FineTunes` を使ったモデルのファインチューニングと、`Deployments` を使ったデプロイの全ライフサイクルを説明します。クイックスタート版（アップロード → 作成 → 待機）については、[メイン README の「ファインチューニング」セクション](../../README_ja.md#ファインチューニング)を参照してください。
 

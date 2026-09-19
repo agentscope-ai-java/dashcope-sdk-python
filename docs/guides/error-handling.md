@@ -1,6 +1,6 @@
 # Error Handling Reference
 
-> **English** | [中文](error-handling_zh.md) | [日本語](error-handling_ja.md)
+> **English** | [中文](error-handling_zh.md) | [日本語](error-handling_ja.md) | [Español](error-handling_es.md) | [한국어](error-handling_ko.md)
 
 This goes beyond the basic pattern in the [README's Error Handling section](../../README.md#error-handling)
 (catch `DashScopeException`, then check `status_code`).

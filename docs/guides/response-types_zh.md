@@ -1,6 +1,6 @@
 # 响应对象模型
 
-> [English](response-types.md) | **中文** | [日本語](response-types_ja.md)
+> [English](response-types.md) | **中文** | [日本語](response-types_ja.md) | [Español](response-types_es.md) | [한국어](response-types_ko.md)
 
 README 的 [输出](../../README.md#output) 部分介绍了所有响应共有的通用字段。
 本指南将进一步说明这些对象的实际行为方式。

@@ -1,4 +1,4 @@
-> **English** | [中文](README_zh.md) | [日本語](README_ja.md)
+> **English** | [中文](README_zh.md) | [日本語](README_ja.md) | [Español](README_es.md) | [한국어](README_ko.md)
 
 ## maintain docs
 1. build docs

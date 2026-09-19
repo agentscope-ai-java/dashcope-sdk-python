@@ -1,6 +1,6 @@
 # Advanced Audio: Voice Cloning, Pronunciation Fixes, Translation, and Hot Words
 
-> **English** | [中文](realtime-audio_zh.md) | [日本語](realtime-audio_ja.md)
+> **English** | [中文](realtime-audio_zh.md) | [日本語](realtime-audio_ja.md) | [Español](realtime-audio_es.md) | [한국어](realtime-audio_ko.md)
 
 This guide covers advanced audio capabilities beyond the basic TTS/ASR examples in the [README](../../README.md#speech-synthesis-tts). All of these are real, verified SDK features with no dedicated sample script, so examples here are built directly from the source signatures and their own docstrings.
 

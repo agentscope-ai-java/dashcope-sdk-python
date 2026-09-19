@@ -1,6 +1,6 @@
 # Basic Chat — 最小可用的 acli 示例
 
-> [English](README.md) | **中文** | [日本語](README_ja.md)
+> [English](README.md) | **中文** | [日本語](README_ja.md) | [Español](README_es.md) | [한국어](README_ko.md)
 
 演示如何用最少的配置启动一个具备联网搜索能力的通用聊天 Agent。**所有的智能都体现在 `.acli/` 配置中——没有任何 Python 启动代码**——直接下载并运行 `acli` 即可。
 

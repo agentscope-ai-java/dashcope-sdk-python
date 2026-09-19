@@ -1,6 +1,6 @@
 # 错误处理参考
 
-> [English](error-handling.md) | **中文** | [日本語](error-handling_ja.md)
+> [English](error-handling.md) | **中文** | [日本語](error-handling_ja.md) | [Español](error-handling_es.md) | [한국어](error-handling_ko.md)
 
 本指南在 [README 的错误处理部分](../../README.md#error-handling)
 （捕获 `DashScopeException`，再检查 `status_code`）基础上做进一步说明。

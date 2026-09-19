@@ -1,6 +1,6 @@
 # レスポンスオブジェクトモデル
 
-> [English](response-types.md) | [中文](response-types_zh.md) | **日本語**
+> [English](response-types.md) | [中文](response-types_zh.md) | **日本語** | [Español](response-types_es.md) | [한국어](response-types_ko.md)
 
 README の [出力](../../README.md#output) の節では、すべてのレスポンスが
 共有する共通フィールドについて説明しています。本ガイドでは、これらの

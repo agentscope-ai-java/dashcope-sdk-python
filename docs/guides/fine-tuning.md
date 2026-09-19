@@ -1,6 +1,6 @@
 # Fine-tuning & Deployment Lifecycle
 
-> **English** | [中文](fine-tuning_zh.md) | [日本語](fine-tuning_ja.md)
+> **English** | [中文](fine-tuning_zh.md) | [日本語](fine-tuning_ja.md) | [Español](fine-tuning_es.md) | [한국어](fine-tuning_ko.md)
 
 This guide covers the full lifecycle of fine-tuning a model with `FineTunes` and serving it with `Deployments`. For the quick-start version (upload → create → wait), see the ["Fine-tuning" section in the main README](../../README.md#fine-tuning).
 

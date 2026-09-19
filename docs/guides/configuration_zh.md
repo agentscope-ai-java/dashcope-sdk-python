@@ -1,6 +1,6 @@
 # 高级配置
 
-> [English](configuration.md) | **中文** | [日本語](configuration_ja.md)
+> [English](configuration.md) | **中文** | [日本語](configuration_ja.md) | [Español](configuration_es.md) | [한국어](configuration_ko.md)
 
 本指南介绍身份验证和区域选择之外的 SDK 全局配置。API Key 的设置请参见 [API Key 鉴权](../../README.md#api-key-authentication)；切换区域/端点请参见 [区域与端点配置](../../README.md#region-and-endpoint-configuration)。
 

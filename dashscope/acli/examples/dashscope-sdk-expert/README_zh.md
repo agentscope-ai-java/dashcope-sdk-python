@@ -1,6 +1,6 @@
 # DashScope SDK Expert —— 配置驱动的 acli 示例
 
-> [English](README.md) | **中文** | [日本語](README_ja.md)
+> [English](README.md) | **中文** | [日本語](README_ja.md) | [Español](README_es.md) | [한국어](README_ko.md)
 
 **在线文档**：https://help.aliyun.com/zh/model-studio/dashscope-sdk-expert
 

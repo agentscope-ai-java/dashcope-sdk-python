@@ -1,6 +1,6 @@
 # DashScope SDK Expert — acli Configuration-Driven Example
 
-> **English** | [中文](README_zh.md) | [日本語](README_ja.md)
+> **English** | [中文](README_zh.md) | [日本語](README_ja.md) | [Español](README_es.md) | [한국어](README_ko.md)
 
 **Online guide**: https://help.aliyun.com/en/model-studio/dashscope-sdk-expert
 

@@ -1,6 +1,6 @@
 # Basic Chat — 最小構成で動く acli の例
 
-> [English](README.md) | [中文](README_zh.md) | **日本語**
+> [English](README.md) | [中文](README_zh.md) | **日本語** | [Español](README_es.md) | [한국어](README_ko.md)
 
 最小限の設定で、Web 検索機能を備えた汎用チャットエージェントを起動する方法を示します。**すべての知能は `.acli/` の設定に存在しており、Python の起動コードは一切ありません**——`acli` をダウンロードしてそのまま実行するだけです。
 

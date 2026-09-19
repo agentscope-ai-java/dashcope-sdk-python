@@ -1,6 +1,6 @@
 # Develop
 
-> **English** | [中文](develop_zh.md) | [日本語](develop_ja.md)
+> **English** | [中文](develop_zh.md) | [日本語](develop_ja.md) | [Español](develop_es.md) | [한국어](develop_ko.md)
 
 ## 1. Code Style
 We adopt [PEP8](https://www.python.org/dev/peps/pep-0008/) as the preferred code style.

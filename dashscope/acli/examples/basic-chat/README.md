@@ -1,6 +1,6 @@
 # Basic Chat — Minimal Working acli Example
 
-> **English** | [中文](README_zh.md) | [日本語](README_ja.md)
+> **English** | [中文](README_zh.md) | [日本語](README_ja.md) | [Español](README_es.md) | [한국어](README_ko.md)
 
 Shows how to start a general-purpose chat agent with web search capability using minimal configuration. **All the intelligence lives in the `.acli/` configuration — there is no Python startup code** — download and run `acli` directly.
 

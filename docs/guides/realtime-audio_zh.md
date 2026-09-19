@@ -1,6 +1,6 @@
 # 高级语音功能：音色复刻、发音纠正、实时翻译与热词
 
-> [English](realtime-audio.md) | **中文** | [日本語](realtime-audio_ja.md)
+> [English](realtime-audio.md) | **中文** | [日本語](realtime-audio_ja.md) | [Español](realtime-audio_es.md) | [한국어](realtime-audio_ko.md)
 
 本指南介绍 [README](../../README.md#speech-synthesis-tts) 中基础 TTS/ASR 示例之外的高级语音能力。以下均为真实、已验证的 SDK 功能，但没有专门的示例脚本，因此本文示例均直接基于源码签名及其自带的 docstring 编写。
 
