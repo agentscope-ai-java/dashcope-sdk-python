@@ -341,6 +341,28 @@ response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
 print(response.output.choices[0].message.content[0]["text"])
 ```
 
+传入 `stream=True` 即可像 `Generation` 一样以流式方式增量输出结果：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+        {"text": "图中描绘的是什么景象?"},
+    ],
+}]
+responses = MultiModalConversation.call(
+    model="qwen-vl-max",
+    messages=messages,
+    stream=True,
+    incremental_output=True,
+)
+for response in responses:
+    print(response.output.choices[0].message.content[0]["text"], end="")
+```
+
 使用 `AioMultiModalConversation` 可获得 `async`/`await` 形式：
 
 ```python
@@ -451,6 +473,7 @@ from dashscope import MultiModalEmbedding
 from dashscope.embeddings.multimodal_embedding import (
     MultiModalEmbeddingItemText,
     MultiModalEmbeddingItemImage,
+    MultiModalEmbeddingItemAudio,
 )
 
 resp = MultiModalEmbedding.call(
@@ -458,6 +481,7 @@ resp = MultiModalEmbedding.call(
     input=[
         MultiModalEmbeddingItemText(text="一辆红色跑车", factor=1.0),
         MultiModalEmbeddingItemImage(image="https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png", factor=1.0),
+        MultiModalEmbeddingItemAudio(audio="https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3", factor=1.0),
     ],
     enable_fusion=True,
 )
@@ -567,6 +591,24 @@ rsp = ImageSynthesis.call(
 if rsp.status_code == HTTPStatus.OK:
     for result in rsp.output.results:
         print(result.url)
+```
+
+`call` 本身就会阻塞直到任务完成；也可以不阻塞地提交任务，然后用 `async_call` + `wait` 单独轮询：
+
+```python
+from dashscope import ImageSynthesis
+
+task = ImageSynthesis.async_call(
+    model="wanx2.1-t2i-turbo",
+    prompt="一间有着精致窗户的花店，漂亮的木质门，摆放着花朵",
+    n=1,
+    size="1024*1024",
+)
+print(task.output.task_id)
+
+rsp = ImageSynthesis.wait(task)
+for result in rsp.output.results:
+    print(result.url)
 ```
 
 `sync_call`（目前仅支持 `wan2.2-t2i-flash`/`wan2.2-t2i-plus`）直接返回结果，而不是轮询异步任务：
@@ -687,6 +729,31 @@ with open("output.wav", "wb") as f:
     f.write(result.get_audio_data())
 ```
 
+`SpeechSynthesisResult` 还提供了逐句时间戳和原始任务响应，可用于例如字幕同步：
+
+```python
+print(result.get_timestamps())  # 每句话的起止时间
+print(result.get_response())    # 底层的 SpeechSynthesisResponse（status、request_id 等）
+```
+
+如果需要流式而非一次性的阻塞调用，可以继承 `ResultCallback` 并作为 `callback=` 传入；音频生成过程中，`on_event` 会接收到每个 `SpeechSynthesisResult` 分片：
+
+```python
+from dashscope.audio.tts import SpeechSynthesizer, ResultCallback
+
+class Callback(ResultCallback):
+    def on_event(self, result) -> None:
+        with open("output.wav", "ab") as f:
+            f.write(result.get_audio_frame())
+
+SpeechSynthesizer.call(
+    model="cosyvoice-v1",
+    text="Hello, Bailian.",
+    format=SpeechSynthesizer.AudioFormat.format_wav,
+    callback=Callback(),
+)
+```
+
 `HttpSpeechSynthesizer` 通过普通 HTTP（无需 WebSocket）调用语音合成，适用于无法保持持久连接的环境：
 
 ```python
@@ -776,6 +843,8 @@ with open("audio.pcm", "rb") as f:
 recognition.stop()
 ```
 
+关于音色复刻、发音纠正、实时语音翻译以及自定义 ASR 热词，请参见[高级语音功能指南](docs/guides/realtime-audio_zh.md)。
+
 ### 百炼应用（Agent 应用）
 
 调用你在[百炼应用中心](https://bailian.console.aliyun.com/)搭建的应用：
@@ -830,6 +899,28 @@ tokenizer = get_tokenizer("qwen-turbo")  # 适用于任意 qwen-* 模型
 tokens = tokenizer.encode("这个是千问tokenizer")
 print(len(tokens))               # token 数量
 print(tokenizer.decode(tokens))  # 解码还原文本
+```
+
+`Tokenization.call` 则通过远程接口调用完成同样的工作（适用于本地分词器不支持的模型）：
+
+```python
+from dashscope import Tokenization
+
+resp = Tokenization.call(model=Tokenization.Models.qwen_turbo, prompt="这个是千问tokenizer")
+print(resp.output["token_ids"], resp.output["tokens"])
+print(resp.usage["input_tokens"])
+```
+
+### 列出可用模型
+
+```python
+from dashscope import Models
+
+models = Models.list(page=1, page_size=10)
+print(models.output["models"])
+
+model = Models.get("qwen-plus")
+print(model.output["model_id"])
 ```
 
 ### 模型微调（Fine-tuning）
@@ -889,8 +980,27 @@ dashscope generation create -m qwen-plus -p "写一首关于大海的诗" --stre
 dashscope models list
 dashscope models get qwen-plus
 
-# 上传用于微调的文件
+# 上传、查看、检索和删除文件
 dashscope files upload -f ./train.jsonl -p fine_tune
+dashscope files list
+dashscope files get <file_id>
+dashscope files delete <file_id>
+
+# 直接向 OSS 上传文件（部分 CV/视觉模型会用到）
+dashscope oss upload -f ./photo.png -m wanx-style-repaint-v1
+
+# 部署微调模型，并管理该部署
+dashscope deployments create -m <finetuned-model-id> --plan mu -c 1
+dashscope deployments list
+dashscope deployments get <deployed_model>
+dashscope deployments scale <deployed_model> -c 2
+dashscope deployments delete <deployed_model>
+
+# Agentic RL 任务管理（`dashscope rl run` 的用法见强化学习指南）
+dashscope rl list
+dashscope rl get <job_id>
+dashscope rl logs <job_id>
+dashscope rl cancel <job_id>
 ```
 
 运行 `dashscope --help` 或 `dashscope <command> --help`（如 `dashscope generation --help`）可查看全部命令组（`generation`、`ft`、`files`、`deployments`、`models`、`embeddings`、`rerank`、`tokenization`、`application`、`image-synthesis`、`video-synthesis`、`multimodal-conversation`、`transcription`、`speech-synthesis`、`rl` 等）及其参数。不带任何参数运行 `dashscope` 则会启动交互式 [AI 助手](#ai-助手dashscope-sdk-expert)。

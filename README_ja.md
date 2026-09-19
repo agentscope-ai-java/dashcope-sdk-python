@@ -343,6 +343,28 @@ response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
 print(response.output.choices[0].message.content[0]["text"])
 ```
 
+`stream=True` を指定すると、`Generation` と同様に結果を逐次ストリーミングできます：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+        {"text": "この画像には何が写っていますか?"},
+    ],
+}]
+responses = MultiModalConversation.call(
+    model="qwen-vl-max",
+    messages=messages,
+    stream=True,
+    incremental_output=True,
+)
+for response in responses:
+    print(response.output.choices[0].message.content[0]["text"], end="")
+```
+
 `AioMultiModalConversation` を使うと `async`/`await` 形式で呼び出せます：
 
 ```python
@@ -453,6 +475,7 @@ from dashscope import MultiModalEmbedding
 from dashscope.embeddings.multimodal_embedding import (
     MultiModalEmbeddingItemText,
     MultiModalEmbeddingItemImage,
+    MultiModalEmbeddingItemAudio,
 )
 
 resp = MultiModalEmbedding.call(
@@ -460,6 +483,7 @@ resp = MultiModalEmbedding.call(
     input=[
         MultiModalEmbeddingItemText(text="赤いスポーツカー", factor=1.0),
         MultiModalEmbeddingItemImage(image="https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png", factor=1.0),
+        MultiModalEmbeddingItemAudio(audio="https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3", factor=1.0),
     ],
     enable_fusion=True,
 )
@@ -569,6 +593,24 @@ rsp = ImageSynthesis.call(
 if rsp.status_code == HTTPStatus.OK:
     for result in rsp.output.results:
         print(result.url)
+```
+
+`call` はそれ自体がタスク完了までブロックしますが、ブロックせずに送信して `async_call` + `wait` で別途ポーリングすることもできます：
+
+```python
+from dashscope import ImageSynthesis
+
+task = ImageSynthesis.async_call(
+    model="wanx2.1-t2i-turbo",
+    prompt="繊細な窓と木製の扉がある花屋",
+    n=1,
+    size="1024*1024",
+)
+print(task.output.task_id)
+
+rsp = ImageSynthesis.wait(task)
+for result in rsp.output.results:
+    print(result.url)
 ```
 
 `sync_call`（現在は `wan2.2-t2i-flash`/`wan2.2-t2i-plus` のみ対応）は、非同期タスクをポーリングする代わりに結果を直接返します：
@@ -689,6 +731,31 @@ with open("output.wav", "wb") as f:
     f.write(result.get_audio_data())
 ```
 
+`SpeechSynthesisResult` は、文単位のタイムスタンプや元のタスクレスポンスも公開しており、字幕同期などに利用できます：
+
+```python
+print(result.get_timestamps())  # 各文の開始・終了時刻
+print(result.get_response())    # 内部の SpeechSynthesisResponse（status、request_id など）
+```
+
+1回のブロッキング呼び出しではなくストリーミングにしたい場合は、`ResultCallback` を継承して `callback=` に渡します。音声が生成されるたびに `on_event` が各 `SpeechSynthesisResult` チャンクを受け取ります：
+
+```python
+from dashscope.audio.tts import SpeechSynthesizer, ResultCallback
+
+class Callback(ResultCallback):
+    def on_event(self, result) -> None:
+        with open("output.wav", "ab") as f:
+            f.write(result.get_audio_frame())
+
+SpeechSynthesizer.call(
+    model="cosyvoice-v1",
+    text="Hello, Bailian.",
+    format=SpeechSynthesizer.AudioFormat.format_wav,
+    callback=Callback(),
+)
+```
+
 `HttpSpeechSynthesizer` は通常の HTTP（WebSocket 不要）で音声合成を呼び出します。持続的な接続を維持できない環境で便利です：
 
 ```python
@@ -778,6 +845,8 @@ with open("audio.pcm", "rb") as f:
 recognition.stop()
 ```
 
+音声クローン、発音修正、リアルタイム音声翻訳、カスタム ASR ホットワードについては、[高度な音声機能ガイド](docs/guides/realtime-audio_ja.md)を参照してください。
+
 ### 百煉アプリケーション（エージェントアプリ）
 
 [百煉のアプリケーションセンター](https://bailian.console.aliyun.com/) で作成したアプリを呼び出します。
@@ -832,6 +901,28 @@ tokenizer = get_tokenizer("qwen-turbo")  # 任意の qwen-* モデルで利用�
 tokens = tokenizer.encode("这个是千问tokenizer")
 print(len(tokens))               # トークン数
 print(tokenizer.decode(tokens))  # トークンからテキストへ復元
+```
+
+`Tokenization.call` はリモート API 呼び出しで同じ処理を行います（ローカルトークナイザーが対応していないモデルに便利です）：
+
+```python
+from dashscope import Tokenization
+
+resp = Tokenization.call(model=Tokenization.Models.qwen_turbo, prompt="这个是千问tokenizer")
+print(resp.output["token_ids"], resp.output["tokens"])
+print(resp.usage["input_tokens"])
+```
+
+### 利用可能なモデルの一覧表示
+
+```python
+from dashscope import Models
+
+models = Models.list(page=1, page_size=10)
+print(models.output["models"])
+
+model = Models.get("qwen-plus")
+print(model.output["model_id"])
 ```
 
 ### ファインチューニング
@@ -891,8 +982,27 @@ dashscope generation create -m qwen-plus -p "海についての俳句を書い�
 dashscope models list
 dashscope models get qwen-plus
 
-# ファインチューニング用ファイルのアップロード
+# ファイルのアップロード、一覧表示、詳細確認、削除
 dashscope files upload -f ./train.jsonl -p fine_tune
+dashscope files list
+dashscope files get <file_id>
+dashscope files delete <file_id>
+
+# OSS へ直接ファイルをアップロード（一部の CV/ビジョンモデルで使用）
+dashscope oss upload -f ./photo.png -m wanx-style-repaint-v1
+
+# ファインチューニング済みモデルをデプロイし、そのデプロイメントを管理する
+dashscope deployments create -m <finetuned-model-id> --plan mu -c 1
+dashscope deployments list
+dashscope deployments get <deployed_model>
+dashscope deployments scale <deployed_model> -c 2
+dashscope deployments delete <deployed_model>
+
+# Agentic RL ジョブの管理（`dashscope rl run` の使い方は強化学習ガイドを参照）
+dashscope rl list
+dashscope rl get <job_id>
+dashscope rl logs <job_id>
+dashscope rl cancel <job_id>
 ```
 
 `dashscope --help` または `dashscope <command> --help`（例：`dashscope generation --help`）を実行すると、すべてのコマンドグループ（`generation`、`ft`、`files`、`deployments`、`models`、`embeddings`、`rerank`、`tokenization`、`application`、`image-synthesis`、`video-synthesis`、`multimodal-conversation`、`transcription`、`speech-synthesis`、`rl` など）とそのオプションを確認できます。引数なしで `dashscope` を実行すると、対話型の [AI アシスタント](#ai-アシスタントdashscope-sdk-expert)が起動します。

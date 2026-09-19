@@ -64,3 +64,27 @@ if response.status_code != HTTPStatus.OK:
 也无需你编写任何代码；它仅覆盖"响应尚未开始前连接就被断开"这一种情况，
 不包括限流、参数错误等应用层失败——这些会作为正常的错误响应返回（相关处理方式
 见 README 的错误处理部分）。
+
+## 限流的重试与退避
+
+与上面的连接级重试不同，SDK **不会**自动重试限流或临时性服务端错误这类
+应用层失败——这些会以非 200 的 `status_code` 正常返回，是否重试由你的代码
+决定。一个基于 `status_code` 的简单指数退避实现：
+
+```python
+import time
+from http import HTTPStatus
+from dashscope import Generation
+
+def call_with_backoff(max_retries=5, base_delay=1.0, **kwargs):
+    for attempt in range(max_retries):
+        response = Generation.call(**kwargs)
+        if response.status_code == HTTPStatus.OK:
+            return response
+        if response.status_code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
+            time.sleep(base_delay * (2 ** attempt))
+            continue
+        return response  # 放弃重试：由调用方检查 status_code/code/message
+
+response = call_with_backoff(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
+```

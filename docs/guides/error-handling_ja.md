@@ -69,3 +69,29 @@ if response.status_code != HTTPStatus.OK:
 切断された」場合のみをカバーするものであり、レート制限や不正な入力といった
 アプリケーションレベルの失敗（README のエラーハンドリングの節で説明した
 パターンで、通常のエラーレスポンスとして返されます）は対象外です。
+
+## レート制限に対するリトライとバックオフ
+
+上記のコネクションレベルの再試行とは異なり、SDK はレート制限や一時的な
+サーバーエラーといったアプリケーションレベルの失敗を自動的には再試行しません
+——これらは 200 以外の `status_code` を持つ通常のレスポンスとして返され、
+再試行するかどうかはあなたのコード次第です。`status_code` を見て行う
+シンプルな指数バックオフの例：
+
+```python
+import time
+from http import HTTPStatus
+from dashscope import Generation
+
+def call_with_backoff(max_retries=5, base_delay=1.0, **kwargs):
+    for attempt in range(max_retries):
+        response = Generation.call(**kwargs)
+        if response.status_code == HTTPStatus.OK:
+            return response
+        if response.status_code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
+            time.sleep(base_delay * (2 ** attempt))
+            continue
+        return response  # リトライを諦める：呼び出し側で status_code/code/message を確認する
+
+response = call_with_backoff(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
+```

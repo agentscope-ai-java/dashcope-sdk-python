@@ -350,6 +350,28 @@ response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
 print(response.output.choices[0].message.content[0]["text"])
 ```
 
+Pass `stream=True` to stream the response incrementally, same as `Generation`:
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+        {"text": "What does this picture describe?"},
+    ],
+}]
+responses = MultiModalConversation.call(
+    model="qwen-vl-max",
+    messages=messages,
+    stream=True,
+    incremental_output=True,
+)
+for response in responses:
+    print(response.output.choices[0].message.content[0]["text"], end="")
+```
+
 Use `AioMultiModalConversation` for the `async`/`await` form:
 
 ```python
@@ -460,6 +482,7 @@ from dashscope import MultiModalEmbedding
 from dashscope.embeddings.multimodal_embedding import (
     MultiModalEmbeddingItemText,
     MultiModalEmbeddingItemImage,
+    MultiModalEmbeddingItemAudio,
 )
 
 resp = MultiModalEmbedding.call(
@@ -467,6 +490,7 @@ resp = MultiModalEmbedding.call(
     input=[
         MultiModalEmbeddingItemText(text="a red sports car", factor=1.0),
         MultiModalEmbeddingItemImage(image="https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png", factor=1.0),
+        MultiModalEmbeddingItemAudio(audio="https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3", factor=1.0),
     ],
     enable_fusion=True,
 )
@@ -576,6 +600,24 @@ rsp = ImageSynthesis.call(
 if rsp.status_code == HTTPStatus.OK:
     for result in rsp.output.results:
         print(result.url)
+```
+
+`call` already blocks until the task completes; submit without blocking and poll separately with `async_call` + `wait`:
+
+```python
+from dashscope import ImageSynthesis
+
+task = ImageSynthesis.async_call(
+    model="wanx2.1-t2i-turbo",
+    prompt="a flower shop with delicate windows and a wooden door",
+    n=1,
+    size="1024*1024",
+)
+print(task.output.task_id)
+
+rsp = ImageSynthesis.wait(task)
+for result in rsp.output.results:
+    print(result.url)
 ```
 
 `sync_call` (currently only for `wan2.2-t2i-flash`/`wan2.2-t2i-plus`) returns the result directly instead of polling an async task:
@@ -696,6 +738,31 @@ with open("output.wav", "wb") as f:
     f.write(result.get_audio_data())
 ```
 
+`SpeechSynthesisResult` also exposes sentence-level timestamps and the raw task response, useful for e.g. subtitle sync:
+
+```python
+print(result.get_timestamps())  # per-sentence begin/end times
+print(result.get_response())    # the underlying SpeechSynthesisResponse (status, request_id, ...)
+```
+
+For streaming instead of a single blocking call, subclass `ResultCallback` and pass it as `callback=`; `on_event` receives each `SpeechSynthesisResult` chunk as audio is generated:
+
+```python
+from dashscope.audio.tts import SpeechSynthesizer, ResultCallback
+
+class Callback(ResultCallback):
+    def on_event(self, result) -> None:
+        with open("output.wav", "ab") as f:
+            f.write(result.get_audio_frame())
+
+SpeechSynthesizer.call(
+    model="cosyvoice-v1",
+    text="Hello, Bailian.",
+    format=SpeechSynthesizer.AudioFormat.format_wav,
+    callback=Callback(),
+)
+```
+
 `HttpSpeechSynthesizer` calls TTS over plain HTTP (no WebSocket), useful in environments that can't hold a persistent connection:
 
 ```python
@@ -785,6 +852,8 @@ with open("audio.pcm", "rb") as f:
 recognition.stop()
 ```
 
+For voice cloning, pronunciation fixes, real-time speech translation, and custom ASR hot words, see the [Advanced Audio guide](docs/guides/realtime-audio.md).
+
 ### Bailian Application (Agent App)
 
 Call an app you built in [Bailian's Application Center](https://bailian.console.aliyun.com/):
@@ -839,6 +908,28 @@ tokenizer = get_tokenizer("qwen-turbo")  # works for any qwen-* model
 tokens = tokenizer.encode("这个是千问tokenizer")
 print(len(tokens))               # token count
 print(tokenizer.decode(tokens))  # round-trip back to text
+```
+
+`Tokenization.call` does the same job as a remote API call instead (useful for models not supported by the local tokenizer):
+
+```python
+from dashscope import Tokenization
+
+resp = Tokenization.call(model=Tokenization.Models.qwen_turbo, prompt="这个是千问tokenizer")
+print(resp.output["token_ids"], resp.output["tokens"])
+print(resp.usage["input_tokens"])
+```
+
+### Listing Available Models
+
+```python
+from dashscope import Models
+
+models = Models.list(page=1, page_size=10)
+print(models.output["models"])
+
+model = Models.get("qwen-plus")
+print(model.output["model_id"])
 ```
 
 ### Fine-tuning
@@ -898,8 +989,27 @@ dashscope generation create -m qwen-plus -p "Write a haiku about the sea" --stre
 dashscope models list
 dashscope models get qwen-plus
 
-# Upload a file for fine-tuning
+# Upload, list, inspect, and delete files
 dashscope files upload -f ./train.jsonl -p fine_tune
+dashscope files list
+dashscope files get <file_id>
+dashscope files delete <file_id>
+
+# Upload a file directly to OSS (used by some CV/vision models)
+dashscope oss upload -f ./photo.png -m wanx-style-repaint-v1
+
+# Deploy a fine-tuned model, then manage the deployment
+dashscope deployments create -m <finetuned-model-id> --plan mu -c 1
+dashscope deployments list
+dashscope deployments get <deployed_model>
+dashscope deployments scale <deployed_model> -c 2
+dashscope deployments delete <deployed_model>
+
+# Agentic RL job management (see the reinforcement guide for `dashscope rl run`)
+dashscope rl list
+dashscope rl get <job_id>
+dashscope rl logs <job_id>
+dashscope rl cancel <job_id>
 ```
 
 Run `dashscope --help` or `dashscope <command> --help` (e.g. `dashscope generation --help`) to see every command group (`generation`, `ft`, `files`, `deployments`, `models`, `embeddings`, `rerank`, `tokenization`, `application`, `image-synthesis`, `video-synthesis`, `multimodal-conversation`, `transcription`, `speech-synthesis`, `rl`, ...) and their options. Running `dashscope` with no arguments instead launches the interactive [AI Assistant](#ai-assistant-dashscope-sdk-expert).

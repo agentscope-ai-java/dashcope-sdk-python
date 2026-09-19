@@ -67,3 +67,29 @@ on your part; it only covers connections dropped before a response starts,
 not application-level failures like rate limiting or invalid input, which
 are returned as normal error responses (see the README's Error Handling
 section for that pattern).
+
+## Retry and Backoff for Rate Limits
+
+Unlike the connection-level retry above, the SDK does **not** automatically
+retry application-level failures such as rate limiting or transient server
+errors — these come back as a normal response with a non-200 `status_code`,
+and it's up to your code to decide whether to retry. A simple exponential
+backoff around `status_code`:
+
+```python
+import time
+from http import HTTPStatus
+from dashscope import Generation
+
+def call_with_backoff(max_retries=5, base_delay=1.0, **kwargs):
+    for attempt in range(max_retries):
+        response = Generation.call(**kwargs)
+        if response.status_code == HTTPStatus.OK:
+            return response
+        if response.status_code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
+            time.sleep(base_delay * (2 ** attempt))
+            continue
+        return response  # give up: caller checks status_code/code/message
+
+response = call_with_backoff(model="qwen-plus", messages=[{"role": "user", "content": "Hi"}])
+```
