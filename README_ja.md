@@ -290,6 +290,26 @@ response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
 print(response.output.choices[0].message.content[0]["text"])
 ```
 
+`AioMultiModalConversation` を使うと `async`/`await` 形式で呼び出せます：
+
+```python
+import asyncio
+from dashscope import AioMultiModalConversation
+
+async def main():
+    messages = [{
+        "role": "user",
+        "content": [
+            {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+            {"text": "この画像には何が写っていますか?"},
+        ],
+    }]
+    response = await AioMultiModalConversation.call(model="qwen-vl-max", messages=messages)
+    print(response.output.choices[0].message.content[0]["text"])
+
+asyncio.run(main())
+```
+
 ### ローカルファイルの使用
 
 URL を受け付けるすべてのフィールド（messages 内の `image`、`audio`、`video`、`ImageSynthesis` の `images` など）は、ローカルファイルパスもそのまま受け付けます。SDK が自動的に OSS へアップロードするため、手動でヘッダーを設定する必要はありません：
@@ -334,6 +354,22 @@ resp = MultiModalEmbedding.call(
 print(resp.output)
 ```
 
+### バッチ（オフライン）テキスト Embedding
+
+大量のテキストを扱う場合、`TextEmbedding.call` を1件ずつ呼び出す代わりに、ファイル（1行1テキスト）を送信して非同期のバッチ Embedding を実行できます：
+
+```python
+from dashscope import BatchTextEmbedding
+
+resp = BatchTextEmbedding.call(
+    model=BatchTextEmbedding.Models.text_embedding_async_v2,
+    url="https://example.com/texts.txt",
+)
+print(resp.output.task_id, resp.output.task_status)
+if resp.output.task_status == "SUCCEEDED":
+    print(resp.output.url)  # ここから結果ファイルをダウンロード
+```
+
 ### テキストリランキング
 
 ```python
@@ -351,6 +387,26 @@ resp = TextReRank.call(
 )
 for r in resp.output.results:
     print(r.index, r.relevance_score, r.document)
+```
+
+`AioTextReRank` を使うと `async`/`await` 形式で呼び出せます：
+
+```python
+import asyncio
+from dashscope import AioTextReRank
+
+async def main():
+    resp = await AioTextReRank.call(
+        model=AioTextReRank.Models.gte_rerank,
+        query="中国の首都はどこですか?",
+        documents=["中国の首都は北京です。", "中国は東アジアにある広大な国です。"],
+        return_documents=True,
+        top_n=1,
+    )
+    for r in resp.output.results:
+        print(r.index, r.relevance_score, r.document)
+
+asyncio.run(main())
 ```
 
 ### コード生成
@@ -434,6 +490,21 @@ result = SpeechSynthesizer.call(
 )
 with open("output.wav", "wb") as f:
     f.write(result.get_audio_data())
+```
+
+`HttpSpeechSynthesizer` は通常の HTTP（WebSocket 不要）で音声合成を呼び出します。持続的な接続を維持できない環境で便利です：
+
+```python
+from dashscope.audio.http_tts import HttpSpeechSynthesizer
+
+result = HttpSpeechSynthesizer.call(
+    model="cosyvoice-v3-flash",
+    text="Hello, Bailian.",
+    voice="longxiaochun",
+    audio_format="wav",
+)
+with open("output.wav", "wb") as f:
+    f.write(result.audio_data)
 ```
 
 ### ストリーミング音声合成（CosyVoice v2）

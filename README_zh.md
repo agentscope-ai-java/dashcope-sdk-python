@@ -288,6 +288,26 @@ response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
 print(response.output.choices[0].message.content[0]["text"])
 ```
 
+使用 `AioMultiModalConversation` 可获得 `async`/`await` 形式：
+
+```python
+import asyncio
+from dashscope import AioMultiModalConversation
+
+async def main():
+    messages = [{
+        "role": "user",
+        "content": [
+            {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+            {"text": "图中描绘的是什么景象?"},
+        ],
+    }]
+    response = await AioMultiModalConversation.call(model="qwen-vl-max", messages=messages)
+    print(response.output.choices[0].message.content[0]["text"])
+
+asyncio.run(main())
+```
+
 ### 使用本地文件
 
 任何接受 URL 的字段（messages 中的 `image`、`audio`、`video`，`ImageSynthesis` 的 `images` 等）同样支持本地文件路径——SDK 会自动上传到 OSS，无需手动设置请求头：
@@ -332,6 +352,22 @@ resp = MultiModalEmbedding.call(
 print(resp.output)
 ```
 
+### 批量（离线）文本向量
+
+对于大批量文本，可以提交一个文件（每行一条文本）进行异步批量向量化，而不必逐条调用 `TextEmbedding.call`：
+
+```python
+from dashscope import BatchTextEmbedding
+
+resp = BatchTextEmbedding.call(
+    model=BatchTextEmbedding.Models.text_embedding_async_v2,
+    url="https://example.com/texts.txt",
+)
+print(resp.output.task_id, resp.output.task_status)
+if resp.output.task_status == "SUCCEEDED":
+    print(resp.output.url)  # 从这里下载结果文件
+```
+
 ### 文本重排（ReRank）
 
 ```python
@@ -349,6 +385,26 @@ resp = TextReRank.call(
 )
 for r in resp.output.results:
     print(r.index, r.relevance_score, r.document)
+```
+
+使用 `AioTextReRank` 可获得 `async`/`await` 形式：
+
+```python
+import asyncio
+from dashscope import AioTextReRank
+
+async def main():
+    resp = await AioTextReRank.call(
+        model=AioTextReRank.Models.gte_rerank,
+        query="哈尔滨在哪？",
+        documents=["黑龙江离俄罗斯很近", "哈尔滨是中国黑龙江省的省会，位于中国东北"],
+        return_documents=True,
+        top_n=1,
+    )
+    for r in resp.output.results:
+        print(r.index, r.relevance_score, r.document)
+
+asyncio.run(main())
 ```
 
 ### 代码生成
@@ -432,6 +488,21 @@ result = SpeechSynthesizer.call(
 )
 with open("output.wav", "wb") as f:
     f.write(result.get_audio_data())
+```
+
+`HttpSpeechSynthesizer` 通过普通 HTTP（无需 WebSocket）调用语音合成，适用于无法保持持久连接的环境：
+
+```python
+from dashscope.audio.http_tts import HttpSpeechSynthesizer
+
+result = HttpSpeechSynthesizer.call(
+    model="cosyvoice-v3-flash",
+    text="Hello, Bailian.",
+    voice="longxiaochun",
+    audio_format="wav",
+)
+with open("output.wav", "wb") as f:
+    f.write(result.audio_data)
 ```
 
 ### 流式语音合成（CosyVoice v2）
