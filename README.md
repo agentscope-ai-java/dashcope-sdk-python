@@ -118,6 +118,8 @@ else:
         print(response.output.choices[0].message.content)
 ```
 
+For the full list of exception classes and when each is raised, see the [Error Handling Reference](docs/guides/error-handling.md).
+
 ## API Key Authentication
 
 The SDK uses API key for authentication. To obtain an API Key, see [How to get an API Key](https://help.aliyun.com/en/model-studio/get-api-key). Please refer to [official documentation for alibabacloud china](https://www.alibabacloud.com/help/en/model-studio/) and [official documentation for alibabacloud international](https://www.alibabacloud.com/help/en/model-studio/) regarding how to obtain your api-key.
@@ -252,6 +254,8 @@ print(response)
 
 A complete runnable example is available in [`samples/set_region_example.py`](samples/set_region_example.py).
 
+For request timeouts, custom headers, proxy support, and closing shared connection pools, see the [Advanced Configuration guide](docs/guides/configuration.md).
+
 ## AI Assistant: DashScope SDK Expert
 
 The SDK ships with an interactive AI assistant, **DashScope SDK Expert**, built on the bundled Agentic CLI (`dashscope/acli`) framework. For DashScope SDK/CLI users it is the recommended way to get development consultation and AI coding help — answering SDK/API questions, generating runnable examples, showing CLI usage, and diagnosing errors, right in your terminal.
@@ -295,6 +299,26 @@ messages = [{
 }]
 response = MultiModalConversation.call(model="qwen-vl-max", messages=messages)
 print(response.output.choices[0].message.content[0]["text"])
+```
+
+Use `AioMultiModalConversation` for the `async`/`await` form:
+
+```python
+import asyncio
+from dashscope import AioMultiModalConversation
+
+async def main():
+    messages = [{
+        "role": "user",
+        "content": [
+            {"image": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20241022/emyrja/dog_and_girl.jpeg"},
+            {"text": "What does this picture describe?"},
+        ],
+    }]
+    response = await AioMultiModalConversation.call(model="qwen-vl-max", messages=messages)
+    print(response.output.choices[0].message.content[0]["text"])
+
+asyncio.run(main())
 ```
 
 ### Using Local Files
@@ -341,6 +365,22 @@ resp = MultiModalEmbedding.call(
 print(resp.output)
 ```
 
+### Batch (Offline) Text Embedding
+
+For large volumes of text, submit a file (one text per line) for asynchronous batch embedding instead of calling `TextEmbedding.call` per item:
+
+```python
+from dashscope import BatchTextEmbedding
+
+resp = BatchTextEmbedding.call(
+    model=BatchTextEmbedding.Models.text_embedding_async_v2,
+    url="https://example.com/texts.txt",
+)
+print(resp.output.task_id, resp.output.task_status)
+if resp.output.task_status == "SUCCEEDED":
+    print(resp.output.url)  # download the result file from here
+```
+
 ### Text ReRank
 
 ```python
@@ -358,6 +398,26 @@ resp = TextReRank.call(
 )
 for r in resp.output.results:
     print(r.index, r.relevance_score, r.document)
+```
+
+Use `AioTextReRank` for the `async`/`await` form:
+
+```python
+import asyncio
+from dashscope import AioTextReRank
+
+async def main():
+    resp = await AioTextReRank.call(
+        model=AioTextReRank.Models.gte_rerank,
+        query="What is the capital of China?",
+        documents=["The capital of China is Beijing.", "China is a large country in East Asia."],
+        return_documents=True,
+        top_n=1,
+    )
+    for r in resp.output.results:
+        print(r.index, r.relevance_score, r.document)
+
+asyncio.run(main())
 ```
 
 ### Code Generation
@@ -441,6 +501,21 @@ result = SpeechSynthesizer.call(
 )
 with open("output.wav", "wb") as f:
     f.write(result.get_audio_data())
+```
+
+`HttpSpeechSynthesizer` calls TTS over plain HTTP (no WebSocket), useful in environments that can't hold a persistent connection:
+
+```python
+from dashscope.audio.http_tts import HttpSpeechSynthesizer
+
+result = HttpSpeechSynthesizer.call(
+    model="cosyvoice-v3-flash",
+    text="Hello, Bailian.",
+    voice="longxiaochun",
+    audio_format="wav",
+)
+with open("output.wav", "wb") as f:
+    f.write(result.audio_data)
 ```
 
 ### Streaming Speech Synthesis (CosyVoice v2)
@@ -611,6 +686,12 @@ status = Deployments.get(deployed_model).output.status
 response = Generation.call(model=deployed_model, messages=[{"role": "user", "content": "Hi"}])
 ```
 
+For the full job/deployment lifecycle (listing, canceling, streaming events, scaling), see the [Fine-tuning & Deployment Lifecycle guide](docs/guides/fine-tuning.md).
+
+### Assistants API (Deprecated)
+
+The legacy Assistants API (`Assistants`, `Threads`, `Runs`, `Messages`) still works but is deprecated — see the [Assistants API guide](docs/guides/assistants.md) for the full surface and migration notes. New code should use [`Generation`](#quick-start) or [`MultiModalConversation`](#multimodal-understanding-vision) instead.
+
 ## CLI Usage
 
 Every SDK capability is also available as a `dashscope` sub-command (installed with the base package), for scripting or quick checks without writing Python:
@@ -675,6 +756,8 @@ response.message       # str: error message on failure, otherwise ""
 response.output        # Any: the request output (shape depends on the API called)
 response.usage         # Any: token/quota usage information
 ```
+
+For how `output`/`usage` support both dict-style and attribute-style access, and the per-capability response subclasses, see the [Response Object Model guide](docs/guides/response-types.md).
 
 ## License
 This project is licensed under the Apache License (Version 2.0).
