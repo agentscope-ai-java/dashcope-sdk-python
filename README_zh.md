@@ -87,6 +87,55 @@ async def main():
 asyncio.run(main())
 ```
 
+### 函数调用
+
+通过 `tools` 传入 OpenAI 风格的工具定义；模型会通过 `message.tool_calls` 请求调用工具，由你的代码执行后再将结果传回：
+
+```python
+from dashscope import Generation
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_current_weather",
+        "description": "获取指定城市的当前天气。",
+        "parameters": {
+            "type": "object",
+            "properties": {"location": {"type": "string", "description": "城市名称。"}},
+            "required": ["location"],
+        },
+    },
+}]
+response = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "杭州天气怎么样"}],
+    tools=tools,
+    result_format="message",
+)
+tool_call = response.output.choices[0].message.tool_calls[0]
+print(tool_call.function.name, tool_call.function.arguments)
+```
+
+### 思考模式
+
+支持混合思考的模型可以将推理过程与最终答案分开返回，通过 `enable_thinking` 开启（需要设置 `stream=True`）；推理过程出现在 `message.reasoning_content` 中，最终答案出现在 `message.content` 中：
+
+```python
+from dashscope import Generation
+
+responses = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "1.1和0.9哪个大"}],
+    result_format="message",
+    enable_thinking=True,
+    incremental_output=True,
+    stream=True,
+)
+for response in responses:
+    message = response.output.choices[0].message
+    print(message.get("reasoning_content") or message.content, end="")
+```
+
 ### 错误处理
 
 缺少必填参数（如未传 `model`、`messages`/`prompt`，或没有配置 API Key）会立即抛出 `DashScopeException` 的子类；而 API 层面的失败（模型名不合法、限流等）不会抛异常，而是体现在返回结果里，因此需要检查 `status_code`：
@@ -108,6 +157,8 @@ else:
     else:
         print(response.output.choices[0].message.content)
 ```
+
+完整的异常类列表及各自的触发时机，请参见[错误处理参考](docs/guides/error-handling_zh.md)。
 
 ## API Key 鉴权
 
@@ -243,6 +294,8 @@ print(response)
 
 完整可运行示例见 [`samples/set_region_example.py`](samples/set_region_example.py)。
 
+关于请求超时、自定义请求头、代理支持以及关闭共享连接池，请参见[高级配置指南](docs/guides/configuration_zh.md)。
+
 ## AI 助手：DashScope SDK Expert
 
 SDK 内置了交互式 AI 助手 **DashScope SDK Expert**，基于随包提供的 Agentic CLI（`dashscope/acli`）框架构建。对于 DashScope SDK/CLI 用户，它是获取开发咨询和 AI 编码帮助的推荐方式——直接在终端中解答 SDK/API 问题、生成可运行示例、展示 CLI 用法、诊断错误。
@@ -308,6 +361,45 @@ async def main():
 asyncio.run(main())
 ```
 
+视频以一组帧图片的 URL/路径列表形式传入（而不是单个视频文件）：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"video": ["frame1.jpg", "frame2.jpg", "frame3.jpg", "frame4.jpg"]},
+        {"text": "描述这段视频中发生的事情。"},
+    ],
+}]
+response = MultiModalConversation.call(model="qwen-vl-max-latest", messages=messages)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
+`qwen-vl-ocr` 系列模型支持 `ocr_options` 参数，用于结构化信息提取（例如根据 JSON 模式从文档图片中提取字段）：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://example.com/invoice.jpg"},
+        {"text": "请将该文档中的字段提取到给定的 JSON 模式中：{result_schema}"},
+    ],
+}]
+response = MultiModalConversation.call(
+    model="qwen-vl-ocr-latest",
+    messages=messages,
+    ocr_options={
+        "task": "key_information_extraction",
+        "task_config": {"result_schema": {"invoice_number": "", "total_amount": ""}},
+    },
+)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
 ### 使用本地文件
 
 任何接受 URL 的字段（messages 中的 `image`、`audio`、`video`，`ImageSynthesis` 的 `images` 等）同样支持本地文件路径——SDK 会自动上传到 OSS，无需手动设置请求头：
@@ -352,6 +444,26 @@ resp = MultiModalEmbedding.call(
 print(resp.output)
 ```
 
+使用显式的 item 类，可以将文本/图像/音频组合成单个融合向量（每个 item 都需要 `factor` 权重；`enable_fusion` 仅 `qwen3-vl-embedding` 支持）：
+
+```python
+from dashscope import MultiModalEmbedding
+from dashscope.embeddings.multimodal_embedding import (
+    MultiModalEmbeddingItemText,
+    MultiModalEmbeddingItemImage,
+)
+
+resp = MultiModalEmbedding.call(
+    model="qwen3-vl-embedding",
+    input=[
+        MultiModalEmbeddingItemText(text="一辆红色跑车", factor=1.0),
+        MultiModalEmbeddingItemImage(image="https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png", factor=1.0),
+    ],
+    enable_fusion=True,
+)
+print(resp.output)
+```
+
 ### 批量（离线）文本向量
 
 对于大批量文本，可以提交一个文件（每行一条文本）进行异步批量向量化，而不必逐条调用 `TextEmbedding.call`：
@@ -366,6 +478,21 @@ resp = BatchTextEmbedding.call(
 print(resp.output.task_id, resp.output.task_status)
 if resp.output.task_status == "SUCCEEDED":
     print(resp.output.url)  # 从这里下载结果文件
+```
+
+不阻塞地提交任务，随后单独轮询：
+
+```python
+from dashscope import BatchTextEmbedding
+
+task = BatchTextEmbedding.async_call(
+    model=BatchTextEmbedding.Models.text_embedding_async_v2,
+    url="https://example.com/texts.txt",
+)
+print(task.output.task_id)
+
+result = BatchTextEmbedding.wait(task)
+print(result.output.task_status)
 ```
 
 ### 文本重排（ReRank）
@@ -442,6 +569,64 @@ if rsp.status_code == HTTPStatus.OK:
         print(result.url)
 ```
 
+`sync_call`（目前仅支持 `wan2.2-t2i-flash`/`wan2.2-t2i-plus`）直接返回结果，而不是轮询异步任务：
+
+```python
+from http import HTTPStatus
+from dashscope import ImageSynthesis
+
+rsp = ImageSynthesis.sync_call(
+    model="wan2.2-t2i-flash",
+    prompt="一间有着精致窗户的花店，漂亮的木质门，摆放着花朵",
+    n=1,
+    size="1024*1024",
+)
+if rsp.status_code == HTTPStatus.OK:
+    print(rsp.output)
+```
+
+使用 `AioImageSynthesis.sync_call` 可获得 `async`/`await` 形式：
+
+```python
+import asyncio
+from dashscope import AioImageSynthesis
+
+async def main():
+    rsp = await AioImageSynthesis.sync_call(
+        model="wan2.2-t2i-flash",
+        prompt="一间有着精致窗户的花店，漂亮的木质门，摆放着花朵",
+        n=1,
+        size="1024*1024",
+    )
+    print(rsp.output)
+
+asyncio.run(main())
+```
+
+### 手绘草图生成图像与图像编辑
+
+`ImageSynthesis.call` 还可以接受手绘草图，或对已有图像进行编辑，通过专用模型和参数实现：
+
+```python
+from dashscope import ImageSynthesis
+
+# 手绘草图生成图像
+rsp = ImageSynthesis.call(
+    model=ImageSynthesis.Models.wanx_sketch_to_image_v1,
+    prompt="一只可爱的猫，水彩风格",
+    sketch_image_url="https://example.com/sketch.png",
+)
+
+# 用文字指令编辑已有图像
+rsp = ImageSynthesis.call(
+    model=ImageSynthesis.Models.wanx_2_1_imageedit,
+    prompt="将背景改为沙滩",
+    function="description_edit",
+    base_image_url="https://example.com/photo.png",
+)
+print(rsp.output)
+```
+
 ### 视频生成
 
 视频生成是异步任务；`call` 会阻塞直到任务完成，也可以用 `async_call` + `wait`/`fetch` 手动轮询。
@@ -458,6 +643,18 @@ rsp = VideoSynthesis.call(
 )
 if rsp.status_code == HTTPStatus.OK:
     print(rsp.output.video_url)
+```
+
+不阻塞地提交任务，随后单独轮询：
+
+```python
+from dashscope import VideoSynthesis
+
+task = VideoSynthesis.async_call(model="wan2.7-t2v", prompt="一只小猫在月光下奔跑")
+print(task.output.task_id)
+
+rsp = VideoSynthesis.wait(task)
+print(rsp.output.video_url)
 ```
 
 ### 语音合成（TTS）
@@ -673,6 +870,12 @@ status = Deployments.get(deployed_model).output.status
 response = Generation.call(model=deployed_model, messages=[{"role": "user", "content": "Hi"}])
 ```
 
+完整的任务/部署生命周期管理（列表、取消、事件流、扩缩容），请参见[模型微调与部署生命周期指南](docs/guides/fine-tuning_zh.md)。
+
+### Assistants API（已弃用）
+
+旧版 Assistants API（`Assistants`、`Threads`、`Runs`、`Messages`）目前仍可使用，但已被弃用——完整接口和迁移说明请参见 [Assistants API 指南](docs/guides/assistants_zh.md)。新代码应改用 [`Generation`](#快速开始) 或 [`MultiModalConversation`](#多模态理解视觉)。
+
 ## CLI 用法
 
 每一项 SDK 能力都可以通过 `dashscope` 子命令直接使用（随基础包一起安装），便于脚本化或快速验证，无需编写 Python 代码：
@@ -737,6 +940,8 @@ response.message       # str: 失败时的错误信息，成功时为空字符�
 response.output        # Any: 请求输出，具体结构取决于调用的接口
 response.usage         # Any: Token / 用量信息
 ```
+
+关于 `output`/`usage` 如何同时支持字典式与属性式访问，以及各能力专属的响应子类，请参见[响应对象模型指南](docs/guides/response-types_zh.md)。
 
 ## 许可证
 

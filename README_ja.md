@@ -89,6 +89,55 @@ async def main():
 asyncio.run(main())
 ```
 
+### 関数呼び出し
+
+`tools` に OpenAI 形式のツール定義を渡します。モデルは `message.tool_calls` を通じて呼び出しをリクエストし、あなたのコードがそれを実行して結果を返します：
+
+```python
+from dashscope import Generation
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_current_weather",
+        "description": "指定した都市の現在の天気を取得します。",
+        "parameters": {
+            "type": "object",
+            "properties": {"location": {"type": "string", "description": "都市名。"}},
+            "required": ["location"],
+        },
+    },
+}]
+response = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "杭州の天気はどうですか？"}],
+    tools=tools,
+    result_format="message",
+)
+tool_call = response.output.choices[0].message.tool_calls[0]
+print(tool_call.function.name, tool_call.function.arguments)
+```
+
+### 思考モード
+
+ハイブリッド思考モデルは、`enable_thinking`（`stream=True` が必要）を使うことで、推論過程を最終的な回答とは別に出力できます。推論過程は `message.reasoning_content` に、最終的な回答は `message.content` に含まれます：
+
+```python
+from dashscope import Generation
+
+responses = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "1.1と0.9どちらが大きいですか"}],
+    result_format="message",
+    enable_thinking=True,
+    incremental_output=True,
+    stream=True,
+)
+for response in responses:
+    message = response.output.choices[0].message
+    print(message.get("reasoning_content") or message.content, end="")
+```
+
 ### エラーハンドリング
 
 必須パラメータが不足している場合（`model` が未指定、`messages`/`prompt` が未指定、API キー未設定など）は、その場で `DashScopeException` のサブクラスが送出されます。一方、モデル名が不正、レート制限超過などの API レベルの失敗は例外にはならず、レスポンスに含まれて返されるため、`status_code` を確認する必要があります。
@@ -110,6 +159,8 @@ else:
     else:
         print(response.output.choices[0].message.content)
 ```
+
+例外クラスの一覧とそれぞれが送出される条件については、[エラーハンドリングリファレンス](docs/guides/error-handling_ja.md)を参照してください。
 
 ## API Key 認証
 
@@ -245,6 +296,8 @@ print(response)
 
 完全に実行可能なサンプルは [`samples/set_region_example.py`](samples/set_region_example.py) にあります。
 
+リクエストタイムアウト、カスタムリクエストヘッダー、プロキシ対応、共有コネクションプールのクローズについては、[高度な設定ガイド](docs/guides/configuration_ja.md)を参照してください。
+
 ## AI アシスタント：DashScope SDK Expert
 
 このSDKには、バンドルされている Agentic CLI（`dashscope/acli`）フレームワーク上に構築されたインタラクティブ AI アシスタント **DashScope SDK Expert** が同梱されています。DashScope の SDK/CLI を利用するユーザーにとって、開発相談や AI によるコーディング支援を受けるための推奨手段であり、SDK/API に関する質問への回答、実行可能なサンプルコードの生成、CLI の使い方の提示、エラー診断を、ターミナル上でそのまま行えます。
@@ -310,6 +363,45 @@ async def main():
 asyncio.run(main())
 ```
 
+動画は単一の動画ファイルではなく、フレーム画像の URL/パスのリストとして渡します：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"video": ["frame1.jpg", "frame2.jpg", "frame3.jpg", "frame4.jpg"]},
+        {"text": "この動画で何が起きているか説明してください。"},
+    ],
+}]
+response = MultiModalConversation.call(model="qwen-vl-max-latest", messages=messages)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
+`qwen-vl-ocr` 系のモデルは、構造化抽出（例えば文書画像から JSON スキーマにフィールドを埋め込む）のための `ocr_options` パラメータをサポートしています：
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://example.com/invoice.jpg"},
+        {"text": "この文書のフィールドを、指定された JSON スキーマに抽出してください: {result_schema}"},
+    ],
+}]
+response = MultiModalConversation.call(
+    model="qwen-vl-ocr-latest",
+    messages=messages,
+    ocr_options={
+        "task": "key_information_extraction",
+        "task_config": {"result_schema": {"invoice_number": "", "total_amount": ""}},
+    },
+)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
 ### ローカルファイルの使用
 
 URL を受け付けるすべてのフィールド（messages 内の `image`、`audio`、`video`、`ImageSynthesis` の `images` など）は、ローカルファイルパスもそのまま受け付けます。SDK が自動的に OSS へアップロードするため、手動でヘッダーを設定する必要はありません：
@@ -354,6 +446,26 @@ resp = MultiModalEmbedding.call(
 print(resp.output)
 ```
 
+明示的な item クラスを使うと、テキスト／画像／音声を組み合わせて1つの融合ベクトルにできます（各アイテムには `factor` の重み付けが必要で、`enable_fusion` は `qwen3-vl-embedding` でのみ利用可能です）：
+
+```python
+from dashscope import MultiModalEmbedding
+from dashscope.embeddings.multimodal_embedding import (
+    MultiModalEmbeddingItemText,
+    MultiModalEmbeddingItemImage,
+)
+
+resp = MultiModalEmbedding.call(
+    model="qwen3-vl-embedding",
+    input=[
+        MultiModalEmbeddingItemText(text="赤いスポーツカー", factor=1.0),
+        MultiModalEmbeddingItemImage(image="https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png", factor=1.0),
+    ],
+    enable_fusion=True,
+)
+print(resp.output)
+```
+
 ### バッチ（オフライン）テキスト Embedding
 
 大量のテキストを扱う場合、`TextEmbedding.call` を1件ずつ呼び出す代わりに、ファイル（1行1テキスト）を送信して非同期のバッチ Embedding を実行できます：
@@ -368,6 +480,21 @@ resp = BatchTextEmbedding.call(
 print(resp.output.task_id, resp.output.task_status)
 if resp.output.task_status == "SUCCEEDED":
     print(resp.output.url)  # ここから結果ファイルをダウンロード
+```
+
+ブロックせずにタスクを送信し、後で個別にポーリングします：
+
+```python
+from dashscope import BatchTextEmbedding
+
+task = BatchTextEmbedding.async_call(
+    model=BatchTextEmbedding.Models.text_embedding_async_v2,
+    url="https://example.com/texts.txt",
+)
+print(task.output.task_id)
+
+result = BatchTextEmbedding.wait(task)
+print(result.output.task_status)
 ```
 
 ### テキストリランキング
@@ -444,6 +571,64 @@ if rsp.status_code == HTTPStatus.OK:
         print(result.url)
 ```
 
+`sync_call`（現在は `wan2.2-t2i-flash`/`wan2.2-t2i-plus` のみ対応）は、非同期タスクをポーリングする代わりに結果を直接返します：
+
+```python
+from http import HTTPStatus
+from dashscope import ImageSynthesis
+
+rsp = ImageSynthesis.sync_call(
+    model="wan2.2-t2i-flash",
+    prompt="繊細な窓と木製の扉がある花屋",
+    n=1,
+    size="1024*1024",
+)
+if rsp.status_code == HTTPStatus.OK:
+    print(rsp.output)
+```
+
+`AioImageSynthesis.sync_call` を使うと `async`/`await` 形式で呼び出せます：
+
+```python
+import asyncio
+from dashscope import AioImageSynthesis
+
+async def main():
+    rsp = await AioImageSynthesis.sync_call(
+        model="wan2.2-t2i-flash",
+        prompt="繊細な窓と木製の扉がある花屋",
+        n=1,
+        size="1024*1024",
+    )
+    print(rsp.output)
+
+asyncio.run(main())
+```
+
+### スケッチから画像生成・画像編集
+
+`ImageSynthesis.call` は、手描きのスケッチや既存の画像の編集にも対応しており、専用のモデルとパラメータを使用します：
+
+```python
+from dashscope import ImageSynthesis
+
+# スケッチから画像を生成
+rsp = ImageSynthesis.call(
+    model=ImageSynthesis.Models.wanx_sketch_to_image_v1,
+    prompt="かわいい猫、水彩画スタイル",
+    sketch_image_url="https://example.com/sketch.png",
+)
+
+# テキスト指示で既存の画像を編集
+rsp = ImageSynthesis.call(
+    model=ImageSynthesis.Models.wanx_2_1_imageedit,
+    prompt="背景をビーチに変更する",
+    function="description_edit",
+    base_image_url="https://example.com/photo.png",
+)
+print(rsp.output)
+```
+
 ### 動画生成
 
 動画生成は非同期タスクとして実行されます。`call` はタスクが完了するまでブロックします。手動でポーリングしたい場合は `async_call` と `wait`/`fetch` を使用してください。
@@ -460,6 +645,18 @@ rsp = VideoSynthesis.call(
 )
 if rsp.status_code == HTTPStatus.OK:
     print(rsp.output.video_url)
+```
+
+ブロックせずにタスクを送信し、後で個別にポーリングします：
+
+```python
+from dashscope import VideoSynthesis
+
+task = VideoSynthesis.async_call(model="wan2.7-t2v", prompt="月明かりの下を走る子猫")
+print(task.output.task_id)
+
+rsp = VideoSynthesis.wait(task)
+print(rsp.output.video_url)
 ```
 
 ### 音声合成（TTS）
@@ -675,6 +872,12 @@ status = Deployments.get(deployed_model).output.status
 response = Generation.call(model=deployed_model, messages=[{"role": "user", "content": "Hi"}])
 ```
 
+ジョブ／デプロイメントの完全なライフサイクル管理（一覧表示、キャンセル、イベントストリーミング、スケーリング）については、[ファインチューニング＆デプロイメントライフサイクルガイド](docs/guides/fine-tuning_ja.md)を参照してください。
+
+### Assistants API（非推奨）
+
+レガシーの Assistants API（`Assistants`、`Threads`、`Runs`、`Messages`）は引き続き動作しますが非推奨です——完全な仕様と移行方法については [Assistants API ガイド](docs/guides/assistants_ja.md)を参照してください。新規コードでは [`Generation`](#クイックスタート) または [`MultiModalConversation`](#マルチモーダル理解ビジョン) の使用を推奨します。
+
 ## CLI の使い方
 
 すべての SDK 機能は `dashscope` サブコマンドとしても利用できます（基本パッケージと一緒にインストールされます）。Python コードを書かずにスクリプトや簡単な動作確認に使えます：
@@ -739,6 +942,8 @@ response.message       # str: 失敗時のエラーメッセージ。成功時�
 response.output        # Any: リクエストの出力（呼び出す API によって形式が異なる）
 response.usage         # Any: トークン/クォータの使用状況
 ```
+
+`output`/`usage` が辞書形式とプロパティ形式の両方のアクセスをどのようにサポートしているか、および各機能専用のレスポンスサブクラスについては、[レスポンスオブジェクトモデルガイド](docs/guides/response-types_ja.md)を参照してください。
 
 ## ライセンス
 本プロジェクトは Apache License（Version 2.0）の下でライセンスされています。

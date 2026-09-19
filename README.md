@@ -93,6 +93,55 @@ async def main():
 asyncio.run(main())
 ```
 
+### Function Calling
+
+Pass OpenAI-style tool definitions via `tools`; the model requests a call through `message.tool_calls`, which your code executes and feeds back:
+
+```python
+from dashscope import Generation
+
+tools = [{
+    "type": "function",
+    "function": {
+        "name": "get_current_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+            "type": "object",
+            "properties": {"location": {"type": "string", "description": "The city name."}},
+            "required": ["location"],
+        },
+    },
+}]
+response = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "What's the weather in Hangzhou?"}],
+    tools=tools,
+    result_format="message",
+)
+tool_call = response.output.choices[0].message.tool_calls[0]
+print(tool_call.function.name, tool_call.function.arguments)
+```
+
+### Thinking Mode
+
+Hybrid thinking models can expose their reasoning process separately from the final answer via `enable_thinking` (requires `stream=True`); the reasoning appears in `message.reasoning_content`, the final answer in `message.content`:
+
+```python
+from dashscope import Generation
+
+responses = Generation.call(
+    model="qwen-plus",
+    messages=[{"role": "user", "content": "Which is bigger, 1.1 or 0.9?"}],
+    result_format="message",
+    enable_thinking=True,
+    incremental_output=True,
+    stream=True,
+)
+for response in responses:
+    message = response.output.choices[0].message
+    print(message.get("reasoning_content") or message.content, end="")
+```
+
 ### Error Handling
 
 Missing required arguments (e.g. no `model`, no `messages`/`prompt`, no API
@@ -321,6 +370,45 @@ async def main():
 asyncio.run(main())
 ```
 
+Video is passed as a list of frame image URLs/paths (not a single video file):
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"video": ["frame1.jpg", "frame2.jpg", "frame3.jpg", "frame4.jpg"]},
+        {"text": "Describe what happens in this video."},
+    ],
+}]
+response = MultiModalConversation.call(model="qwen-vl-max-latest", messages=messages)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
+`qwen-vl-ocr` models accept an `ocr_options` parameter for structured extraction (e.g. filling a JSON schema from a document image):
+
+```python
+from dashscope import MultiModalConversation
+
+messages = [{
+    "role": "user",
+    "content": [
+        {"image": "https://example.com/invoice.jpg"},
+        {"text": "Extract fields from this document into the given JSON schema: {result_schema}"},
+    ],
+}]
+response = MultiModalConversation.call(
+    model="qwen-vl-ocr-latest",
+    messages=messages,
+    ocr_options={
+        "task": "key_information_extraction",
+        "task_config": {"result_schema": {"invoice_number": "", "total_amount": ""}},
+    },
+)
+print(response.output.choices[0].message.content[0]["text"])
+```
+
 ### Using Local Files
 
 Every field that accepts a URL (`image`, `audio`, `video` in messages; `images` on `ImageSynthesis`, etc.) also accepts a local file path — the SDK uploads it to OSS automatically, no manual header needed:
@@ -365,6 +453,26 @@ resp = MultiModalEmbedding.call(
 print(resp.output)
 ```
 
+Use the explicit item classes to combine text/image/audio into a single fused vector (each requires a `factor` weight, and `enable_fusion` on `qwen3-vl-embedding`):
+
+```python
+from dashscope import MultiModalEmbedding
+from dashscope.embeddings.multimodal_embedding import (
+    MultiModalEmbeddingItemText,
+    MultiModalEmbeddingItemImage,
+)
+
+resp = MultiModalEmbedding.call(
+    model="qwen3-vl-embedding",
+    input=[
+        MultiModalEmbeddingItemText(text="a red sports car", factor=1.0),
+        MultiModalEmbeddingItemImage(image="https://dashscope.oss-cn-beijing.aliyuncs.com/images/256_1.png", factor=1.0),
+    ],
+    enable_fusion=True,
+)
+print(resp.output)
+```
+
 ### Batch (Offline) Text Embedding
 
 For large volumes of text, submit a file (one text per line) for asynchronous batch embedding instead of calling `TextEmbedding.call` per item:
@@ -379,6 +487,21 @@ resp = BatchTextEmbedding.call(
 print(resp.output.task_id, resp.output.task_status)
 if resp.output.task_status == "SUCCEEDED":
     print(resp.output.url)  # download the result file from here
+```
+
+Submit without blocking, then poll separately:
+
+```python
+from dashscope import BatchTextEmbedding
+
+task = BatchTextEmbedding.async_call(
+    model=BatchTextEmbedding.Models.text_embedding_async_v2,
+    url="https://example.com/texts.txt",
+)
+print(task.output.task_id)
+
+result = BatchTextEmbedding.wait(task)
+print(result.output.task_status)
 ```
 
 ### Text ReRank
@@ -455,6 +578,64 @@ if rsp.status_code == HTTPStatus.OK:
         print(result.url)
 ```
 
+`sync_call` (currently only for `wan2.2-t2i-flash`/`wan2.2-t2i-plus`) returns the result directly instead of polling an async task:
+
+```python
+from http import HTTPStatus
+from dashscope import ImageSynthesis
+
+rsp = ImageSynthesis.sync_call(
+    model="wan2.2-t2i-flash",
+    prompt="a flower shop with delicate windows and a wooden door",
+    n=1,
+    size="1024*1024",
+)
+if rsp.status_code == HTTPStatus.OK:
+    print(rsp.output)
+```
+
+Use `AioImageSynthesis.sync_call` for the `async`/`await` form:
+
+```python
+import asyncio
+from dashscope import AioImageSynthesis
+
+async def main():
+    rsp = await AioImageSynthesis.sync_call(
+        model="wan2.2-t2i-flash",
+        prompt="a flower shop with delicate windows and a wooden door",
+        n=1,
+        size="1024*1024",
+    )
+    print(rsp.output)
+
+asyncio.run(main())
+```
+
+### Sketch-to-Image and Image Editing
+
+`ImageSynthesis.call` also accepts a hand-drawn sketch or an existing image to edit, via dedicated models and parameters:
+
+```python
+from dashscope import ImageSynthesis
+
+# Sketch to image
+rsp = ImageSynthesis.call(
+    model=ImageSynthesis.Models.wanx_sketch_to_image_v1,
+    prompt="a cute cat, watercolor style",
+    sketch_image_url="https://example.com/sketch.png",
+)
+
+# Edit an existing image with a text instruction
+rsp = ImageSynthesis.call(
+    model=ImageSynthesis.Models.wanx_2_1_imageedit,
+    prompt="change the background to a beach",
+    function="description_edit",
+    base_image_url="https://example.com/photo.png",
+)
+print(rsp.output)
+```
+
 ### Video Generation
 
 Video generation runs as an async task; `call` blocks until it completes, or use `async_call` + `wait`/`fetch` to poll manually.
@@ -471,6 +652,18 @@ rsp = VideoSynthesis.call(
 )
 if rsp.status_code == HTTPStatus.OK:
     print(rsp.output.video_url)
+```
+
+Submit without blocking, then poll separately:
+
+```python
+from dashscope import VideoSynthesis
+
+task = VideoSynthesis.async_call(model="wan2.7-t2v", prompt="a kitten running under the moonlight")
+print(task.output.task_id)
+
+rsp = VideoSynthesis.wait(task)
+print(rsp.output.video_url)
 ```
 
 ### Speech Synthesis (TTS)
